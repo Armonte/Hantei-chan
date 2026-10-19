@@ -124,7 +124,12 @@ void MainFrame::openBrowserRequest(const abrowser::OpenRequest& req)
 void MainFrame::DrawHan2Windows()
 {
 	static bool settingsLoaded = false;
-	if (!settingsLoaded) { settingsLoaded = true; han2ui::LoadHan2Settings(); }
+	if (!settingsLoaded) {
+		settingsLoaded = true; han2ui::LoadHan2Settings();
+		// the archive browser stays closed at startup unless Preferences > "Open the archive browser on startup" (then on the game list,
+		// as the old start screen); a file opened from the command line skips it
+		if (gSettings.openBrowserOnStartup && views.empty() && !abrowser::show) abrowser::ShowWindow(true);
+	}
 	ProcessDroppedFiles();
 	if (ImGuiWindow* w = ImGui::FindWindowByName("Box Pane")) han2ui::dockAnimId = w->DockId;
 	if (ImGuiWindow* w = ImGui::FindWindowByName("Right Pane")) han2ui::dockInspectorId = w->DockId;
@@ -147,8 +152,14 @@ void MainFrame::DrawHan2Windows()
 	han2ui::DrawCgWindow(getActiveCharacter());
 	han2ui::DrawDiffWindow(getActiveCharacter());
 	if (auto* av = getActiveView()) { han2ui::DrawAnimWindow(av->getCharacter(), av->getState(), &av->onion()); han2ui::DrawAnimListWindow(av->getCharacter(), av->getState()); }
+	{   // the archive browser's first-use dock place: a tab next to the Right Pane (its node exists from the default layout even with nothing open)
+		ImGuiID rp = 0;
+		if (ImGuiWindow* w = ImGui::FindWindowByName("Right Pane")) rp = w->DockId;
+		else if (ImGuiWindowSettings* s = ImGui::FindWindowSettingsByID(ImHashStr("Right Pane"))) rp = s->DockId;
+		abrowser::dockTarget = rp;
+	}
 	abrowser::OpenRequest req;
-	if (abrowser::Draw(req)) openBrowserRequest(req);
+	if (abrowser::Draw(req, gSettings.recentFiles)) openBrowserRequest(req);
 }
 
 void MainFrame::openPartsEditorForCharacter(CharacterInstance* character)

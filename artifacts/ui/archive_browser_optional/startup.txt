@@ -1,0 +1,19 @@
+# AB_W=1280 AB_H=720 tools/ui/ab_shot.sh artifacts/ui/archive_browser_optional/startup.txt
+# Startup with the archive browser closed (the default): only the small start card. Then the browser opened on
+# demand: it docks as a tab in the right dock node (narrow layout: sources | list, preview below) instead of
+# covering the window.
+waitidle
+wait 30
+capture C:/dev/hantei-chan/work/ab/archopt_01_startup.png
+browser open
+browse C:\Program Files (x86)\Steam\steamapps\common\UNDER NIGHT IN-BIRTH II Sys Celes
+waitidle
+filter /chr0
+waitidle
+wait 120
+waitidle
+select data/chr000/chr000.ha6
+waitidle
+wait 60
+capture C:/dev/hantei-chan/work/ab/archopt_02_browser_tab.png
+quit

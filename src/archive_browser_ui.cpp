@@ -45,6 +45,9 @@ unsigned MakeTex(const uint8_t *rgba, int w, int h)
 void FreeTex(unsigned &t) { if (t) { GLuint g = t; glDeleteTextures(1, &g); t = 0; } }
 
 bool g_pinned = false;          // keep the window open after opening something
+bool g_gamesPage = false;       // the game list instead of the listing (also shown while nothing is mounted)
+int g_gamesAtGroup = -1;        // st.nextGroup when the game list was asked for: opening a folder / archive leaves it
+bool g_restoreTried = false;    // the last browsed folder / archive is re-mounted once, the first time the window shows
 bool g_gridMode = false;
 bool g_iconLarge = false;   // list rows: 20 px icons (default) or 40 px
 bool g_focusFilter = false;
@@ -654,6 +657,15 @@ void OpenArchiveDialog()
 // ---- the window ----------------------------------------------------------------------------------------------------------------------------------------
 static void Toolbar(State &st)
 {
+	{
+		const bool games = g_gamesPage || st.sources.empty();
+		if (games) ImGui::BeginDisabled(st.sources.empty());
+		if (ImGui::Button(games ? T("Back to the files", "\xe3\x83\x95\xe3\x82\xa1\xe3\x82\xa4\xe3\x83\xab\xe4\xb8\x80\xe8\xa6\xa7\xe3\x81\xab\xe6\x88\xbb\xe3\x82\x8b") : T("Game list", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe4\xb8\x80\xe8\xa6\xa7"))) {
+			if (games) g_gamesPage = false; else ShowWindow(true);
+		}
+		if (games) ImGui::EndDisabled();
+		ImGui::SameLine();
+	}
 	if (ImGui::Button(T("Open game folder...", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe3\x83\x95\xe3\x82\xa9\xe3\x83\xab\xe3\x83\x80\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f..."))) ImGui::OpenPopup("##gamemenu");
 	if (ImGui::BeginPopup("##gamemenu")) {
 		if (ImGui::MenuItem(T("Detect the game automatically...", "\xe8\x87\xaa\xe5\x8b\x95\xe5\x88\xa4\xe5\x88\xa5..."))) FolderDialog(Game::None);
@@ -696,7 +708,42 @@ static void Toolbar(State &st)
 	{ const char *lg = i18n::language == 1 ? "EN" : "JP"; if (ImGui::SmallButton(lg)) { i18n::language = 1 - i18n::language; han2ui::SaveHan2Settings(); } }
 }
 
-bool Draw(OpenRequest &req)
+static std::string GamesPage(const std::vector<std::string> &recentFiles);
+
+void ShowWindow(bool gamesPage)
+{
+	show = true;
+	if (gamesPage) { g_gamesPage = true; g_gamesAtGroup = S().nextGroup; }
+}
+
+// Where the window goes when it opens. First use (nothing in imgui.ini): a tab in the dock node MainFrame named (the Right Pane's), else a
+// floating window at ui::FitNextWindow's size, clamped to the main window. A floating size saved by an older build that covers (almost) the
+// whole main window is shrunk once per session; any other size or dock place the user picked is left alone.
+static void PlaceWindow()
+{
+	static bool clampedOnce = false;
+	const ImGuiID wid = ImHashStr("###abrowser");
+	ImGuiWindow *w = ImGui::FindWindowByID(wid);
+	ImGuiWindowSettings *ws = w ? nullptr : ImGui::FindWindowSettingsByID(wid);
+	ui::FitNextWindow(1100.f, 680.f);   // FirstUseEver: the floating size (also when undocked later)
+	if (!w && !ws) {
+		if (dockTarget && ImGui::DockBuilderGetNode(dockTarget)) ImGui::DockBuilderDockWindow("###abrowser", dockTarget);   // settings only: Begin creates it docked
+		return;
+	}
+	if (clampedOnce) return;
+	clampedOnce = true;
+	const bool docked = w ? w->DockId != 0 : ws->DockId != 0;
+	if (docked) return;
+	const ImVec2 size = w ? w->SizeFull : ImVec2((float)ws->Size.x, (float)ws->Size.y);
+	const ImGuiViewport *vp = ImGui::GetMainViewport();
+	const float maxW = vp->WorkSize.x * 0.92f, maxH = vp->WorkSize.y * 0.90f;
+	if (size.x > maxW || size.y > maxH) {
+		ImGui::SetNextWindowSize(ImVec2(std::min(size.x, maxW), std::min(size.y, maxH)), ImGuiCond_Always);
+		ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	}
+}
+
+bool Draw(OpenRequest &req, const std::vector<std::string> &recentFiles)
 {
 	g_uiFrame++;
 	PumpMain();
@@ -705,36 +752,57 @@ bool Draw(OpenRequest &req)
 	bool open = false;
 	if (g_havePending) { req = g_pending; g_havePending = false; return true; }
 	if (!show) return false;
-	if (st.sources.empty() && !st.lastBrowsed.empty()) { std::string e = OpenPath(st.lastBrowsed); (void)e; show = true; }   // restore the last browsed folder / archive
-	{ const ImGuiViewport *vp = ImGui::GetMainViewport(); ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 24, vp->WorkPos.y + 30), ImGuiCond_FirstUseEver); ImGui::SetNextWindowSize(ImVec2(std::min(1240.f, vp->WorkSize.x - 48.f), std::min(760.f, vp->WorkSize.y - 60.f)), ImGuiCond_FirstUseEver); }
+	if (g_gamesPage && st.nextGroup != g_gamesAtGroup) g_gamesPage = false;   // a folder / archive was opened (game row, menu, script panel)
+	if (!g_restoreTried && !g_gamesPage && st.sources.empty() && !st.lastBrowsed.empty()) { g_restoreTried = true; std::string e = OpenPath(st.lastBrowsed); (void)e; }   // restore the last browsed folder / archive
+	PlaceWindow();
 	if (!ImGui::Begin((std::string(T("Archive Browser", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6")) + "###abrowser").c_str(), &show)) { ImGui::End(); return false; }
 	Toolbar(st);
+	if (g_gamesPage || st.sources.empty()) {   // the game list (the old start screen), inside the window
+		ImGui::Separator();
+		const std::string f = GamesPage(recentFiles);
+		ImGui::End();
+		if (f.empty()) return false;
+		req = OpenRequest{}; req.kind = OpenRequest::LooseFile; req.path = f;
+		if (!g_pinned) show = false;
+		return true;
+	}
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) g_focusFilter = true;
 	ImGui::Separator();
 	const float bottom = ImGui::GetFrameHeightWithSpacing() + ImGui::GetStyle().WindowPadding.y + 4.f;
-	if (ImGui::BeginTable("##layout", 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, -bottom))) {
-		ImGui::TableSetupColumn("##src", ImGuiTableColumnFlags_WidthFixed, 230.f);
+	// docked as a tab in a narrow column: sources | list on top, the preview under them (three columns need ~40 em)
+	const bool narrow = ImGui::GetContentRegionAvail().x < ui::Em(40.f);
+	const float prevH = narrow ? std::max(ui::Em(8.f), (ImGui::GetContentRegionAvail().y - bottom) * 0.40f) : 0.f;
+	const float cellH = narrow ? std::max(ui::Em(4.f), ImGui::GetContentRegionAvail().y - bottom - prevH - ImGui::GetStyle().CellPadding.y * 2.f) : 0.f;   // 0: down to the window bottom
+	if (ImGui::BeginTable("##layout", narrow ? 2 : 3, ImGuiTableFlags_Resizable | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_NoSavedSettings, ImVec2(0, -(bottom + prevH)))) {
+		ImGui::TableSetupColumn("##src", ImGuiTableColumnFlags_WidthFixed, narrow ? ui::Em(8.f) : 230.f);
 		ImGui::TableSetupColumn("##list", ImGuiTableColumnFlags_WidthStretch, 3.f);
-		ImGui::TableSetupColumn("##prev", ImGuiTableColumnFlags_WidthStretch, 2.4f);
+		if (!narrow) ImGui::TableSetupColumn("##prev", ImGuiTableColumnFlags_WidthStretch, 2.4f);
 		ImGui::TableNextRow();
 		ImGui::TableSetColumnIndex(0);
-		ImGui::BeginChild("##sources", ImVec2(0, 0), false);
+		ImGui::BeginChild("##sources", ImVec2(0, cellH), false);
 		ImGui::TextDisabled("%s", T("Sources", "\xe3\x82\xbd\xe3\x83\xbc\xe3\x82\xb9"));
 		DrawSources(st);
 		ImGui::EndChild();
 		ImGui::TableSetColumnIndex(1);
-		ImGui::BeginChild("##entries", ImVec2(0, 0), false);
+		ImGui::BeginChild("##entries", ImVec2(0, cellH), false);
 		{
 			int cols = 1; if (g_gridMode) cols = std::max(1, (int)(ImGui::GetContentRegionAvail().x / 128.f));
 			if (HandleKeys(st, req, cols)) open = true;
 			DrawList(st, req, open);
 		}
 		ImGui::EndChild();
-		ImGui::TableSetColumnIndex(2);
-		ImGui::BeginChild("##preview", ImVec2(0, 0), false);
+		if (!narrow) {
+			ImGui::TableSetColumnIndex(2);
+			ImGui::BeginChild("##preview", ImVec2(0, 0), false);
+			DrawPreviewPane(st, req, open);
+			ImGui::EndChild();
+		}
+		ImGui::EndTable();
+	}
+	if (narrow) {
+		ImGui::BeginChild("##preview", ImVec2(0, std::max(1.f, prevH - ImGui::GetStyle().ItemSpacing.y)), false);
 		DrawPreviewPane(st, req, open);
 		ImGui::EndChild();
-		ImGui::EndTable();
 	}
 	// status bar
 	if (st.prog.running) {
@@ -748,7 +816,7 @@ bool Draw(OpenRequest &req)
 		ImGui::TextDisabled("%s", !st.status.empty() ? st.status.c_str() : (s ? s->describe.c_str() : ""));
 		if (s && !st.status.empty()) { ImGui::SameLine(); ImGui::TextDisabled("  |  %s", s->describe.c_str()); }
 	}
-	ImGui::SameLine(ImGui::GetWindowWidth() - 360);
+	if (ImGui::GetWindowWidth() > 720.f) ImGui::SameLine(ImGui::GetWindowWidth() - 360);
 	ImGui::TextDisabled("%zu %s, %zu %s", st.view.size(), T("shown", "\xe8\xa1\xa8\xe7\xa4\xba"), st.sel.size(), T("selected", "\xe9\x81\xb8\xe6\x8a\x9e"));
 	ImGui::End();
 	if (open) {
@@ -792,7 +860,12 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 		for (auto &k : keys) if (arg == k.first) { g_injKeys.push_back((int)k.second); return true; }
 		say("unknown key"); return false;
 	}
-	if (cmd == "info") { char b[256]; snprintf(b, sizeof b, "sources=%zu sel=%d view=%zu cursor=%d selected=%zu type=%d status=%s", st.sources.size(), st.selSource, st.view.size(), st.cursor, st.sel.size(), st.typeFilter, st.status.c_str()); say(b); return false; }
+	if (cmd == "info") {
+		const ImGuiWindow *w = ImGui::FindWindowByID(ImHashStr("###abrowser"));
+		char b[512]; snprintf(b, sizeof b, "sources=%zu sel=%d view=%zu cursor=%d selected=%zu type=%d show=%d dockTarget=%08x node=%d dockId=%08x size=%.0fx%.0f status=%s", st.sources.size(), st.selSource, st.view.size(), st.cursor, st.sel.size(), st.typeFilter,
+		              show ? 1 : 0, dockTarget, dockTarget && ImGui::DockBuilderGetNode(dockTarget) ? 1 : 0, w ? w->DockId : 0u, w ? w->Size.x : 0.f, w ? w->Size.y : 0.f, st.status.c_str());
+		say(b); return false;
+	}
 	if (cmd == "typeahead") { g_injType += arg; return true; }
 	if (cmd == "frame") { st.bankFrame = atoi(arg.c_str()); return true; }
 	if (cmd == "palette") { st.bankPalette = std::clamp(atoi(arg.c_str()), 0, 7); return true; }
@@ -802,6 +875,12 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 	if (cmd == "grid") { g_gridMode = arg != "off"; return true; }
 	if (cmd == "pin") { g_pinned = arg != "off"; return true; }
 	if (cmd == "show") { show = arg != "off"; return true; }
+	if (cmd == "browser") {   // browser open | games | close
+		if (arg == "open" || arg.empty()) { ShowWindow(false); return true; }
+		if (arg == "games") { ShowWindow(true); return true; }
+		if (arg == "close") { show = false; return true; }
+		say("browser <open|games|close>"); return false;
+	}
 	say("unknown command " + cmd); return false;
 }
 
@@ -816,19 +895,12 @@ static void OpenGameRow(const GameDef &d)
 	else FolderDialog(d.id);
 }
 
-std::string DrawWelcome(const std::vector<std::string> &recentFiles)
+// The game list, drawn inside the archive browser window (it was a full-window start screen before).
+static std::string GamesPage(const std::vector<std::string> &recentFiles)
 {
 	std::string openFile;
 	State &st = S();
-	LoadSettings();
 	RescanInstalls();
-	const ImGuiViewport *vp = ImGui::GetMainViewport();
-	const ImVec2 sz(std::min(1300.f, vp->WorkSize.x - 40.f), std::min(980.f, vp->WorkSize.y - 12.f));
-	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + (vp->WorkSize.x - sz.x) * 0.5f, vp->WorkPos.y + (vp->WorkSize.y - sz.y) * 0.5f));
-	ImGui::SetNextWindowSize(sz);
-	ImGui::SetNextWindowBgAlpha(0.97f);
-	if (!ImGui::Begin("##welcome", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoSavedSettings)) { ImGui::End(); return {}; }
-	ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);   // i18n-ok: product name
 	ImGui::TextDisabled("%s", T("Every French-Bread game this editor reads. Open one: its archives are mounted, characters are listed with thumbnails, a double click opens a character.",
 	                            "対応しているフレンチ・ブレッド作品の一覧です。開くとアーカイブをマウントしてキャラクターをサムネイル付きで表示し、ダブルクリックで編集できます。"));
 	ImGui::Separator();
@@ -890,6 +962,29 @@ std::string DrawWelcome(const std::vector<std::string> &recentFiles)
 	if (recentFiles.empty()) ImGui::TextDisabled("  -");
 	for (size_t i = 0; i < recentFiles.size() && i < 1; i++) if (ImGui::Selectable((recentFiles[i] + "##rf" + std::to_string(i)).c_str())) openFile = recentFiles[i];
 	if (!st.status.empty()) ImGui::TextColored(ImVec4(1, .7f, .3f, 1), "%s", st.status.c_str());
+	return openFile;
+}
+
+std::string DrawWelcome(const std::vector<std::string> &recentFiles)
+{
+	std::string openFile;
+	LoadSettings();
+	const ImGuiViewport *vp = ImGui::GetMainViewport();
+	ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + vp->WorkSize.x * 0.5f, vp->WorkPos.y + vp->WorkSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowBgAlpha(0.92f);
+	const ImGuiWindowFlags fl = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoDocking |
+	                            ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoFocusOnAppearing;
+	if (!ImGui::Begin("##welcome", nullptr, fl)) { ImGui::End(); return {}; }
+	ImGui::SetWindowFontScale(1.5f); ImGui::TextUnformatted("Hantei-chan"); ImGui::SetWindowFontScale(1.f);   // i18n-ok: product name
+	ImGui::TextDisabled("%s", T("Nothing is open.", "\xe4\xbd\x95\xe3\x82\x82\xe9\x96\x8b\xe3\x81\x84\xe3\x81\xa6\xe3\x81\x84\xe3\x81\xbe\xe3\x81\x9b\xe3\x82\x93\xe3\x80\x82"));
+	const float bw = ui::Em(16.f);
+	if (ImGui::Button(T("Archive Browser (Ctrl+B)", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6 (Ctrl+B)"), ImVec2(bw, 0))) ShowWindow(false);
+	if (ImGui::Button(T("Game list...", "\xe3\x82\xb2\xe3\x83\xbc\xe3\x83\xa0\xe4\xb8\x80\xe8\xa6\xa7..."), ImVec2(bw, 0))) ShowWindow(true);
+	if (ImGui::Button(T("Open a character file...", "\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xa9\xe3\x82\xaf\xe3\x82\xbf\xe3\x83\xbc\xe3\x83\x95\xe3\x82\xa1\xe3\x82\xa4\xe3\x83\xab\xe3\x82\x92\xe9\x96\x8b\xe3\x81\x8f..."), ImVec2(bw, 0))) { std::string p = FileDialog(fileType::OPENANY, false); if (!p.empty()) openFile = p; }
+	if (!recentFiles.empty()) {
+		ImGui::TextDisabled("%s", T("Recent files", "\xe6\x9c\x80\xe8\xbf\x91\xe3\x81\xae\xe3\x83\x95\xe3\x82\xa1\xe3\x82\xa4\xe3\x83\xab"));
+		for (size_t i = 0; i < recentFiles.size() && i < 3; i++) if (ImGui::Selectable((recentFiles[i] + "##sf" + std::to_string(i)).c_str())) openFile = recentFiles[i];
+	}
 	ImGui::End();
 	return openFile;
 }

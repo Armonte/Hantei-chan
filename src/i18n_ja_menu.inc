@@ -341,3 +341,4 @@
 {"Import", "インポート"},
 {"Project", "プロジェクト"},
 {"Legacy", "レガシー"},
+{"Open the archive browser on startup", "起動時にアーカイブブラウザを開く"},
