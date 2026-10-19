@@ -192,6 +192,9 @@ public:
 	const char *get_filename(unsigned int n);
 
 	ImageData* draw_texture(unsigned int n, bool to_pow2, bool draw_8bpp = 0);
+	// draw_texture with an explicit palette (256 entries 0xAABBGGRR, e.g. paletteAt()) in place of the current one, for any bank
+	// format; the current palette number is left alone. Null `pal` = the current palette. The CG manager previews with it.
+	ImageData* draw_texture_pal(unsigned int n, const unsigned int *pal, bool to_pow2 = false, bool draw_8bpp = false);
 	//True if image n is palette-indexed (8bpp) and can use the shader palette path.
 	bool image_is_8bpp(unsigned int n);
 	const unsigned int* getPalettePtr() const { return palette; }

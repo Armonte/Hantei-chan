@@ -67,5 +67,13 @@ private:
 	CG &m_cg;
 };
 
+// The bank's bytes as a save writes them, for every format the manager opens: the BMP Cutter model when it parsed one (`model`), a
+// foreign bank's own serializer, else the CG's bank bytes as loaded (a BMP Cutter bank the model rejects: "Replace selected" edits
+// those bytes in place). False with `err` when the CG holds no bank.
+bool BankBytes(const CG &cg, const Bank *model, std::vector<uint8_t> &out, std::string *err);
+// RGBA of image `id` as the Browser preview and thumbnails show it: palette number `pal` of PUPS bank `pups` (CG::paletteAt) drives the
+// decode for every format; the CG's current palette (the main editor's) is used only when that palette does not exist.
+bool DecodePreview(CG &cg, const Bank *model, int id, int pal, int pups, Rgba &out);
+
 } // namespace cgm
 #endif

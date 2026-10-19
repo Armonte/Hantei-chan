@@ -6,6 +6,7 @@
 #include "../character_instance.h"
 #include "../i18n.h"
 #include "../filedialog.h"
+#include "../app_log.h"
 #include "../png_writer.h"
 #include "cgm_ops.h"
 #include "cgm_export.h"
@@ -94,10 +95,11 @@ void Window::rebuild(CharacterInstance &ch) {
 	owner = &ch; cgGen = ch.cg.generation();
 	clearThumbs();
 	pp.shownId = -1; idxUse.owner = nullptr;   // pixels or image count may have changed (palette pushes keep cgGen in step and skip this)
-	bank.reset(); atlas.clear();
+	bank.reset(); atlas.clear(); bankErr.clear();
 	if (!ch.cg.foreign() && ch.cg.bank_data()) {
 		auto b = std::make_unique<Bank>(); std::string err;
 		if (Bank::parse((const uint8_t *)ch.cg.bank_data(), ch.cg.bank_size(), *b, &err)) { bank = std::move(b); atlas = bank->buildAtlas(); }
+		else bankErr = err;
 	}
 	filterKey = ~0ull;
 	diskUids = bank ? ImageUids(*bank) : std::vector<uint32_t>();
@@ -274,21 +276,33 @@ void Window::undoRedo(CharacterInstance &ch, bool redo, const WindowHost &host, 
 }
 
 // RGBA of image id with palette `pal` / PUPS bank `pups` (type 0 images follow the palette, the others carry their own colours).
+// Write a bank file through a temp file and rename; `keepBak`: the first save keeps the original beside it as .bak.
+static bool WriteBankFile(const std::string &utf8Path, const std::vector<uint8_t> &bytes, bool keepBak, std::string *err) {
+	const std::filesystem::path target(Utf8ToWide(utf8Path));
+	std::error_code ec;
+	if (keepBak) { std::filesystem::path bak = target; bak += L".bak"; if (!std::filesystem::exists(bak, ec) && std::filesystem::exists(target, ec)) std::filesystem::copy_file(target, bak, ec); }
+	std::filesystem::path tmp = target; tmp += L".tmp";
+	{ std::ofstream f(tmp, std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); if (!f) { if (err) *err = Fmt(TXT("Could not write %s"), utf8Path.c_str()); return false; } }
+	std::filesystem::rename(tmp, target, ec);
+	if (ec) { std::filesystem::remove(tmp, ec); if (err) *err = Fmt(TXT("Could not write %s"), utf8Path.c_str()); return false; }
+	return true;
+}
+
 bool Window::fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector<uint8_t> &px, int &w, int &h) {
-	if (bank) {
-		Rgba r; const unsigned *p = ch.cg.paletteAt(pal, pups);
-		if (!bank->decode(id, r, p)) return false;
-		px = std::move(r.px); w = r.w; h = r.h; return true;
-	}
-	ImageData *im = ch.cg.draw_texture((unsigned)id, false, false);
-	if (!im) return false;
-	w = im->width; h = im->height; px.assign(im->pixels, im->pixels + (size_t)w * h * 4);
-	delete im; return true;
+	// The Browser's palette number drives the decode for every bank format, not only BMP Cutter banks.
+	Rgba r; if (!DecodePreview(ch.cg, bank.get(), id, pal, pups, r)) return false;
+	px = std::move(r.px); w = r.w; h = r.h; return true;
 }
 
 void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int maxSide, bool linear) {
 	std::vector<uint8_t> tmp; const uint8_t *px = src.data(); int tw = w, th = h;
+	// A decode with a bad size (negative / zero side, fewer pixels than w*h, past the GPU limit) made glTexImage2D fail with
+	// GL_INVALID_VALUE: a black tile, and the error surfaced in the main view as a GL error box on every scroll (issue #87).
 	GLint maxTex = 0; glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);   // sheets over 2048 px upload whole; only past the GPU limit are they scaled
+	if (w <= 0 || h <= 0 || src.size() < (size_t)w * h * 4) {
+		HC_LOG_WARN("CG manager: image decoded with an unusable size {}x{} ({} bytes); shown empty", w, h, src.size());
+		t.w = t.h = 0; t.empty = true; return;
+	}
 	if (maxTex > 0 && std::max(w, h) > maxTex && (maxSide <= 0 || maxSide > maxTex)) maxSide = maxTex;
 	if (maxSide > 0 && std::max(w, h) > maxSide) {   // box filter down to the thumbnail size
 		const float s = (float)maxSide / (float)std::max(w, h);
@@ -307,7 +321,12 @@ void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int
 	if (!t.tex) glGenTextures(1, &t.tex);
 	glBindTexture(GL_TEXTURE_2D, t.tex);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+	while (glGetError() != GL_NO_ERROR) {}   // only this upload's error below
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, tw, th, 0, GL_RGBA, GL_UNSIGNED_BYTE, px);
+	if (const GLenum e = glGetError(); e != GL_NO_ERROR) {
+		HC_LOG_WARN("CG manager: texture upload {}x{} failed (GL 0x{:x}); shown empty", tw, th, (unsigned)e);
+		t.w = t.h = 0; t.empty = true; return;
+	}
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, linear ? GL_LINEAR : GL_NEAREST);
 	t.w = tw; t.h = th;
@@ -1218,12 +1237,27 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			}
 		}
 		ImGui::EndDisabled();
-		if (FitButton(LBL("Save bank as...")) && ch->cg.foreign()) {
-			char nm[128]; snprintf(nm, sizeof(nm), "%s", "bank.bin");
-			const std::string p = FileDialog(-1, true, nm);
-			if (!p.empty()) { std::vector<uint8_t> bytes; ch->cg.foreign()->serialize(bytes); std::ofstream f(std::filesystem::u8path(p), std::ios::binary); f.write((const char *)bytes.data(), (std::streamsize)bytes.size()); status = f ? Fmt(TXT("Saved %s"), p.c_str()) : std::string(TXT("Could not write the file.")); }
+		// Save for every bank format this section shows (a foreign bank's serializer, else the CG's bank bytes, which "Replace selected"
+		// edits in place). Saving used to need a foreign bank and did nothing, silently, for the others (UNI2 / MBTL .cg).
+		if (!ch->getCGPath().empty() && FitButton(LBL("Save to the character's .cg"))) {
+			std::vector<uint8_t> bytes; std::string e;
+			const std::string cgp = AnsiToUtf8(ch->getCGPath());
+			if (!BankBytes(ch->cg, nullptr, bytes, &e)) status = e;
+			else if (!WriteBankFile(cgp, bytes, true, &e)) status = e;
+			else { status = Fmt(TXT("Saved %s (the original is kept as .bak)"), ch->getCGPath().c_str()); if (onSaved) onSaved(ch, cgp); }
 		}
-		ImGui::PushTextWrapPos(0.f); ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks.")); ImGui::PopTextWrapPos();
+		if (FitButton(LBL("Save bank as..."))) {
+			const std::string cur = ch->getCGPath().empty() ? std::string("bank.cg") : std::filesystem::u8path(AnsiToUtf8(ch->getCGPath())).filename().u8string();
+			char nm[128]; snprintf(nm, sizeof(nm), "%s", cur.c_str());
+			const std::string p = FileDialog(-1, true, nm);
+			if (!p.empty()) {
+				std::vector<uint8_t> bytes; std::string e;
+				if (!BankBytes(ch->cg, nullptr, bytes, &e)) status = e;
+				else if (!WriteBankFile(p, bytes, false, &e)) status = e;
+				else status = Fmt(TXT("Saved %s"), p.c_str());
+			}
+		}
+		ImGui::PushTextWrapPos(0.f); ImGui::TextDisabled("%s", TXT("This bank format: browse, batch export / import and image replace. Structural edits and palette editing are for BMP Cutter banks.")); if (!bankErr.empty()) ImGui::TextDisabled("%s", Fmt(TXT("The bank editor could not read this bank as a standard BMP Cutter bank: %s"), bankErr.c_str()).c_str()); ImGui::PopTextWrapPos();
 		if (!status.empty()) ImGui::TextWrapped("%s", status.c_str());
 		for (const std::string &w : warnings) ImGui::TextColored(ImVec4(1.f, 0.75f, 0.3f, 1.f), "%s", w.c_str());
 	}
@@ -1785,7 +1819,7 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 		if (key == "palSel") { const bool r = num(pal.selA); pal.selB = pal.selA; return r; }
 		if (key == "palPreviewMode") return num(pp.mode);
 		if (key == "palPreviewImage") return num(pp.image);
-		if (key == "previewPal") return num(previewPal);
+		if (key == "previewPal") { const bool r = num(previewPal); clearThumbs(); previewId = -1; return r; }   // as the Palette spinner does
 		if (key == "zoom") { zoom = std::clamp((float)atof(arg.c_str() + arg.find(' ') + 1), 0.25f, 8.f); return true; }
 		if (key == "fit") { int f = 0; num(f); fit = f != 0; return true; }
 		if (msg) *msg = "unknown field " + key; return false;

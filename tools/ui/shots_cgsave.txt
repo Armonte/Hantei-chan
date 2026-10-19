@@ -1,0 +1,19 @@
+# CG manager on a UNI2 bank (not BMP Cutter): the Palette number recolours the preview; "Save to the character's .cg" writes the bank.
+# Run on a copy: AB_ARGS='--open C:\dev\hantei-chan\work\cgsave_data\data\chr000\chr000_0.txt' tools/ui/ab_shot.sh tools/ui/shots_cgsave.txt
+wait 120
+cgm open
+wait 30
+cgm tab Browser
+wait 10
+cgm select 222
+wait 30
+cgm set previewPal 0
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgsave_pal0.png
+cgm set previewPal 5
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgsave_pal5.png
+cgm press Save to the character's .cg
+wait 30
+cgm status
+quit

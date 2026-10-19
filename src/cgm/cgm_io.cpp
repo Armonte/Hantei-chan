@@ -25,8 +25,8 @@ bool CgIO::info(int n, ImgInfo &o) const {
 	std::vector<CgCellRect> cells; if (m_cg.image_cells((unsigned)n, cells)) o.blocks = (int)cells.size();
 	return true;
 }
-bool CgIO::decode(int n, Rgba &o, const uint32_t *) const {
-	ImageData *im = m_cg.draw_texture((unsigned)n, false, false); if (!im) return false;
+bool CgIO::decode(int n, Rgba &o, const uint32_t *pal) const {
+	ImageData *im = m_cg.draw_texture_pal((unsigned)n, pal, false, false); if (!im) return false;
 	o.w = im->width; o.h = im->height; o.px.assign(im->pixels, im->pixels + (size_t)o.w * o.h * 4); delete im; return true;
 }
 bool CgIO::indexable(int n) const { return m_cg.image_is_8bpp((unsigned)n); }
@@ -45,6 +45,25 @@ bool CgIO::replace(int n, const uint8_t *rgba, int w, int h, std::string *err, R
 	if (!m_cg.replace_image_rgba((unsigned)n, rgba, w, h, err)) return false;
 	if (rep) { *rep = ReplaceReport(); rep->changedPixels = m_cg.generation() != g0 ? 1 : 0; }
 	return true;
+}
+
+bool BankBytes(const CG &cg, const Bank *model, std::vector<uint8_t> &out, std::string *err) {
+	out.clear();
+	if (model) { model->serialize(out); return true; }
+	if (CgForeignBank *f = cg.foreign()) { f->serialize(out); if (out.empty() && err) *err = "the bank serialized to no bytes"; return !out.empty(); }
+	if (cg.bank_data() && cg.bank_size()) { out.assign((const uint8_t *)cg.bank_data(), (const uint8_t *)cg.bank_data() + cg.bank_size()); return true; }
+	if (err) *err = "no bank is loaded";
+	return false;
+}
+
+bool DecodePreview(CG &cg, const Bank *model, int id, int pal, int pups, Rgba &out) {
+	if (id < 0) return false;
+	const unsigned *p = cg.paletteAt(pal, pups);
+	if (model) return id < (int)model->images.size() && model->decode(id, out, p);
+	ImageData *im = cg.draw_texture_pal((unsigned)id, p, false, false);
+	if (!im) return false;
+	out.w = im->width; out.h = im->height; out.px.assign(im->pixels, im->pixels + (size_t)out.w * out.h * 4);
+	delete im; return true;
 }
 
 } // namespace cgm

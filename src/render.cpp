@@ -306,14 +306,20 @@ void Render::ApplySpriteTextureMode()
 	}
 }
 
+// A GL error left by anything earlier in the frame (a texture upload in a tool window, ...). Logged, never a modal box: a box
+// re-raised every frame by the same failing upload had to be dismissed over and over (issue #87).
+static void ReportPendingGlErrors(const char *where)
+{
+	for (int i = 0; i < 8; i++) {
+		const GLenum err = glGetError();
+		if (err == GL_NO_ERROR) return;
+		HC_LOG_ERROR("GL error 0x{:x} pending at {}", (unsigned)err, where);
+	}
+}
+
 void Render::DrawGridLines()
 {
-	if(int err = glGetError())
-	{
-		std::stringstream ss;
-		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
-	}
+	ReportPendingGlErrors(__func__);
 
 	//Lines only
 	glm::mat4 view = glm::mat4(1.f);
@@ -331,13 +337,7 @@ void Render::DrawGridLines()
 
 void Render::Draw()
 {
-	if(int err = glGetError())
-	{
-		std::stringstream ss;
-		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
-		//PostQuitMessage(1);
-	}
+	ReportPendingGlErrors(__func__);
 
 	// Note: DrawBackground is invoked from MainFrame::DrawBack so it runs
 	// even when there is no active character (and master's code paths use
@@ -456,12 +456,7 @@ void Render::Draw()
 
 void Render::DrawSpriteOnly(bool drawHitboxes)
 {
-	if(int err = glGetError())
-	{
-		std::stringstream ss;
-		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
-	}
+	ReportPendingGlErrors(__func__);
 
 	// Disable depth write so layers don't occlude each other
 	// We still depth TEST against the background, but don't write to depth buffer
