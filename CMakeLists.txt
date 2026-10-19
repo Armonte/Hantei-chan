@@ -1399,6 +1399,38 @@ add_test(NAME render_parity_tools
 add_test(NAME rhi_lint
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/rhi_lint.sh" "${CMAKE_SOURCE_DIR}"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL (docs/plans/render_d3d9/PLAN.md 5.2).  glsl_identity is pure Python over the
+# repo text: res/shaders/*.glsl.* must stay byte-identical to the inline GLSL until P1
+# switches the C++ over to loading them.
+add_test(NAME glsl_identity
+	COMMAND python3 "${CMAKE_SOURCE_DIR}/tests/hlsl_glsl_identity_test.py"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL: compile every res/shaders/*.hlsl (vs_3_0 / ps_3_0) with
+# d3dcompiler_47.dll, loaded dynamically, and report the instruction count and the
+# CTAB constants.  It needs the DLL, not a GPU, so it is a normal Windows test.
+add_executable(hlslcompile tools/hlsl/hlslcompile.cpp)
+target_compile_definitions(hlslcompile PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(hlslcompile PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_compile
+	COMMAND hlslcompile "${CMAKE_SOURCE_DIR}/res/shaders"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Labelled gpu per the lane brief: it needs at least a real Windows host with the
+# d3dcompiler_47 OS component, which CI's non-GPU jobs don't guarantee.  It is green
+# on this worktree (18 vs_3_0/ps_3_0 entry points, 0 failures).
+set_tests_properties(hlsl_compile PROPERTIES LABELS gpu)
+
+# Lane HLSL: scalar CPU check that the HLSL ports of texturedSrcFrag (modes 0-3) and
+# partsSrcFrag are the same maths as the GLSL, on 10,000 random inputs plus every exact
+# texel centre.  No GPU, no game data.
+add_executable(hlsl_ref_test tests/hlsl_ref_test.cpp)
+if(MINGW)
+	target_link_options(hlsl_ref_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_ref COMMAND hlsl_ref_test)
 add_test(NAME render_parity
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
