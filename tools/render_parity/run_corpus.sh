@@ -89,11 +89,14 @@ win() { wslpath -w "$1"; }
 RUN_ARGS=(--headless --deterministic)
 [ "$RENDERER" != gl ] && RUN_ARGS+=(--renderer "$RENDERER")
 
-run_file() {   # <corpus-file> <kind> <shard>
+run_file() {   # <corpus-file> <kind> <shard> [<case-base>]
 	local src="$1" kind="$2" shard="$3"
 	local W="$ROOT/shard$shard"
 	local base; base="$(basename "$src")"
-	local case_base="${base%.*}"
+	# A sharded batch part is called "<corpus-file>.part.batch", so the caller
+	# passes the corpus file name for --only and for the status file.
+	local case_base="${4:-$(basename "$src")}"
+	case_base="${case_base%.*}"
 	if [ -n "$ONLY" ]; then
 		# comma-separated shell patterns, matched one at a time (a case pattern
 		# list built with command substitution does not word-split reliably).
@@ -105,7 +108,11 @@ run_file() {   # <corpus-file> <kind> <shard>
 		IFS="$OLDIFS"
 		[ "$hit" = 1 ] || return 0
 	fi
+	# Every shard runs its own part of the same corpus file, so the status file
+	# carries the shard number; otherwise one shard resumes past another one's
+	# work and the case set would depend on the order the shards finished.
 	local st="$OUT/$case_base.status"
+	[ "$kind" = batch ] && st="$OUT/$case_base.s$shard.status"
 	if [ "$FORCE" = 0 ] && [ -f "$st" ] && grep -q '^done ' "$st"; then return 0; fi
 	# Per-file reset: the app writes the folders it browsed back into
 	# han2_settings.ini, and the welcome screen draws them ("Recent game folders
@@ -196,9 +203,12 @@ fail=0
 SHOTS_WSL="$(wslpath -m "$SHOTS")"
 for k in $(seq 0 $((JOBS - 1))); do
 	(
-		for part in "$ROOT/shard$k"/*.part.batch; do
-			[ -e "$part" ] && run_file "$part" batch "$k"
-		done
+	for part in "$ROOT/shard$k"/*.part.batch; do
+		[ -e "$part" ] || continue
+		# "chars_uni2.part.batch" -> case base "chars_uni2" for --only and status
+		stem="${part##*/}"; stem="${stem%.part.batch}"
+		run_file "$part" batch "$k" "$stem"
+	done
 		# The ui scripts go after this shard's batch work: every shard owns its
 		# own assignments, so this reads the whole table and skips the rest.
 		while IFS=$'\t' read -r p sk; do
