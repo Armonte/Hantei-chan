@@ -193,7 +193,35 @@ of the affected areas, byte-identical.
       control 0, both detached captures 1130x672); a headless run with
       `--post-key 0x11` logs no warning, and `--post-key 0xFF` (no scancode)
       still logs `--post-key 255: no SDL scancode for this virtual key`.
-- [ ] 8. Remove `context_gl.h`.
+- [x] 8. `src/context_gl.h` deleted (2026-10-19). Its last user was the
+      `bg_render` stage tool (not the app), which created a hidden Win32 window
+      plus a wgl context; it now opens a hidden SDL3 window with a 3.3
+      compatibility GL context (24 depth / 8 stencil), the same attributes as
+      `platform::Init`, and links `SDL3-static`. `MainFrame` takes the platform
+      window (`MainFrame(platform::AppWindow*)`, `main.cpp` passes
+      `platform::Window()`), and `updateWindowTitle` goes through
+      `platform::SetTitle(window, utf8)` instead of `SetWindowTextW` on the
+      HWND (the wide title round-trips through UTF-8 unchanged); its dead GLFW
+      `#else` branch and the `GLFWwindow` declaration in `main.h` are gone.
+      `mainWindowHandle` (HWND) stays only as the Win32 file dialogs' owner
+      (step 7 / P5). `grep -rn "wgl\|ContextGl\|context_gl\|HGLRC" src
+      CMakeLists.txt cmake` prints nothing (only the frozen
+      `tools/stage_capture/before/bg_render_old.cpp` snapshot of 9d751c6 keeps
+      it, which is not built). `bg_render` CLI output (stdout/stderr) kept as
+      it is: it is a dev tool's interface, not app logging.
+      Evidence: `./build.sh` clean. `bg_render` before/after byte-identical on
+      8/8 renders (MBAACC bg00/01/05/10, 640x480 tick 30, and 333x257 zoom 1.5
+      `--clean`; `work/render_parity/p0s8/{before,after}`). Full corpus run
+      `runs/20261019_225582a_gl` (13m06 at `-j 8`, load average 45-113 from
+      other agents): **2831 PASS / 0 ALLOWED / 16 FAIL** vs the golden
+      (`runs/p0_step8_report.md`). The 16 FAILs are the same archive-browser
+      "Files in games" count drift as step 5 (now 57 px each, C:/games still
+      changing under other agents); the golden binary
+      (`baseline_bin/<BASELINE>_det`) re-run today on those 7 ui-script files
+      (30 cases) is byte-identical to this build on 30/30
+      (`runs/p0_step8_env_check.md`). The 3 `stage_mbaacc_bg01_*` drift cases
+      of step 5 PASS again. ctest at `-j8`: 99/100, `cgm_folder_mbaacc`
+      timed out at 300 s under that load; alone it passes (659 s).
 
 **Gate P0: parity and ctest PASS.**
 
@@ -204,6 +232,7 @@ of the affected areas, byte-identical.
 | ctest | **PASS** | 100/100, including `render_parity` (60-case smoke). After step 5: 99/100 at `-j8` with `cgm_folder_mbaacc` timing out at 300 s (load average 55-81 from other agents; cgmtool shares no code with this step); it passes alone in 700 s |
 | corpus timing | **PASS** | full corpus at `-j 8` in 3m28, `-j 1` vs `-j 8` byte-identical on the smoke subset, `stage3d_dfci` and the cgm palettes |
 | detached windows | **PASS** | `tools/render_parity/detach_check.sh` (step 5): open, render (byte-identical to the baseline exe), take a shortcut through `--post-key`, capture |
+| full corpus after step 8 | **2831 PASS / 0 ALLOWED / 16 FAIL**, all 16 environment drift | run `runs/20261019_225582a_gl`, report `runs/p0_step8_report.md`; golden binary re-run on the 30 cases of the affected scripts = this build 30/30 (`runs/p0_step8_env_check.md`). Golden NOT changed (same open decision as step 5). The step-5 run `20261019_f041e10_gl` was deleted (numbers above). |
 | drag-drop | pending | not exercised by a scripted run yet (drop points now go through `platform::PollEvents`) |
 | full corpus after step 5 | **2828 PASS / 0 ALLOWED / 19 FAIL**, all 19 environment drift | run `runs/20261019_f041e10_gl`, report `runs/p0_step5_report.md`. The golden binary itself (`baseline_bin/<BASELINE>_det`) re-run today on the same 39 cases renders all 19 differently from the golden and byte-identically to the step-5 build (det vs new 39/39 PASS, `runs/p0_step5_env_check.md`). 16 UI shots: the archive browser's "Files in games (38956)" is now 38939 (C:/games changes under other agents; e.g. PovertyCaster logs in C:/games/mbaacc). 3 `stage_mbaacc_bg01_*`: the mist layer differs, `bg01.dat` unchanged (2026-07-03); the cause is outside the app binary. Golden NOT changed: needs the coordinator's decision (re-render the golden from the determinism binary, as on 2026-10-18, or pin the browsed folder). |
 
