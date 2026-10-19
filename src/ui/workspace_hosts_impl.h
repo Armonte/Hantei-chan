@@ -211,13 +211,6 @@ bool MainFrame::DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t pos
 	const bool selected = ImGui::BeginTabItem(tabId.c_str(), waitingForClose ? nullptr : &open, flags);
 	if (selected) ImGui::EndTabItem();
 	m_tabUi[view->getId()]={ImGui::GetItemRectMin(),ImGui::GetItemRectMax(),ImGui::GetItemID()};
- if(ImGui::GetIO().MouseDown[0] || ImGui::IsMouseReleased(0)) {
-  static unsigned trace=0;
-  if(auto* f=fopen("tab_input_trace.log",trace++%512==0?"w":"a")) {
-   const auto& ui=m_tabUi[view->getId()]; auto& g=*ImGui::GetCurrentContext();
-   fprintf(f,"frame=%d view=%llu item=%u active=%u hover=%u down=%d mouse=%.1f,%.1f rect=%.1f,%.1f,%.1f,%.1f drag=%d owner=%s\n",ImGui::GetFrameCount(),(unsigned long long)view->getId(),ui.item,g.ActiveId,g.HoveredId,g.IO.MouseDown[0],g.IO.MousePos.x,g.IO.MousePos.y,ui.min.x,ui.min.y,ui.max.x,ui.max.y,g.DragDropActive,g.HoveredWindow?g.HoveredWindow->Name:"none"); fclose(f);
-  }
- }
 	if (isPoint) ImGui::PopStyleColor(2);
 
 	// Drag source: reorder within the bar, drop on another window's bar, or
@@ -307,13 +300,6 @@ void MainFrame::DrawHostTabs(uint64_t hostId)
  if(auto* bar=ImGui::GetCurrentTabBar()) for(const auto& tab:bar->Tabs)
   for(auto id:tabs) if(m_tabUi[id].item==tab.ID) visual.push_back(id);
  m_tabOrderMatches[hostId]=visual==tabs;
- static unsigned trace=0;
- if(auto* f=fopen("workspace_tab_trace.log",trace++%512==0?"w":"a")) {
-  fprintf(f,"frame=%d host=%llu active=%llu selected=%llu match=%d model=",ImGui::GetFrameCount(),(unsigned long long)hostId,(unsigned long long)sessionActive,(unsigned long long)selectedNow,m_tabOrderMatches[hostId]);
-  for(auto id:tabs) fprintf(f,"%llu,",(unsigned long long)id);
-  fprintf(f," visual="); for(auto id:visual) fprintf(f,"%llu,",(unsigned long long)id);
-  fprintf(f," drag=%llu pending=%d\n",(unsigned long long)m_tabDrag.viewId,m_pendingTabMove.valid); fclose(f);
- }
 	shown = selectedNow;
 }
 
@@ -563,11 +549,6 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
   else if(!ImGui::IsMouseClicked(button)) PositionDragBy(int(io.MouseDelta.x),int(io.MouseDelta.y));
  }
  if(positionOwned || claimed) m_detachedDragThisFrame=true;
-	static unsigned surfaceTrace=0;
-	if(auto* f=fopen("detached_surface_trace.log",surfaceTrace++%512==0?"w":"a")) {
-		const auto* hovered=ImGui::GetCurrentContext()->HoveredWindow; const auto* current=ImGui::GetCurrentWindow();
-		fprintf(f,"frame=%d host=%llu view=%llu viewport=%u hovered=%d active=%d wheel=%.2f mouse=%.1f,%.1f rect=%.1f,%.1f,%.1f,%.1f clip=%.1f,%.1f,%.1f,%.1f owner=%s current=%s zoom=%.2f\n",ImGui::GetFrameCount(),(unsigned long long)hostId,(unsigned long long)view->getId(),ImGui::GetWindowViewport()->ID,ImGui::IsItemHovered(),ImGui::IsItemActive(),io.MouseWheel,io.MousePos.x,io.MousePos.y,mn.x,mn.y,mx.x,mx.y,current->ClipRect.Min.x,current->ClipRect.Min.y,current->ClipRect.Max.x,current->ClipRect.Max.y,hovered?hovered->Name:"none",current->Name,cam.zoom); fclose(f);
-	}
 	const ImVec2 origin(mn.x + cam.panX + w / 2.f, mn.y + cam.panY + h / 2.f);
 	// A pan / box / UV drag on this surface blocks shortcuts like one in the main view (main.cpp).
 	if (ImGui::IsItemActive() || (m_uvDrag.active && m_uvDrag.viewId == view->getId()) || m_hostBoxDragView == view->getId())

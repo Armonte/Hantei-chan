@@ -1,5 +1,6 @@
 #include "app_log.h"
 #include "main_frame.h"
+#include "app_log.h"
 #include "timeline_navigation.h"
 #include "ui/ui_style.h"
 #include "startup_args.h"

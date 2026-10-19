@@ -26,13 +26,8 @@ void MainFrame::DrawUi()
 		auto owner=m_session.owner(entry->getId());
 		auto* host=owner?m_session.host(*owner):nullptr;
 		if(host && host->active==entry->getId()) {
-   const bool playing=entry->getState().animating; const int before=entry->getState().currentTick;
-   AdvanceViewPlayback(entry.get());
-   static unsigned playbackTrace=0;
-   if(playing) if(auto* f=fopen("view_playback_trace.log",playbackTrace++%512==0?"w":"a")) {
-    fprintf(f,"frame=%d host=%llu view=%llu tick=%d->%d playing=%d\n",ImGui::GetFrameCount(),(unsigned long long)*owner,(unsigned long long)entry->getId(),before,entry->getState().currentTick,entry->getState().animating); fclose(f);
-   }
-  }
+			AdvanceViewPlayback(entry.get());
+		}
 	}
 
 	ImGuiID errorPopupId = ImGui::GetID(LBL("Loading Error"));

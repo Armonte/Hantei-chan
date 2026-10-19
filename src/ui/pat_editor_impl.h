@@ -1279,7 +1279,7 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 			ch->undoManager.undo(); const bool undone=read()==original && readY()==originalY;
 			ch->undoManager.redo(); const bool redone=read()==changed && readY()==changedY;
 			ch->undoManager.undo();
-			if(auto* log=fopen("position_tool_trace.log","a")) { fprintf(log,"gesture view=%llu source=%d/%d tick=%d route=%d commit=%d undo=%d redo=%d delta=%d,%d expected=%d,%d\n",(unsigned long long)view->getId(),sp,sf,view->getState().PreviewTick(&ch->frameData),routed,committed,undone,redone,changed-original,changedY-originalY,int(std::lround(30.f/hit->m[0])),int(std::lround(15.f/hit->m[3]))); fclose(log); }
+			HC_LOG_DEBUG("position gesture view={} source={}/{} tick={} route={} commit={} undo={} redo={} delta={},{} expected={},{}",(unsigned long long)view->getId(),sp,sf,view->getState().PreviewTick(&ch->frameData),routed,committed,undone,redone,changed-original,changedY-originalY,int(std::lround(30.f/hit->m[0])),int(std::lround(15.f/hit->m[3])));
    moved &= routed&&committed&&undone&&redone;
 			if(msg) *msg="persistent source routing/undo/redo: "+std::to_string(routed&&committed&&undone&&redone);
 		}

@@ -28,10 +28,6 @@ void RightPane::Draw()
 	ImGui::PopStyleVar();
 
 	const bool viewJustChanged=RestorePaneScroll(currState.rightPaneScrollY);
-	static unsigned trace=0;
- if(auto* f=fopen("pane_scroll_trace.log",trace++%512==0?"w":"a")) {
-  fprintf(f,"frame=%d pane=%s restore=%d actual=%.2f saved=%.2f wheel=%.2f\n",ImGui::GetFrameCount(),windowName("Right Pane").c_str(),viewJustChanged,ImGui::GetScrollY(),currState.rightPaneScrollY,ImGui::GetIO().MouseWheel); fclose(f);
- }
 
 	auto seq = frameData->get_sequence(currState.pattern);
 	if(seq)

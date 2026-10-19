@@ -19,9 +19,9 @@ RunHidden "$root/iori_0.txt" $script
 $log=Get-Content -LiteralPath ($script+'.log') -Raw
 if($log -notmatch 'opponentroster: (\d+)' -or [int]$Matches[1] -le 4) { throw 'Roster did not exceed open-tab list' }
 if($log -notmatch 'Selected state: 26 / 10' -or $log -notmatch 'opponentcycle: empty pool or unavailable') { throw 'Selection/empty-pool contract failed' }
-$trace=@(Get-Content -LiteralPath "$out/full.jsonl" | ForEach-Object { $_ | ConvertFrom-Json })
+$trace=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log "$out/hanteichan.log" -Tag "$out/full.jsonl")
 if(@($trace | Where-Object { $_.pattern -eq 26 -and $_.state -eq 10 -and $_.texture_available }).Count -ne 1) { throw 'Unopened target did not render' }
-$onion=@(Get-Content -LiteralPath "$out/onion.jsonl" | ForEach-Object { $_ | ConvertFrom-Json })
+$onion=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log "$out/hanteichan.log" -Tag "$out/onion.jsonl")
 if(@($onion | Where-Object { $_.pattern -eq 27 -and $_.texture_available }).Count -ne 1) { throw 'Current Iori future-onion fixture changed or opponent onion missing' }
 $saved=Get-Content -LiteralPath $project -Raw | ConvertFrom-Json
 if($saved.characters.Count -ne 1) { throw 'Preview target unexpectedly created an editor character' }

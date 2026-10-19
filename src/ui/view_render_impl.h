@@ -397,10 +397,6 @@ void MainFrame::AddOpponentLayers(CharacterView* view, const preview::TickState&
 	viewrender::AddFrameLayers(render,frame,&target->cg,&target->parts,style);
 	st.opponentStatus=std::string(st.authoredInspection && st.absoluteScrub?"Absolute timeline: ":scene.authored?"Selected state: ":"Playback: ")+std::to_string(scene.pose.pattern)+" / "+std::to_string(scene.pose.state)+" (held pose; acquisition not simulated)";
 	if(scene.pose.release) st.opponentStatus="Release approximation: "+std::to_string(scene.pose.pattern)+" / "+std::to_string(scene.pose.state)+" elapsed="+std::to_string(scene.elapsed)+" y="+std::to_string(scene.pose.y)+" landing="+std::to_string(releaseLanding);
-	// Bounded transition trace, no unrelated project data or authored notes.
-	static std::string last; static int count=0;
-	const auto event=std::to_string(view->getId())+":"+target->getName()+":"+std::to_string(st.opponentOpacity)+":"+std::to_string(st.pattern)+":"+std::to_string(st.frame)+":"+std::to_string(tick)+":"+st.opponentStatus;
-	if (event!=last && count<128) { last=event; ++count; if(auto* f=fopen("opponent_preview_trace.log","a")) { fprintf(f,"%s\n",event.c_str()); fclose(f); } }
 }
 
 // Ticks sampled by the onion skin around `tick`, farthest first, split into

@@ -1,19 +1,15 @@
 #pragma once
 
 void MainFrame::TraceStateTransfer(const char* action) {
-    static unsigned rows=0;
-    if(auto* f=fopen("state_transfer_trace.log",rows++%128==0?"w":"a")) {
-        auto owner=m_session.owner(m_stateTransfer.view);
-        auto* window=GImGui?GImGui->CurrentWindow:nullptr;
-        const auto viewport=window && window->Viewport?window->Viewport->ID:0;
-        fprintf(f,"action=%s view=%llu host=%llu viewport=%u source=%d:%d-%d target=%d:%d-%d groups=%u version=%llu changed=%d ready=%d\n",
-            action,(unsigned long long)m_stateTransfer.view,(unsigned long long)(owner?*owner:0),
-            viewport,m_stateTransfer.request.sourcePattern,m_stateTransfer.request.sourceFirst,
-            m_stateTransfer.request.sourceLast,m_stateTransfer.request.targetPattern,m_stateTransfer.request.targetFirst,
-            m_stateTransfer.request.targetLast,m_stateTransfer.request.groups,(unsigned long long)m_stateTransfer.version,
-            m_stateTransfer.plan.changed,m_stateTransfer.ready);
-        fclose(f);
-    }
+    auto owner=m_session.owner(m_stateTransfer.view);
+    auto* window=GImGui?GImGui->CurrentWindow:nullptr;
+    const auto viewport=window && window->Viewport?window->Viewport->ID:0;
+    HC_LOG_DEBUG("state transfer action={} view={} host={} viewport={} source={}:{}-{} target={}:{}-{} groups={} version={} changed={} ready={}",
+        action,(unsigned long long)m_stateTransfer.view,(unsigned long long)(owner?*owner:0),
+        viewport,m_stateTransfer.request.sourcePattern,m_stateTransfer.request.sourceFirst,
+        m_stateTransfer.request.sourceLast,m_stateTransfer.request.targetPattern,m_stateTransfer.request.targetFirst,
+        m_stateTransfer.request.targetLast,m_stateTransfer.request.groups,(unsigned long long)m_stateTransfer.version,
+        m_stateTransfer.plan.changed,m_stateTransfer.ready);
 }
 void MainFrame::OpenStateTransfer(CharacterView* view) {
     if(!view || view->isStageView() || view->getCharacter()->frameData.game()!=Ha6Game::MBAACC) return;
