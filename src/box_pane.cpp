@@ -9,6 +9,8 @@
 #include <imgui.h>
 #include <imgui_internal.h>
 
+int gUiScriptBoxControls = -1;   // ui-script "boxcontrols open|close": next frame's Box Controls header state (-1 = untouched)
+
 constexpr int boxLimit = 33;
 
 // List MBTL move-script spawns (mv_script.h) for the current pattern.
@@ -176,7 +178,8 @@ void BoxPane::Draw()
 		if (currState.frame >= (int)frames.size()) currState.frame = (int)frames.size() - 1;
 		BoxList &boxes = frames[currState.frame].hitboxes;
 
-		// Box Controls section (collapsible)
+		// Box Controls section (collapsible). ui-script "boxcontrols open|close" sets it, so a capture can reach the timeline.
+		if (gUiScriptBoxControls >= 0) { im::SetNextItemOpen(gUiScriptBoxControls != 0); gUiScriptBoxControls = -1; }
 		if(im::CollapsingHeader(LBL("Box Controls"), ImGuiTreeNodeFlags_DefaultOpen))
 		{
 			// Helper lambda to check if a box exists (has non-zero coordinates)
@@ -678,9 +681,24 @@ void BoxPane::DrawSpawnTimeline()
 		{TXT("Effects"), IM_COL32(80, 180, 255, 255)},
 		{TXT("Conditions"), IM_COL32(255, 150, 60, 255)},
 	};
+	// The indicator rows follow the simulated flow, like the Main (sim) row and the playhead: each run of ticks the
+	// root spends in one frame shows that frame's boxes / effects / conditions. Laid out in file order (as the
+	// Keyframes row is), a Go to / loop put the playhead over another frame's data after the first jump (issue #88).
+	struct Visit { int frame, t0, t1; };
+	std::vector<Visit> visits;
+	{
+		const int liveEnd = std::min(rootEnd >= 0 ? rootEnd : maxTimelineTick, (int)track.size());
+		for (int t = 0; t < liveEnd; ) {
+			int e = t + 1;
+			while (e < liveEnd && track[e] == track[t]) ++e;
+			if (track[t] >= 0 && track[t] < mainFrameCount) visits.push_back({track[t], t, e});
+			t = e;
+		}
+	}
 	for (int r = 0; r < indicatorRows; ++r) {
 		rowLabel(indicators[r].name, indicators[r].color);
-		for (int i = 0; i < mainFrameCount; ++i) {
+		for (const Visit& v : visits) {
+			const int i = v.frame;
 			const Frame& f = mainSeq->frames[i];
 			bool on = false;
 			int count = 0;
@@ -694,7 +712,7 @@ void BoxPane::DrawSpawnTimeline()
 			case 6: count = (int)f.IF.size(); on = count > 0; break;
 			}
 			if (!on) continue;
-			const float x0 = tickX(kfStart[i]) + 1, x1 = std::max(x0 + 3, tickX(kfStart[i + 1]) - 1);
+			const float x0 = tickX(v.t0) + 1, x1 = std::max(x0 + 3, tickX(v.t1) - 1);
 			drawList->AddRectFilled(ImVec2(x0, yPos + 5), ImVec2(x1, yPos + rowHeight - 5), indicators[r].color);
 			if (count > 1 && x1 - x0 > 14)
 				drawList->AddText(ImVec2(x0 + 2, yPos + 3), IM_COL32(0, 0, 0, 255), std::to_string(count).c_str());
