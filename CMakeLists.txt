@@ -51,7 +51,7 @@ add_executable(${EXE}
 	src/render_target.cpp
 	src/png_writer.cpp
 	src/workspace_session.cpp
-	src/workspace_viewports.cpp
+	src/platform/viewports.cpp
 	src/mbaacc_pack.cpp
 	src/mbaacc_package.cpp
 	${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/pcmod/pcmod_export_ui.cpp ${HMOD_SOURCES} src/modproject/hmod_ui.cpp

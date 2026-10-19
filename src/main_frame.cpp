@@ -150,7 +150,7 @@ void MainFrame::Draw()
 
 	// Detached windows (ImGui platform windows) render through the same GL
 	// context, each with its own DC; the main window is current again after.
-	WorkspaceViewports::RenderSecondaryWindows();
+	viewports::RenderSecondaryWindows();
 
 	if (gStartup.headless) glBindFramebuffer(GL_FRAMEBUFFER, 0);   // nothing is presented
 	else platform::SwapGlBuffers();
