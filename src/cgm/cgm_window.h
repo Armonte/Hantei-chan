@@ -55,6 +55,7 @@ private:
 	int thumbSize = 96;
 	int selected = -1;
 	float zoom = 2.f;
+	bool fit = true;                // Browser preview: shrink an image larger than the pane to fit it
 	int previewPal = 0, previewPups = 0;
 	// per character caches
 	const CharacterInstance *owner = nullptr;
@@ -117,7 +118,7 @@ private:
 		int kind = 0, sel = -1;                       // kind: 0 CG image, 1 .pat texture, 2 RBO / GOF2 part sheet
 		char filter[48] = {};
 		int viewKind = -1, viewId = -1; unsigned long long viewGen = ~0ull;
-		Thumb view; float zoom = 1.f;
+		Thumb view; float zoom = 1.f; bool fit = true;
 		int game = -1;                                // index into the browser's game list (-1 = detect)
 		std::string gameDir[8];
 		unsigned long long patGen = 0;                // bumped on every .pat texture replace
