@@ -109,4 +109,17 @@ struct Issue { IssueCode code; uint32_t addr = 0; std::string message; };
 std::vector<Issue> VerifyPatches(const Data& d, const PeImage& exe, const Profile& pf);
 
 } // namespace pcmod::s2
+
+namespace pcmod { struct Manifest; }
+namespace pcmod::s2 {
+// ---- package level (pcmod.json schema 2 <-> the three files) ----
+struct Files { std::string patches, features, rules; };   // file TEXTS ("" = absent)
+// Export: writes the present sections of `d` as TOML (patches only if d.patches non-empty, etc.), RE-PARSES them with the
+// PC-mirrored parser (so PovertyCaster accepts exactly what we write), and sets m.schema = 2, the aux refs
+// (patches.toml / features.toml / rules.toml with sha256 + size of the written bytes) and m.s2Canon. "" = ok.
+std::string AttachToManifest(Manifest& m, const Data& d, const Profile& pf, Files& out);
+// Load an existing schema-2 package's texts (PC loadSchema2): checks each present file's size/sha256 against the manifest,
+// parses it, sets m.s2Canon. "" = ok, else the refusal sentence.
+std::string LoadFromTexts(Manifest& m, const Files& texts, const Profile& pf, Data& out);
+} // namespace pcmod::s2
 #endif
