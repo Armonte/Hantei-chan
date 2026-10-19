@@ -44,11 +44,14 @@ namespace abrowser { struct OpenRequest; }
 #include "cgm/cgm_window.h"
 
 struct ImRect;
+namespace platform { struct AppWindow; }
 
 class MainFrame
 {
 public:
-	MainFrame();
+	// The main window from src/platform (platform::Window()); MainFrame sets
+	// its title. The GL context is the platform layer's, current on this thread.
+	explicit MainFrame(platform::AppWindow* window);
 	~MainFrame();
 	
 	void Draw();
@@ -468,6 +471,7 @@ private:
 	} m_hud;
 	void drawHudWindow();
 	int m_keyCapture = -1;   // binding index waiting for a key (Keyboard shortcuts window)
+	platform::AppWindow* m_window = nullptr;   // the main window (title)
 	int m_textNavDir = 0;    // keyframe step requested from a text field
 public:
 	static wchar_t s_swallowChar; // WM_CHAR to drop (the key already acted as a shortcut)

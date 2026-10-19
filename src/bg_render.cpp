@@ -13,7 +13,11 @@
 //   <prefix>.cam (int32 x, y in 1/128 px), <prefix>.zoom (float). The camera
 //   comes from the snapshot unless --cam is given.
 // Without --state the stage runtime is reset (seed) and ticked N times.
-#include <windows.h>
+//
+// The GL context comes from a hidden SDL3 window (the app's own platform layer,
+// src/platform, is not linked into this tool): a 3.3 compatibility context with
+// 24-bit depth and 8-bit stencil, the attributes of the pre-SDL Win32 context.
+#include <SDL3/SDL.h>
 #include <glad/glad.h>
 #include <cstdio>
 #include <cstdlib>
@@ -22,7 +26,6 @@
 #include <iterator>
 #include <string>
 #include <vector>
-#include "context_gl.h"
 #include "png_writer.h"
 #include "background/bg_file.h"
 #include "background/bg_renderer.h"
@@ -34,8 +37,6 @@ static bool ReadAll(const std::string& p, std::vector<uint8_t>& out) {
 	out.assign(std::istreambuf_iterator<char>(f), std::istreambuf_iterator<char>());
 	return true;
 }
-
-static LRESULT CALLBACK WndProc(HWND h, UINT m, WPARAM w, LPARAM l) { return DefWindowProcW(h, m, w, l); }
 
 int main(int argc, char** argv) {
 	if (argc < 2) {
@@ -76,15 +77,21 @@ int main(int argc, char** argv) {
 	}
 	if (out.empty()) { fprintf(stderr, "--out required\n"); return 1; }
 
-	WNDCLASSW wc = {};
-	wc.lpfnWndProc = WndProc;
-	wc.hInstance = GetModuleHandleW(nullptr);
-	wc.lpszClassName = L"bg_render_hidden";
-	RegisterClassW(&wc);
-	HWND hwnd = CreateWindowW(wc.lpszClassName, L"bg_render", WS_OVERLAPPEDWINDOW, 0, 0, 64, 64,
-	                          nullptr, nullptr, wc.hInstance, nullptr);
-	ContextGl ctx(hwnd);
-	if (!gladLoadGL()) { fprintf(stderr, "gladLoadGL failed\n"); return 2; }
+	// Hidden 64x64 window that only carries the context; every draw goes to the
+	// offscreen target below.
+	if (!SDL_Init(SDL_INIT_VIDEO)) { fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError()); return 2; }
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+	SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_COMPATIBILITY);
+	SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
+	SDL_GL_SetAttribute(SDL_GL_STENCIL_SIZE, 8);
+	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+	SDL_Window* window = SDL_CreateWindow("bg_render", 64, 64, SDL_WINDOW_OPENGL | SDL_WINDOW_HIDDEN);
+	if (!window) { fprintf(stderr, "SDL_CreateWindow failed: %s\n", SDL_GetError()); return 2; }
+	SDL_GLContext glContext = SDL_GL_CreateContext(window);
+	if (!glContext) { fprintf(stderr, "SDL_GL_CreateContext failed: %s\n", SDL_GetError()); return 2; }
+	SDL_GL_MakeCurrent(window, glContext);
+	if (!gladLoadGLLoader((GLADloadproc)SDL_GL_GetProcAddress)) { fprintf(stderr, "gladLoadGLLoader failed\n"); return 2; }
 
 	bg::File file;
 	if (!file.Load(stage.c_str())) { fprintf(stderr, "load failed: %s\n", stage.c_str()); return 3; }

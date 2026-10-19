@@ -2,7 +2,7 @@
 #define PLATFORM_PLATFORM_H_GUARD
 
 // src/platform: the only place that knows the windowing API (PLAN.md 5). P0
-// moves the Win32 window and the wgl GL context here onto SDL3, with the
+// moves the Win32 window and its GL context here onto SDL3, with the
 // renderer output unchanged; P2 adds the D3D9 device on the same window handle.
 //
 // The signatures keep the old Win32 names where callers already used them
@@ -57,7 +57,8 @@ void WindowPos(int& x, int& y);
 // what the ini's posX/posY/sizeX/sizeY hold and InitDesc x/y/w/h take.
 void WindowOuterRect(int& x, int& y, int& w, int& h);
 bool IsMaximized();
-void SetTitle(const std::string& utf8Title);
+// Title of a window this layer created (MainFrame holds the main one).
+void SetTitle(AppWindow* window, const std::string& utf8Title);
 
 // The native window: HWND on Windows, nullptr elsewhere. P2 creates the D3D9
 // device on it through SDL_PROP_WINDOW_WIN32_HWND_POINTER.
@@ -66,7 +67,7 @@ void* NativeWindowHandle();
 // GL context (P0 only; deleted with the GL backend in P6).
 void MakeGlCurrent();
 void SwapGlBuffers();
-// wglSwapIntervalEXT(0) / SDL_GL_SetSwapInterval: vsync off, as before.
+// SDL_GL_SetSwapInterval: the app passes 0 (vsync off), as it always has.
 void SetSwapInterval(int interval);
 // The main window's SDL_GLContext, for ImGui_ImplSDL3_InitForOpenGL: the SDL3
 // backend creates each detached window's context sharing objects with it
