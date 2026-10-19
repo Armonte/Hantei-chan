@@ -23,9 +23,9 @@
 //   --export-scale N  --export-bg transparent|editor  --export-boxes  --export-nospawns
 //   --export-crop all|each
 //   --save-project <hproj>  save the project (atomic) before quitting
-//   --capture-windows <prefix>  save every detached OS window (PrintWindow) as <prefix>_<n>.png
-//   --post-key <vk>      frame 12: post WM_KEYDOWN <vk> to the first detached window
-//                        (checks shortcut routing through the HWND subclass)
+//   --capture-windows <prefix>  save every detached OS window (its GL frame) as <prefix>_<n>.png
+//   --post-key <vk>      frame 12: push a key press <vk> (Win32 virtual-key code) into the SDL queue for the
+//                        first detached window (checks shortcut routing from a detached window)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | waitms <ms> | waits3dchange <s> (until the 3D stage model on disk changes) | capture <png> | quit | openany <path> |
 //                        pattern N | frame N | viewframe N | zoomview N | framenodes MASK (hold open: 1 Attack data, 2 Effects, 4 Conditions) | copypattern N | pastepattern N | gameformat G | layer N | switchview N |

@@ -567,17 +567,28 @@ void MainFrame::ProcessStartupArgs()
 		}
 	}
 	if (gStartup.postKey && n == 12) {
-		// --post-key <vk>: push a key down with the mapped scancode into the SDL
-		// queue (PLAN.md 6 P0 step 6). The old code posted WM_KEYDOWN to the
-		// first detached window; SDL delivers the pushed event to whichever
-		// window has keyboard focus, which is the same window the user was in.
+		// --post-key <vk>: a key press, pushed into the SDL queue with the mapped
+		// scancode (PLAN.md 6 P0 step 6), aimed like the old WM_KEYDOWN post at
+		// the first detached window (else the main window). It then takes the
+		// same path as a typed key: ImGui, then MainFrame::HandleKeys. The key
+		// up follows so ImGui does not keep the key held.
+		SDL_WindowID target = platform::MainWindowId();
+		for (ImGuiViewport *vp : ImGui::GetPlatformIO().Viewports)
+			if (vp != ImGui::GetMainViewport() && vp->PlatformHandle) { target = (SDL_WindowID)(intptr_t)vp->PlatformHandle; break; }
 		if (int sc = platform::ScancodeFromVk((uint32_t)gStartup.postKey)) {
 			SDL_Event ev{};
 			ev.type = SDL_EVENT_KEY_DOWN;
+			ev.key.timestamp = SDL_GetTicksNS();
+			ev.key.windowID = target;
 			ev.key.scancode = (SDL_Scancode)sc;
-			ev.key.key = (SDL_Keycode)SDL_GetKeyFromScancode((SDL_Scancode)sc, SDL_KMOD_NONE, false);
-			ev.key.windowID = SDL_GetKeyboardFocus() ? SDL_GetWindowID(SDL_GetKeyboardFocus()) : 0;
+			ev.key.key = SDL_GetKeyFromScancode((SDL_Scancode)sc, SDL_KMOD_NONE, false);
+			ev.key.down = true;
 			SDL_PushEvent(&ev);
+			ev.type = SDL_EVENT_KEY_UP;
+			ev.key.down = false;
+			SDL_PushEvent(&ev);
+		} else {
+			HC_LOG_WARN("--post-key {}: no SDL scancode for this virtual key", gStartup.postKey);
 		}
 	}
 	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
