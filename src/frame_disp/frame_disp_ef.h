@@ -59,6 +59,12 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 	};
 
 	std::vector<Frame_EF> & efList = *efList_;
+	int noteFrame = -1;
+	if (frameData && patternIndex >= 0) {
+		auto* seq = frameData->get_sequence(patternIndex);
+		if (seq) for (int f = 0; f < (int)seq->frames.size(); ++f)
+			if (&seq->frames[f].EF == efList_) { noteFrame = f; break; }
+	}
 
 	// Manual edit mode tracking
 	static std::vector<int> manualEditMode;
@@ -125,7 +131,9 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 		if(!collapsedStates[i]) {
 			flags |= ImGuiTreeNodeFlags_DefaultOpen;
 		}
+		if (gSettings.compactUi) im::PushStyleColor(ImGuiCol_Text, ui::EffectsColor);
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
+		if (gSettings.compactUi) im::PopStyleColor();
 		collapsedStates[i] = !isOpen; // Update stored state
 		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(true, i, efList[i].type);
 		
@@ -278,6 +286,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 						if(insertPos > efList.size()) insertPos = efList.size();
 						
 						// Insert at target position
+						if (noteFrame >= 0) frameData->notes.move(patternIndex, noteFrame, true, sourceIdx, insertPos, (int)efList.size() + 1);
 						efList.insert(efList.begin() + insertPos, temp);
 						manualEditMode.insert(manualEditMode.begin() + insertPos, tempManual);
 						collapsedStates.insert(collapsedStates.begin() + insertPos, tempCollapsed);
@@ -298,6 +307,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 
 	// Handle deletion
 	if(deleteI >= 0) {
+		if (noteFrame >= 0) frameData->notes.erase(patternIndex, noteFrame, true, deleteI, (int)efList.size());
 		efList.erase(efList.begin() + deleteI);
 		manualEditMode.erase(manualEditMode.begin() + deleteI);
 		collapsedStates.erase(collapsedStates.begin() + deleteI);
@@ -320,6 +330,7 @@ inline void EfDisplay(std::vector<Frame_EF> *efList_, Frame_EF *singleClipboard 
 			CopyVectorContents<Frame_EF>(*groupClipboard, efList);
 		}
 		if(footer.Button(LBL("Paste all"))) {
+			if (noteFrame >= 0) frameData->notes.remap(patternIndex, noteFrame, true, std::vector<int>(efList.size(), -1));
 			CopyVectorContents<Frame_EF>(efList, *groupClipboard);
 			markModified();
 		}

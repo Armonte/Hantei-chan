@@ -13,6 +13,8 @@
 #include "cmdfile/cmd_notes.h"
 #include "cmdfile/cmd_validate.h"
 #include "cmdfile/cmd_workspace.h"
+#include "cmdfile/cmd_grab_profiles.h"
+#include "mbaacc_typed_hitgrab.h"
 
 #include <windows.h>
 
@@ -453,10 +455,73 @@ void TestSavePipeline()
 
 } // namespace
 
+static void TestGrabProfiles()
+{
+    using namespace cmdfile;
+    using namespace cmdfile::grab;
+    g_context = "grab profiles";
+    const std::string original = "0 5A 00000000 00000000 0 0 0 0 0\r\nEND\r\n[Other]\r\nMystery = keep // untouched\r\n";
+    Workspace ws;
+    ws.state.document = Document::parse(original);
+    const auto uid = ws.state.document.commands[0].uid;
+    ws.state.notes.byUid[uid] = "keep note";
+    auto set = [&](const char* section, const std::string& key, std::optional<std::string> value) {
+        return ws.apply([&](WorkspaceSnapshot& s) { return s.document.setGrabProfileValue(section, key, value); });
+    };
+    Check(set(Routes, Key(1,"Defender",0,0), "Pattern:344"), "create route section");
+    Check(set(Routes, Key(1,"Defender",1,0), "Pattern:345"), "domain override");
+    Check(Effective(ws.state.document,Routes,1,"Defender",1,2) == "Pattern:345", "context inherits domain");
+    Check(set(Routes, Key(1,"Defender",1,2), "None"), "explicit none");
+    Check(Effective(ws.state.document,Routes,1,"Defender",1,2) == "None", "none blocks fallback");
+    Check(set(Routes, Key(1,"Defender",1,2), std::nullopt), "clear override");
+    Check(Effective(ws.state.document,Routes,1,"Defender",1,2) == "Pattern:345", "inherit restored");
+    Check(ws.undo(), "undo clear");
+    Check(Effective(ws.state.document,Routes,1,"Defender",1,2) == "None", "undo restores explicit none");
+    Check(ws.redo(), "redo clear");
+    Check(ws.state.document.commands[0].uid == uid && ws.state.notes.byUid.at(uid) == "keep note", "command uid and note preserved");
+    Check(ws.state.document.serialize().find("Mystery = keep // untouched\r\n") != std::string::npos, "unknown lines preserved");
+    int v = 0, step = 0, direction = 0;
+    for (int d = 0; d < 4; ++d) {
+        Check(Vector(VectorText(254,4,d),v,step,direction) && v == 254 && step == 4 && direction == d, "vector codec");
+    }
+    Check(!Vector(std::string("HitVector:255,Step:0,Direction:Away"),v,step,direction), "reject vector 255");
+    Check(!Vector(std::string("HitVector:0,Step:5,Direction:Away"),v,step,direction), "reject step 5");
+    Check(!Vector(std::string("HitVector:0,Step:0,Direction:Unknown"),v,step,direction), "reject unknown direction without coercion");
+    for (unsigned p = 1; p <= 255; ++p) Check(mbaacc::extended::typedHitgrabProfile(mbaacc::extended::makeTypedHitgrab(p)) == (int)p, "typed ATNG codec");
+    Check(!mbaacc::extended::isTypedHitgrab(0x58000001u), "zero profile signature not typed");
+    Check(mbaacc::extended::makeTypedHitgrab(0) == 1, "ordinary hitgrab encoding");
+    Check(!mbaacc::extended::isTypedHitgrab(0x58010003u), "unknown ATNG bits not decoded as typed");
+    Check(!Pattern(std::string("Pattern:65535"),v), "reject out-of-range pattern");
+    auto doc = Document::parse("END\r\n[GameplayExtension.ThrowTechRoutes.v1]\r\n  Profile.1.Defender = Pattern:1  // keep\r\n");
+    Check(doc.setGrabProfileValue(Routes,"Profile.1.Defender","Pattern:2"), "surgical edit");
+    Check(doc.serialize().find("  Profile.1.Defender = Pattern:2  // keep\r\n") != std::string::npos, "whitespace/comment preserved");
+    doc = Document::parse(doc.serialize() + "Profile.1.Defender=Pattern:3\r\n");
+    auto before = doc.serialize();
+    Check(!doc.setGrabProfileValue(Routes,"Profile.1.Defender","None") && doc.serialize() == before, "duplicate key fails unchanged");
+    doc = Document::parse(before + "[GameplayExtension.ThrowTechRoutes.v1]\r\n"); before = doc.serialize();
+    Check(!doc.setGrabProfileValue(Routes,"Profile.2.Defender","None") && doc.serialize() == before, "duplicate section fails unchanged");
+    doc = Document::parse("END"); Check(doc.setGrabProfileValue(Vectors,"Profile.1.Attacker",VectorText(0,0,0)), "missing final newline insertion");
+    Check(Document::parse(doc.serialize()).assignments.size() == 1, "new section parses");
+    doc = Document::parse("// no END"); before = doc.serialize();
+    Check(!doc.setGrabProfileValue(Routes,"Profile.1.Defender","None") && doc.serialize() == before, "missing END fails unchanged");
+    const auto dir = TempDir(); const auto path = dir + "\\grab_0_c.txt";
+    Check(WriteBytes(path, original), "write disposable profile fixture");
+    Workspace disk; std::string error;
+    Check(disk.open(path, &error), "open profile fixture");
+    Check(disk.apply([](WorkspaceSnapshot& s) { return s.document.setGrabProfileValue(Routes,"Profile.1.Defender","Pattern:344"); }), "stage profile for save");
+    const auto saved = disk.save(ExtensionProfile::Extended, false);
+    Check(saved.status == SaveStatus::Saved, "save profile through normal pipeline: " + saved.message);
+    std::string backup; Check(ReadFileBytes(saved.backupPath, backup) && backup == original, "profile save backup exact");
+    Workspace reloaded; Check(reloaded.open(path,&error), "reload saved profile");
+    Check(Effective(reloaded.state.document,Routes,1,"Defender",1,2) == "Pattern:344", "saved inheritance survives reload");
+    RemoveTree(dir);
+}
+
 int main(int argc, char** argv)
 {
 	std::string fixtures = argc > 1 ? argv[1] : "tests\\fixtures\\cmdfile";
 	TestHistory();
+	TestGrabProfiles();
 	TestRegressions();
 	TestNotes();
 	TestSavePipeline();

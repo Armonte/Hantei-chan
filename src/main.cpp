@@ -420,7 +420,7 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	// A key that already ran a shortcut while a text field was focused (Num*
 	// / Num/ keyframe step) must not also type its character.
-	if (msg == WM_CHAR && MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
+	if ((msg == WM_CHAR || msg == WM_SYSCHAR) && MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
 		MainFrame::s_swallowChar = 0;
 		return 0;
 	}
@@ -536,11 +536,14 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		}
 		return 0;
 	case WM_KEYDOWN:
+	case WM_SYSKEYDOWN: // Alt chords arrive here, not as ordinary WM_KEYDOWN.
 		// The shortcut router decides: a focused ImGui text field keeps its
 		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
 		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,
-		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
+		                        ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput)) {
+			if(msg==WM_SYSKEYDOWN) MainFrame::s_swallowChar=(wchar_t)towlower(MapVirtualKey((UINT)wParam,MAPVK_VK_TO_CHAR)&0xFFFF);
 			return 0;
+		}
 		break;
 	case WM_CANCELMODE:
 		if(mf) mf->CancelViewportGestures();

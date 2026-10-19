@@ -64,12 +64,15 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::nudgeLayerUpFast,    "Move layer up 10px",        {vkUp, ctrlShift},    R::focusedContext, C::characterView, false, true},
 		{A::nudgeLayerDownFast,  "Move layer down 10px",      {vkDown, ctrlShift},  R::focusedContext, C::characterView, false, true},
 		{A::toggleSpawnPreview,  "Toggle spawned patterns",   {'P', 0},             R::focusedContext, C::characterView, false, false},
+		{A::previousOpponentPreview,"Opponent preview: previous character",{0xBC,shortcutAlt},R::focusedContext,C::characterView,false,false},
+		{A::nextOpponentPreview,"Opponent preview: next character",{0xBE,shortcutAlt},R::focusedContext,C::characterView,false,false},
+		{A::openOpponentPreviewSettings,"Opponent preview: settings",{'O',shortcutAlt|shortcutShift},R::focusedContext,C::characterView,false,false},
 
-		{A::playReverse,      "Play reverse",                 {'J', 0},             R::focusedContext, C::characterView, false, false},
+		{A::playReverse,      "Play reverse",                 {'J', shortcutShift},             R::focusedContext, C::characterView, false, false},
 		{A::togglePlayback,   "Stop / play",                  {'K', 0},             R::focusedContext, C::characterView, false, false},
-		{A::playForward,      "Play forward",                 {'L', 0},             R::focusedContext, C::characterView, false, false},
-		{A::stepTickBackward, "Step one tick back",           {'J', shortcutShift}, R::focusedContext, C::characterView, false, true},
-		{A::stepTickForward,  "Step one tick forward",        {'L', shortcutShift}, R::focusedContext, C::characterView, false, true},
+		{A::playForward,      "Play forward",                 {'L', shortcutShift},             R::focusedContext, C::characterView, false, false},
+		{A::stepTickBackward, "Step one tick back",           {'J', 0}, R::focusedContext, C::characterView, false, true},
+		{A::stepTickForward,  "Step one tick forward",        {'L', 0}, R::focusedContext, C::characterView, false, true},
 
 		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false, false, true},
 
@@ -107,6 +110,12 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::togglePartHighlight, "Highlight the selected part", {'H', 0},           R::focusedContext, C::patEditor,      false, false},
 		{A::toggleTextureView,"Texture view",                 {'T', 0},             R::focusedContext, C::patEditor,      false, false},
 		{A::toggleUvView,     "UV view",                      {'U', 0},             R::focusedContext, C::patEditor,      false, false},
+		{A::previousPositionTarget,"Position tool: previous overlap target",{0xDB,shortcutAlt},R::focusedContext,C::characterView,false,false},
+		{A::nextPositionTarget,"Position tool: next overlap target",{0xDD,shortcutAlt},R::focusedContext,C::characterView,false,false},
+		{A::togglePositionSolo,"Position tool: Solo selected target",{'S',shortcutAlt},R::focusedContext,C::characterView,false,false},
+		{A::nextKeyframe, "Next state (keep box)", {vkPrior,0}, R::focusedContext, C::characterView, true,true},
+		{A::previousKeyframe, "Previous state (keep box)", {vkNext,0}, R::focusedContext, C::characterView, true,true},
+
 	}
 {
 	for (const auto& b : m_bindings) m_defaults.push_back(b.chord);
@@ -289,6 +298,12 @@ const char* ShortcutRegistry::ActionId(ShortcutAction action)
 	case A::nudgeLayerUpFast: return "nudgeLayerUpFast";
 	case A::nudgeLayerDownFast: return "nudgeLayerDownFast";
 	case A::toggleSpawnPreview: return "toggleSpawnPreview";
+	case A::previousOpponentPreview: return "previousOpponentPreview";
+	case A::previousPositionTarget: return "previousPositionTarget";
+	case A::nextPositionTarget: return "nextPositionTarget";
+	case A::togglePositionSolo: return "togglePositionSolo";
+	case A::nextOpponentPreview: return "nextOpponentPreview";
+	case A::openOpponentPreviewSettings: return "openOpponentPreviewSettings";
 	case A::playReverse: return "playReverse";
 	case A::togglePlayback: return "togglePlayback";
 	case A::playForward: return "playForward";

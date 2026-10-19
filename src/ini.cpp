@@ -38,6 +38,14 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.bilinear = i; 
 	} else if (sscanf(line, "Theme=%i", &i) == 1){
 		gSettings.theme = i;
+	} else if (sscanf(line, "ShowPatternList=%i", &i) == 1){
+		gSettings.showPatternList = i != 0;
+	} else if (sscanf(line, "ScrubHoldDelayMs=%i", &i) == 1){
+		gSettings.scrubHoldDelayMs=std::clamp(i,0,2000);
+	} else if (sscanf(line, "ScrubRepeatMs=%i", &i) == 1){
+		gSettings.scrubRepeatMs=std::clamp(i,1,1000);
+	} else if (sscanf(line, "CompactUi=%i", &i) == 1){
+		gSettings.compactUi = i != 0;
 	} else if (sscanf(line, "FontSize=%f", &x) == 1){
 		gSettings.fontSize = x;
 	} else if (sscanf(line, "posX=%i", &i) == 1){
@@ -123,7 +131,12 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		if (!gSettings.blenderPathFromNewKey && !s3d::BlenderPathIsPre5(line + 12)) gSettings.blenderPath = line + 12;
 	} else if (strncmp(line, "StageGameDir=", 13) == 0){
 		gSettings.stageGameDir = line + 13;
-	} else if (strncmp(line, "Key=", 4) == 0){
+	} else if (sscanf(line,"GrabPoolInitialized=%i",&i)==1) {
+  gSettings.grabPoolInitialized=i!=0;
+ } else if (strncmp(line,"GrabPoolPath=",13)==0) {
+  std::string path=line+13;
+  if(!path.empty() && std::find(gSettings.grabCyclePool.begin(),gSettings.grabCyclePool.end(),path)==gSettings.grabCyclePool.end()) gSettings.grabCyclePool.push_back(path);
+ } else if (strncmp(line, "Key=", 4) == 0){
 		gSettings.keyBindings.push_back(line);
 	} else if (strncmp(line, "RecentProject=", 14) == 0){
 		// Normalize path when loading from INI for consistency
@@ -144,6 +157,9 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("Zoom=%f\n", gSettings.zoomLevel);
 	buf->appendf("Bilinear=%i\n", gSettings.bilinear);
 	buf->appendf("Theme=%i\n", gSettings.theme);
+	buf->appendf("ShowPatternList=%i\n",gSettings.showPatternList ? 1 : 0);
+	buf->appendf("ScrubHoldDelayMs=%i\nScrubRepeatMs=%i\n",gSettings.scrubHoldDelayMs,gSettings.scrubRepeatMs);
+	buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);
 	buf->appendf("posX=%hi\n", gSettings.posX);
 	buf->appendf("posY=%hi\n", gSettings.posY);
@@ -180,7 +196,9 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
 	if (!gSettings.fpanimBundleDir.empty()) buf->appendf("FpanimBundleDir=%s\n", gSettings.fpanimBundleDir.c_str());
 	if (!gSettings.blenderPath.empty()) buf->appendf("Stage3dBlenderPath=%s\n", gSettings.blenderPath.c_str());
-	for (const auto& k : gSettings.keyBindings)
+	buf->appendf("GrabPoolInitialized=%i\n",gSettings.grabPoolInitialized?1:0);
+ for(const auto& path:gSettings.grabCyclePool) buf->appendf("GrabPoolPath=%s\n",path.c_str());
+ for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 
 	// Write recent projects (max 10)

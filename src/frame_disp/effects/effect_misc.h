@@ -2,6 +2,7 @@
 #define EFFECT_MISC_H_GUARD
 
 #include "../bof_extensions.h"
+#include "../bof_post_port.h"
 #include "../../i18n.h"
 #include "effect_form.h"
 
@@ -699,6 +700,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				}
 
 			} else if(no == 154 && bof::DrawEffect154(p, width, markModified)) { // BOF only (Extended profile)
+			} else if(bof::DrawPostEffect(no, p, width, markModified)) {
 			} else if(no == 106) { // Make projectile no longer despawn on hit
 				im::Text(TXT("Deactivates EFTP1 P3 bit0"));
 

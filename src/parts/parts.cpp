@@ -105,7 +105,9 @@ bool Parts::Load(const char* name)
     if (!ReadInMem(name, loadData, size))
         return false;
 
-    if (memcmp(loadData, "PAniDataFile", 12))
+    // The standalone-open dispatcher can receive truncated/untrusted files.
+    // Validate the complete fixed header before either memcmp or +0x20 access.
+    if (size < 0x24 || memcmp(loadData, "PAniDataFile", 12))
     {
         delete[] loadData;
         return false;
@@ -237,7 +239,11 @@ bool Parts::Load(const char* name)
         auto extensionPos = filePath.find_last_of(".");
         if (extensionPos != std::string::npos) {
             auto palPath = filePath.substr(0, extensionPos) + ".pal";
-            if (std::filesystem::exists(palPath)) {
+            // Native file paths follow ReadInMem's ACP contract; filesystem's
+            // narrow-path UTF-8 conversion may throw for an accented filename.
+            std::ifstream paletteFile(palPath, std::ios::binary);
+            if (paletteFile) {
+                paletteFile.close();
                 if (!cg->loadPalette(palPath.c_str()))
                     HC_LOG_WARN("[Parts] failed to auto-load palette {}", palPath);
             }
@@ -894,6 +900,13 @@ void Parts::Draw(const DrawParams& params,
             continue;
         }
 
+        if(params.observeGeometry && !rawTextureView && cutout.texture>=0 &&
+           cutout.texture<int(textures.size()) && textures[cutout.texture] &&
+           gfxMeta[cutout.texture].textureIndex!=0 && (newColor[3]>0 || spec[3]>0)) {
+            const float* submitted=vertexData.empty()?reinterpret_cast<const float*>(point):vertexData.data();
+            const size_t count=vertexData.empty()?6:vertexData.size()/7;
+            params.observeGeometry(submitted,count,view,*textures[cutout.texture],spec[3]>0);
+        }
         partVertices.Load();
         partVertices.Bind();
         // PRFL: exactly 1 draws linear; other non-zero bytes draw point like the game.

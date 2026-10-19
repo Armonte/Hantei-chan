@@ -3,11 +3,12 @@
 
 #include <imgui.h>
 #include <cstdio>
+#include <string>
 #include "i18n.h"
 
 struct SubVector
 {
-	int id;
+	int id = -1; // An absent subvector, including slot zero, must not look valid.
 	int x_vel;
 	int y_vel;
 	int x_acc;
@@ -51,7 +52,9 @@ protected:
 	VectorList *vector_list;
 public:
 	bool loaded;
+	std::string loadedPath;
 	bool load(const char* name);
+	bool GetPrimaryMotion(int vectorId,SubVector& motion) const;
 
 	void free();
 
@@ -153,7 +156,7 @@ public:
 			ImGui::TableNextColumn();
 			snprintf(buffer, 64, "%08i", curVector.flag);
 			ImGui::Text(buffer);
-			curSubVector = svlp[curVector.VecNum];
+			curSubVector = curVector.VecNum >= 0 && curVector.VecNum < 256 ? svlp[curVector.VecNum] : SubVector{};
 			ImGui::TableNextColumn();
 			snprintf(buffer, 64, "%i", curSubVector.x_vel);
 			ImGui::Text(buffer);
@@ -186,7 +189,7 @@ public:
 			ImGui::TableNextColumn();
 			snprintf(buffer, 64, "%08i", curVector.flag2);
 			ImGui::Text(buffer);
-			curSubVector = svlp[curVector.VecNum2];
+			curSubVector = curVector.VecNum2 >= 0 && curVector.VecNum2 < 256 ? svlp[curVector.VecNum2] : SubVector{};
 			ImGui::TableNextColumn();
 			snprintf(buffer, 64, "%i", curSubVector.x_vel);
 			ImGui::Text(buffer);

@@ -89,6 +89,9 @@ public:
     // Rendering. One part set, drawn the way uni2.exe's PatPartSet_Draw_PrimQueue 0x4BFFB0 does it
     // (rules in part_render_math.h).
     struct DrawParams {
+        // Optional observer of exactly the geometry submitted by this draw.
+        // It cannot mutate draw state and is absent for exports/onion samples.
+        std::function<void(const float*,size_t,const glm::mat4&,const Texture&,bool)> observeGeometry;
         int pattern = 0;          // part set
         int nextPattern = -1;     // AFHK: part set of the next frame's same layer (-1 = none)
         float curWeight = 1.f;    // AFHK: weight of the current frame (1 = no interpolation)

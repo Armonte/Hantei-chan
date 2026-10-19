@@ -1,0 +1,51 @@
+{
+  "schema": "mbaa-runtime-pat-transform-trace-v1",
+  "process_id": 44108,
+  "module_base": "0x400000",
+  "final_capture_entry": "vanilla instruction",
+  "pattern": 173,
+  "keyframe": 1,
+  "object_position_fixed": [34130, -38292],
+  "owner_position_fixed": [39068, -28436],
+  "owner_pattern": 63,
+  "owner_state": 4,
+  "master_position_fixed": [38108, -38292],
+  "object_minus_owner_fixed": [-4938, -9856],
+  "object_minus_master_fixed": [-3978, 0],
+  "camera_position_fixed": [22852, -3584],
+  "grab_pivot": [0, 0],
+  "angle": 0,
+  "scale": [0.8459, 0.8459],
+  "facing_left": true,
+  "actor_matrix_row_major": [
+    [-0.845899999, 0, 0, 0],
+    [0, 0.845899999, 0, 0],
+    [0, 0, 1, 0],
+    [0, 0, 0, 1]
+  ],
+  "ha6_layer_matrix_row_major": [
+    [-1.47432573e-08, 1.79999995, 0, 0],
+    [-0.337286413, -7.86805003e-08, 0, 0],
+    [1.76811695, 0, 0, 0],
+    [0, 0, 0, 1]
+  ],
+  "ha6_actor_matrix_row_major": [
+    [1.24713218e-08, 1.52261996, 0, 0],
+    [0.285310566, -6.65558346e-08, 0, 0],
+    [-1.49565017, 0, 0, 0],
+    [407.46875, 160, 0, 1]
+  ],
+  "final_screen_vertices_xyz": [
+    [380.078918, 13.8284912, 0],
+    [380.078918, 306.171509, 0],
+    [434.858551, 13.8284788, 0],
+    [434.858551, 306.171509, 0]
+  ],
+  "part_final_matrix_row_major": [
+    [1.24713218e-08, 1.52261996, 0, 0],
+    [0.285310566, -6.65558346e-08, 0, 0],
+    [-1.49565017, 0, 0, 0],
+    [380.078918, 13.8284912, 0, 1]
+  ],
+  "clip_vertices_xyzw": [380.078918,13.8284912,0,1,380.078918,306.171509,0,1,434.858551,13.8284788,0,1,434.858551,306.171509,0,1]
+}

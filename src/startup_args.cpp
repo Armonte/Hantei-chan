@@ -181,17 +181,6 @@ static bool han2StartupSniff(const std::string &path)
 	return han2::IsHan2(b, n) || pac::LooksLikePac(b, n);
 }
 
-// French-Bread PAT v3/v4 (magic 3|4, 0x01234567); MBAACC .pat files start differently and stay on the old path
-static bool han2StartupSniffPat(const std::string &path)
-{
-	FILE *f = fopen(path.c_str(), "rb");
-	if (!f) return false;
-	unsigned char b[8]{};
-	size_t n = fread(b, 1, 8, f);
-	fclose(f);
-	return han2::IsPat(b, n);
-}
-
 // The view's own render target as drawn this frame (DrawBack), alpha forced opaque. Reads the FBO, never a back
 // buffer, so it works the same with the window hidden (--headless).
 static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
@@ -387,6 +376,7 @@ void MainFrame::ProcessStartupArgs()
 				Sequence pasted; pasted = st.copied->pattern;
 				st.pasteNotice = FormatConvertNotice(fd.conformPasted(pasted));
 				*seq = std::move(pasted);
+				fd.notes.archivePattern(atoi(arg.c_str()));
 				fd.mark_modified(atoi(arg.c_str()));
 				st.pattern = atoi(arg.c_str()); st.frame = 0;
 				return true;
@@ -432,7 +422,9 @@ void MainFrame::ProcessStartupArgs()
 			else requestErrorPopup("Load Error", err);
 		} else if (ext == ".hproj") {
 			loadProjectFromPath(path, false);
-		} else if (ext == ".dt2" || ext == ".pac" || ext == ".p" || ext == ".chp" || (ext == ".pat" && han2StartupSniffPat(path)) || (ext == ".dat" && han2StartupSniff(path))) {
+		} else if (ext == ".pat") {
+			openAnyFile(path);
+		} else if (ext == ".dt2" || ext == ".pac" || ext == ".p" || ext == ".chp" || (ext == ".dat" && han2StartupSniff(path))) {
 			openHan2File(path);   // RBO / GOF2 character or PAC archive
 		} else if (ext == ".dat") {
 			loadStageFile(path);   // [stage-link] a bgmake stage (with --game-link: the Stage section's files)

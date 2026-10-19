@@ -140,6 +140,19 @@ void CharacterView::refreshPanes(Render* render)
 	}
 	if (m_boxPane) {
 		m_boxPane->onModified = modifyCallback;
+		m_boxPane->onResizeDuration=[this](int pattern,int state,int duration) {
+			auto* seq=m_character->frameData.get_sequence(pattern);
+			if(!seq || state<0 || state>=int(seq->frames.size()) || seq->frames[state].AF.duration==duration) return false;
+			m_character->undoManager.beginTransaction("Resize state duration");
+			seq->frames[state].AF.duration=duration;
+			m_character->frameData.mark_modified(pattern); m_character->markModified(); m_character->undoManager.markModified(pattern);
+			m_character->undoManager.commitTransaction();
+			m_state.forceSpawnTreeRebuild=true;
+			// Keep the preferred local offset: display clamps it to the new duration,
+			// and undo can recover the previous location without a navigation history.
+			m_state.authoredInspection=true; m_state.animating=false;
+			return true;
+		};
 		// Hide Box Pane by default in PAT editor mode
 		if (m_isPatEditor) {
 			m_boxPane->isVisible = false;

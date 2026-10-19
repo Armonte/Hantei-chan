@@ -16,6 +16,9 @@ extern struct Settings
 	float zoomLevel = 3.0f;
 	bool bilinear = 0;
 	int theme = 0;
+	bool showPatternList = false;
+	int scrubHoldDelayMs=250, scrubRepeatMs=17;
+	bool compactUi = false; // Global presentation only; never part of a project/document.
 	float fontSize = 18.f;
 	short posX = 100;
 	short posY = 100;
@@ -25,6 +28,8 @@ extern struct Settings
 	std::vector<std::string> recentProjects; // Recent project paths (max 10)
 	std::vector<std::string> recentFiles;    // File > Open Recent: files opened through the smart Open... (max 10)
 	bool detachableWindows = true;  // ImGui multi-viewport (native detached windows); restart-bound
+	bool grabPoolInitialized=false;
+	std::vector<std::string> grabCyclePool;
 	std::vector<std::string> keyBindings;    // "Key=<action>#<n>=<vk>,<mods>" overrides (issue #9)
 	bool invertWheelZoom = false;            // wheel up zooms out (issue #9)
 	std::string stageGameDir;                // last stage list (game bg folder) for the stage browser/dropdown

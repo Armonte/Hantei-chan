@@ -1,5 +1,6 @@
 #ifndef RENDER_H_GUARD
 #define RENDER_H_GUARD
+#include "sprite_pick.h"
 
 #include "cg.h"
 #include "texture.h"
@@ -7,6 +8,9 @@
 #include "vao.h"
 #include "hitbox.h"
 #include <vector>
+#include <cstdio>
+#include "cg_sprite_transform.h"
+#include <string>
 #include <unordered_map>
 #include <glm/mat4x4.hpp>
 #include <glm/vec4.hpp>
@@ -38,6 +42,9 @@ inline int LayerDrawBucket(int afpl, int objectPriority)
 }
 
 struct RenderLayer {
+	int positionKind=-1, positionIndex=-1;
+	glm::mat4 cgActorMatrix{1.f};
+	int tracePattern = -1, traceFrame = -1;
 	int spriteId;
 	int spawnOffsetX, spawnOffsetY;  // Offset from spawn parameters
 	int frameOffsetX, frameOffsetY;  // Offset from frame AF data
@@ -73,6 +80,7 @@ struct RenderLayer {
 	// AFHK weight 0: UNI2/MBTL lerp the part transform fully to the next part set, MBAACC keeps the current
 	// one (partrender::PartLerpsTransform).
 	bool patUniDialect = true;
+	bool patMbaacc = false; // MBAACC PAT shares its flattened HA6 layer matrix with CG.
 	// Pattern comparison overlay (issue #63): draw this layer's boxes as
 	// outlines only, so they read apart from the main pattern's filled boxes.
 	bool boxesOutlineOnly = false;
@@ -96,6 +104,12 @@ struct RenderLayer {
 class Render
 {
 private:
+	std::string m_transformTracePath;
+	FILE* m_transformTrace = nullptr;
+	int m_transformTraceCount = 0, m_traceRootPattern = -1, m_traceRootFrame = -1, m_traceTick = -1;
+	const RenderLayer* m_traceLayer = nullptr;
+	glm::mat4 m_cgActorMatrix{1.f};
+	void TraceSpriteMatrix(const glm::mat4& matrix);
 	glm::mat4 projection, view;
 	glm::mat4 perspective;  // Perspective projection for PAT rendering
 	glm::mat4 invOrtho;     // Inverse orthographic for coordinate transforms
@@ -139,6 +153,7 @@ private:
 		}
 	};
 	struct CachedSprite {
+		std::shared_ptr<const spritepick::Mask> pickMask;
 		unsigned int tex = 0;
 		int w = 0, h = 0, ox = 0, oy = 0;
 		bool indexed = false;
@@ -184,6 +199,18 @@ private:
 	void SetBlendingMode();
 
 public:
+	struct PositionFootprint {
+  int kind,index; glm::vec2 quad[4]{},uv[4]{};
+  std::shared_ptr<const spritepick::Mask> mask;
+  bool triangle=false,solid=false; float invW[3]{1,1,1};
+  bool hit(float x,float y) const { return mask && (triangle?spritepick::TriangleHit(quad,uv,invW,*mask,x,y,solid):spritepick::Hit(quad,uv,*mask,x,y)); }
+ };
+	bool capturePosition=false;
+	std::vector<PositionFootprint> positionFootprints;
+	void FinishTransformTrace() { if(m_transformTrace) { fclose(m_transformTrace); m_transformTrace=nullptr; } }
+	void RequestTransformTrace(const std::string& path, int pattern, int frame, int tick) {
+		m_transformTracePath = path; m_traceRootPattern = pattern; m_traceRootFrame = frame; m_traceTick = tick;
+	}
 	// Switch to <cg>_pN.pal for layers of patterns with PUPS N (issue #76).
 	bool followPups = true;
 	bool filter;
@@ -250,6 +277,7 @@ public:
 	void SortLayersByZPriority(int mainPatternPriority);
 	void DrawLayers();
 	bool HasLayers() const { return !renderLayers.empty(); }
+	bool IsolatePositionTarget(int kind,int index);
 
 	// Background (stage) rendering.
 	void SetBackgroundRenderer(bg::Renderer* renderer, bg::Camera* camera);

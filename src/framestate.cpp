@@ -743,6 +743,83 @@ void BuildSpawnTreeRecursive(
 // Preview simulator binding
 // ---------------------------------------------------------------------------
 
+void FrameState::InspectState(FrameData* data,int state,int offset)
+{
+	playAllRoutes=false;
+	auto* seq=data?data->get_sequence(pattern):nullptr;
+	if(!seq || seq->frames.empty()) return;
+	frame=std::clamp(state,0,int(seq->frames.size())-1);
+	authoredOffset=std::clamp(offset,0,std::max(1,seq->frames[frame].AF.duration)-1);
+	authoredInspection=true; animating=false; playbackFinished=false;
+	static int count=0;
+	if(count++<128) if(auto* f=fopen("timeline_navigation_trace.log","a")) { fprintf(f,"authored pattern=%d state=%d offset=%d runtime_tick=%d\n",pattern,frame,authoredOffset,currentTick); fclose(f); }
+}
+
+int FrameState::AuthoredTick(FrameData* data) const
+{
+	auto* seq=data?data->get_sequence(pattern):nullptr; if(!seq || seq->frames.empty()) return 0;
+	const int selected=std::clamp(frame,0,int(seq->frames.size())-1); int tick=0;
+	for(int i=0;i<selected;++i) tick+=std::max(1,seq->frames[i].AF.duration);
+	int local=authoredOffset;
+	if(!authoredInspection && previewSim) { preview::TickState ts; previewSim->getStateAt(currentTick,ts); if(ts.root() && ts.root()->frame==selected) local=ts.root()->frameTimer; }
+	return tick+std::clamp(local,0,std::max(1,seq->frames[selected].AF.duration)-1);
+}
+
+void FrameState::ScrubTimeline(FrameData* data,FrameData* effects,int tick)
+{
+	playAllRoutes=false;
+	if(!absoluteScrub) { SeekTimelineTick(data,effects,tick,"simulated scrub"); return; }
+	auto* seq=data?data->get_sequence(pattern):nullptr; if(!seq || seq->frames.empty()) return;
+	tick=std::max(0,tick);
+	for(int i=0;i<int(seq->frames.size());++i) {
+		const int duration=std::max(1,seq->frames[i].AF.duration);
+		if(tick<duration || i==int(seq->frames.size())-1) { InspectState(data,i,std::min(tick,duration-1)); return; }
+		tick-=duration;
+	}
+}
+
+void FrameState::SeekTimelineTick(FrameData* data,FrameData* effects,int tick,const char* origin)
+{
+	authoredInspection=false;
+	auto& sim=BindPreviewSim(data,effects); currentTick=std::clamp(tick,0,sim.horizon());
+	preview::TickState ts; sim.getStateAt(currentTick,ts);
+	const auto* root=ts.root(); if(root) frame=root->frame;
+	authoredInspection=false; playbackFinished=false;
+	static int count=0;
+	if(count++<256) if(auto* f=fopen("timeline_navigation_trace.log","a")) { fprintf(f,"seek origin=%s pattern=%d requested=%d tick=%d state=%d timer=%d visit=%u if=%d\n",origin,pattern,tick,currentTick,frame,root?root->frameTimer:-1,root?root->visitSerial:0,int(previewOptions.defaultIfAssumption)); fclose(f); }
+}
+
+void FrameState::DiscoverPaths(FrameData* data,FrameData* effects)
+{
+	// Reuse exactly the viewport's dialect/IF options, but always discover runtime flow.
+	auto options=BindPreviewSim(data,effects).options();
+	options.authoredRoot=false; options.rootStartState=0;
+	discoveredRoutes=preview::DiscoverRoutes(data,effects,pattern,options);
+	routeData=data; routeEffects=effects; routeVersion=data?data->dataVersion:0;
+	routeEffectVersion=effects?effects->dataVersion:0; routeOptions=previewOptions;
+	playAllRoutes=false;
+	static int count=0;
+	if(count++<64) if(auto* f=fopen("timeline_navigation_trace.log","a")) {
+		fprintf(f,"discover pattern=%d routes=%zu version=%llu if=%d\n",pattern,discoveredRoutes.size(),(unsigned long long)routeVersion,int(options.defaultIfAssumption)); fclose(f);
+	}
+}
+
+void FrameState::SelectPath(FrameData* data,FrameData* effects,int start)
+{
+	routePattern=pattern; routeStart=start; playAllRoutes=false; animating=false;
+	SeekTimelineTick(data,effects,0,"select path");
+}
+
+bool FrameState::AdvanceRoute(FrameData* data,FrameData* effects)
+{
+	for(size_t i=0;i<discoveredRoutes.size();++i) if(discoveredRoutes[i].start==routeStart) {
+		if(i+1==discoveredRoutes.size() && !playbackLoop) { playAllRoutes=false; return false; }
+		const int start=discoveredRoutes[(i+1)%discoveredRoutes.size()].start;
+		SelectPath(data,effects,start); playAllRoutes=true; animating=true; return true;
+	}
+	playAllRoutes=false; return false;
+}
+
 preview::PreviewSim& FrameState::BindPreviewSim(FrameData* mainData, FrameData* effectData)
 {
 	if (!previewSim)
@@ -774,6 +851,20 @@ preview::PreviewSim& FrameState::BindPreviewSim(FrameData* mainData, FrameData* 
 	}
 
 	preview::Options o = previewOptions;
+	if(routePattern!=pattern) { routePattern=pattern; routeStart=0; discoveredRoutes.clear(); playAllRoutes=false; }
+	auto* routeSeq=mainData?mainData->get_sequence(pattern):nullptr;
+	if(!routeSeq || routeStart<0 || routeStart>=int(routeSeq->frames.size())) routeStart=0;
+	if(!discoveredRoutes.empty() && (routeData!=mainData || routeEffects!=effectData ||
+		routeVersion!=(mainData?mainData->dataVersion:0) || routeEffectVersion!=(effectData?effectData->dataVersion:0) || !(routeOptions==previewOptions))) {
+		if(playAllRoutes) animating=false;
+		discoveredRoutes.clear(); playAllRoutes=false;
+	}
+	o.authoredRoot=absoluteScrub && authoredInspection;
+	o.rootStartState=o.authoredRoot?0:routeStart;
+	if(o.authoredRoot && mainData) if(auto* seq=mainData->get_sequence(pattern)) {
+		int64_t total=0; for(const auto& frame:seq->frames) total+=std::max(1,frame.AF.duration);
+		o.horizonTicks=std::max(o.horizonTicks,int(std::min<int64_t>(30000,total)));
+	}
 	// The half-scale PAT owner rule is MBAA's; UNI/MBTL data keeps 1:1.
 	o.patOwnerHalfScale = previewOptions.patOwnerHalfScale && mainData && !mainData->usesUniFormat();
 	o.uniPlacement = mainData && mainData->usesUniFormat();

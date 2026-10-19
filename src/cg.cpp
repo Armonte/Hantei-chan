@@ -336,7 +336,7 @@ ImageData *CG::draw_texture(unsigned int n, bool to_pow2_flg, bool draw_8bpp) {
 	int width = image->bounds_x2 - x1+1;
 	int height = image->bounds_y2 - y1+1;
 	
-	if (width == 0 || height == 0) {
+	if (width <= 0 || height <= 0) {
 		return 0;
 	}
 	

@@ -62,6 +62,7 @@ enum class ShortcutAction : uint8_t {
 	nudgeLayerDownFast,
 	// View toggles (issue #61)
 	toggleSpawnPreview,
+	previousOpponentPreview, nextOpponentPreview, openOpponentPreviewSettings,
 	// Transport (J/K/L)
 	playReverse,
 	togglePlayback,
@@ -87,6 +88,8 @@ enum class ShortcutAction : uint8_t {
 	// PAT editor render modes (sosfiro T / U)
 	toggleTextureView,
 	toggleUvView,
+	previousPositionTarget, nextPositionTarget,
+	togglePositionSolo,
 	count
 };
 

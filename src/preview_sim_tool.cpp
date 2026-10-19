@@ -12,6 +12,7 @@
 
 #include "framedata.h"
 #include "preview_sim.h"
+#include "opponent_scene.h"
 
 #include <algorithm>
 #include <chrono>
@@ -536,6 +537,134 @@ int SelfTest()
 		CHECK(std::string(preview::RootEndKindText(preview::RootEndKind::None)) == "loops", "None reads as loops");
 	}
 
+	// Opponent event resolution consumes actual visits, not adjacent frame IDs.
+	{
+		FrameData poses; poses.initEmpty();
+		auto& r = AddFrame(poses, 200, 3, 2, 0, 0);
+		AddEF(r, 14, 27, {5, -10, 0, 1, 36});
+		preview::PreviewSim sim; sim.setInputs(&poses, nullptr, 200, opt);
+		sim.ensureSimulatedTo(10);
+		auto a = opponent::Resolve(poses, sim.rootVisitTrack(), 1, false);
+		auto b = opponent::Resolve(poses, sim.rootVisitTrack(), 10, false);
+		CHECK(a.found && a.entryTick == 0 && a.elapsed == 1, "held state does not restart opponent release");
+		CHECK(b.entryTick == 9 && b.elapsed == 1 && b.visit != a.visit, "self-jump restarts release on actual re-entry");
+		auto again = opponent::Resolve(poses, sim.rootVisitTrack(), 1, false);
+		CHECK(again.entryTick == a.entryTick && again.visit == a.visit && again.elapsed == a.elapsed, "opponent seek A-B-A is deterministic");
+		poses.get_sequence(200)->frames[0].EF[0].number = 33; // fingerprint-only invalidation
+		sim.ensureSimulatedTo(10);
+		CHECK(opponent::Resolve(poses, sim.rootVisitTrack(), 10, false).pose.pattern == 33, "opponent event track follows unmarked edits/undo");
+		AddFrame(poses, 201, 1, 2, 0, 2);
+		AddEF(AddFrame(poses, 201, 1), 14, 999, {0,0,0,0}); // unreachable
+		AddEF(AddFrame(poses, 201, 30, 0), 14, 26, {0,0,0,0});
+		sim.setInputs(&poses, nullptr, 201, opt); sim.ensureSimulatedTo(5);
+		auto skipped = opponent::Resolve(poses, sim.rootVisitTrack(), 5, false);
+		CHECK(skipped.found && skipped.sourceState == 2 && skipped.pose.pattern == 26, "unvisited authored pose is never selected");
+		auto authored = opponent::InspectAuthored(poses, 201, 1, false);
+		CHECK(authored.found && authored.authored && authored.pose.pattern == 999 && authored.entryTick == -1 && authored.elapsed == 0, "authored inspection is separate from runtime visits");
+		auto& e = AddFrame(poses, 202, 3, 2, 0, 0);
+		AddEF(e, 6, 161, {0,350,2,30,-40,2000,1,0,2});
+		sim.setInputs(&poses, nullptr, 202, opt); sim.ensureSimulatedTo(4);
+		CHECK(!opponent::Resolve(poses, sim.rootVisitTrack(), 4, false).found, "vanilla profile does not interpret BOF poses");
+		a = opponent::Resolve(poses, sim.rootVisitTrack(), 1, true);
+		b = opponent::Resolve(poses, sim.rootVisitTrack(), 4, true);
+		CHECK(a.pose.pattern == 350 && a.pose.state == 2 && a.pose.grabLocation == 1, "BOF target pose fields retain target identity");
+		CHECK(a.facingLeft != b.facingLeft, "explicit facing flip uses prior pose across re-entry");
+		const auto entries = sim.rootVisitTrack().size();
+		sim.getStateAt(1,st); sim.getStateAt(3,st); sim.getStateAt(1,st);
+		CHECK(sim.rootVisitTrack().size() == entries, "checkpoint/cursor replay does not duplicate entry events");
+		CHECK(!opponent::Resolve(poses, sim.rootVisitTrack(), -1, true).found, "negative opponent seek fails closed");
+		auto& branch = AddFrame(poses, 203, 1);
+		AddIF(branch, 4, {2,0,0});
+		AddEF(AddFrame(poses,203,50,0),14,100,{0,0,0,0});
+		AddEF(AddFrame(poses,203,50,0),14,200,{0,0,0,0});
+		auto options = opt; options.defaultIfAssumption = preview::IfAssume::False;
+		sim.setInputs(&poses,nullptr,203,options); sim.ensureSimulatedTo(2);
+		a = opponent::Resolve(poses,sim.rootVisitTrack(),2,false);
+		options.defaultIfAssumption = preview::IfAssume::True;
+		sim.setInputs(&poses,nullptr,203,options); sim.ensureSimulatedTo(2);
+		b = opponent::Resolve(poses,sim.rootVisitTrack(),2,false);
+		CHECK(a.pose.pattern == 100 && b.pose.pattern == 200, "opponent resolver uses actual IF policy and invalidates with it");
+		auto& ordered = AddFrame(poses,204,10,0);
+		AddEF(ordered,14,350,{0,0,0,0}); AddEF(ordered,14,27,{0,0,0,1,36});
+		a = opponent::InspectAuthored(poses,204,0,false);
+		CHECK(a.effect == 1 && a.pose.release && a.pose.vector == 36, "same-entry pose/release preserves EF order");
+		Frame_EF native4{}; native4.type = 4; native4.number = 26;
+		native4.parameters[3] = 1; native4.parameters[4] = 36; native4.parameters[7] = 10;
+		auto described4 = opponent::Describe(native4,false);
+		Frame_EF edit14{}; edit14.type=14;
+		CHECK(opponent::HeldEditSlots(edit14,false).rotation==2,"native14 editable pose slots");
+		edit14.parameters[3]=1;
+		CHECK(!opponent::HeldEditSlots(edit14,false).writable(),"release pose cannot be dragged as held");
+		CHECK(opponent::ReleaseEditSlots(edit14,false).x==0 && opponent::ReleaseEditSlots(edit14,false).rotation==-1,"release origin editable without inventing rotation");
+		edit14.parameters[3]=0; edit14.parameters[6]=1;
+		CHECK(!opponent::HeldEditSlots(edit14,false).writable(),"relative pose fails closed");
+		CHECK(!opponent::ReleaseEditSlots(edit14,false).writable(),"relative release fails closed");
+		Frame_EF edit4{}; edit4.type=4;
+		CHECK(opponent::HeldEditSlots(edit4,false).writable() && opponent::HeldEditSlots(edit4,false).rotation==-1,"native4 has no invented rotation");
+		Frame_EF edit161{}; edit161.type=6; edit161.number=161;
+		CHECK(!opponent::HeldEditSlots(edit161,false).writable(),"BOF pose editing requires profile");
+		CHECK(opponent::HeldEditSlots(edit161,true).x==3 && opponent::HeldEditSlots(edit161,true).rotation==5,"BOF adapter slots");
+		// Linear root scrubbing still runs effects/children and the shared pose history.
+		auto& linear0=AddFrame(poses,211,2,2,0,0);
+		AddIF(linear0,4,{2,0,0}); AddEF(linear0,1,212,{100,-40,0,0}); AddEF(linear0,14,26,{20,-30,0,0,0,10});
+		AddFrame(poses,211,3,3); AddEF(AddFrame(poses,211,4,0),14,26,{40,-50,0,1,36});
+		AddFrame(poses,212,2,1); AddFrame(poses,212,2,2,0,1);
+		auto linearOpt=opt; linearOpt.authoredRoot=true; linearOpt.defaultIfAssumption=preview::IfAssume::True;
+		sim.setInputs(&poses,nullptr,211,linearOpt); sim.getStateAt(4,st);
+		CHECK(st.root() && st.root()->frame==1 && st.actors.size()==2,"absolute root ignores self-jump/IF while prior spawn persists");
+		CHECK(st.actors.size()>1 && st.actors[1].frame==1,"spawn retains its own animation flow");
+		a=opponent::Resolve(poses,sim.rootVisitTrack(),4,false);
+		CHECK(a.found && a.sourceState==0 && !a.pose.release,"grab carries to later absolute state");
+		sim.getStateAt(6,st); b=opponent::Resolve(poses,sim.rootVisitTrack(),6,false);
+		CHECK(st.root() && st.root()->frame==2 && b.pose.release && b.elapsed==1,"release replaces prior grab and advances in absolute time");
+		sim.getStateAt(4,st); a=opponent::Resolve(poses,sim.rootVisitTrack(),4,false);
+		CHECK(st.root()->frame==1 && !a.pose.release && a.sourceState==0,"absolute A-B-A restores spawn/pose history");
+		linearOpt.authoredRoot=false; linearOpt.defaultIfAssumption=preview::IfAssume::False;
+		sim.setInputs(&poses,nullptr,211,linearOpt); sim.getStateAt(4,st);
+		CHECK(st.root()->frame==0,"return to runtime restores AF jumps");
+		edit161.number=162;
+		CHECK(!opponent::ReleaseEditSlots(edit161,false).writable() && opponent::ReleaseEditSlots(edit161,true).x==1 && opponent::ReleaseEditSlots(edit161,true).y==2,"BOF release editing profile and slots");
+		CHECK(described4.release && described4.state == 10 && described4.vector == 36, "EF4 release retains its explicit target state (unlike EF14)");
+	}
+	{
+		FrameData routes; routes.initEmpty(); preview::PreviewSim sim;
+		AddFrame(routes,250,2,2,0,0); // state 0 loops, leaving states 1/2 disconnected
+		auto& entry=AddFrame(routes,250,2,1); AddEF(entry,1,251,{20,-10,0,0});
+		AddFrame(routes,250,3,0); AddFrame(routes,251,20,0);
+		auto ro=opt; ro.horizonTicks=60;
+		auto found=preview::DiscoverRoutes(&routes,nullptr,250,ro);
+		CHECK(found.size()==2 && found[0].start==0 && found[0].bounded && found[1].start==1 && found[1].states==2 && !found[1].bounded,"discovery covers disconnected states and bounds cycles");
+		ro.rootStartState=1; sim.setInputs(&routes,nullptr,250,ro); sim.getStateAt(1,st);
+		CHECK(st.root() && st.root()->frame==1 && ByPattern(st,251),"fresh route executes entry effects with shared actor simulator");
+		sim.getStateAt(4,st); sim.getStateAt(1,st);
+		CHECK(st.root() && st.root()->frame==1 && ByPattern(st,251),"route A-B-A is deterministic");
+		ro.rootStartState=99; sim.setInputs(&routes,nullptr,250,ro); sim.getStateAt(1,st);
+		CHECK(!st.root() && sim.rootFrameTrack().empty(),"invalid route start fails closed");
+		AddIF(routes.get_sequence(250)->frames[0],4,{2,0,0}); routes.mark_modified(250);
+		ro.rootStartState=0; ro.defaultIfAssumption=preview::IfAssume::True;
+		found=preview::DiscoverRoutes(&routes,nullptr,250,ro);
+		CHECK(!found.empty() && !found[0].bounded && found[0].states==2,"discovery uses runtime IF policy (unlike the false-policy cycle)");
+		CHECK(routes.get_sequence(250)->frames[0].AF.jump==0 && routes.get_sequence(250)->frames.size()==3,"discovery does not rewrite authored flow");
+	}
+	{
+  FrameData motion; motion.initEmpty(); motion.setGameOverride(Ha6Game::MBAACC);
+  auto& f=AddFrame(motion,280,3,1); f.AS.movementFlags=0x11; f.AS.speed[0]=256; f.AS.accel[0]=128;
+  AddEF(f,1,281,{10,0,4,0}); AddEF(f,1,282,{20,0,0,0});
+  auto& stop=AddFrame(motion,280,20,0); stop.AS.movementFlags=0x11;
+  AddEF(stop,1,283,{0,0,0,0});
+  AddFrame(motion,281,40,0); AddFrame(motion,282,40,0); AddFrame(motion,283,40,0);
+  preview::PreviewSim sim; auto o=opt; o.simulateMovement=true; o.horizonTicks=12;
+  sim.setInputs(&motion,nullptr,280,o); sim.getStateAt(1,st);
+  CHECK(st.root()->x==1.5f && ByPattern(st,281)->x==11.5f && ByPattern(st,282)->x==20.f,"AS acceleration precedes movement; follow-parent vs detached child");
+  sim.getStateAt(3,st);
+  CHECK(st.root()->x==3.5f && ByPattern(st,283) && ByPattern(st,283)->x==3.5f,"new-state stop/EF dispatch precede movement");
+  sim.getStateAt(1,st); CHECK(st.root()->x==1.5f,"movement survives backwards checkpoint scrub");
+  o.rootFacingLeft=true; sim.setInputs(&motion,nullptr,280,o); sim.getStateAt(1,st);
+  CHECK(st.root()->x==-1.5f && ByPattern(st,281)->x==-11.5f,"AS X velocity/acceleration and child motion mirror together");
+  auto& add=motion.get_sequence(280)->frames[1].AS; add.movementFlags=0x20; add.speed[0]=256;
+  motion.mark_modified(280); o.rootFacingLeft=false; sim.setInputs(&motion,nullptr,280,o); sim.getStateAt(3,st);
+  CHECK(st.root()->x==6.5f,"AS Add X retains prior velocity before adding");
+ }
 	std::printf("\nselftest: %s (%d failure(s))\n", g_fail ? "FAILED" : "passed", g_fail);
 	return g_fail ? 4 : 0;
 }
@@ -546,7 +675,8 @@ struct Args {
 	int pattern = -1;
 	int ticks = -1;
 	int every = 1;
-	bool scan = false, bench = false, assumeTrue = false, events = false, selftest = false;
+	int opponentState = -1;
+	bool scan = false, bench = false, assumeTrue = false, events = false, selftest = false, opponentTrace = false, extended = false;
 };
 
 } // namespace
@@ -568,6 +698,9 @@ int main(int argc, char** argv)
 		else if (s == "--assume-true") a.assumeTrue = true;
 		else if (s == "--events") a.events = true;
 		else if (s == "--selftest") a.selftest = true;
+		else if (s == "--opponent-trace") a.opponentTrace = true;
+		else if (s == "--extended") a.extended = true;
+		else if (s == "--opponent-state") a.opponentState = std::atoi(next().c_str());
 		else { std::cerr << "unknown argument " << s << "\n"; return 2; }
 	}
 	if (a.selftest) return SelfTest();
@@ -593,6 +726,22 @@ int main(int argc, char** argv)
 	preview::Options opt;
 	if (a.assumeTrue) opt.defaultIfAssumption = preview::IfAssume::True;
 	if (a.ticks > 0) opt.horizonTicks = a.ticks;
+	if (a.opponentState >= 0) {
+		if (auto* seq = main.get_sequence(a.pattern); seq && a.opponentState < (int)seq->frames.size()) {
+			const auto& effects = seq->frames[a.opponentState].EF;
+			for (int i = 0; i < (int)effects.size() && i < 64; ++i) {
+				const auto& e = effects[i];
+				std::printf("authored-ef index=%d type=%d number=%d params=", i, e.type, e.number);
+				for (int v : e.parameters) std::printf(" %d", v);
+				std::printf("\n");
+			}
+		}
+		const auto p = opponent::InspectAuthored(main, a.pattern, a.opponentState, a.extended);
+		std::printf("opponent-authored found=%d source=%d/%d ef=%d target=%d/%d release=%d vector=%d entry=%d elapsed=%d\n",
+			p.found, p.sourcePattern, p.sourceState, p.effect, p.pose.pattern, p.pose.state,
+			p.pose.release, p.pose.vector, p.entryTick, p.elapsed);
+		return p.found ? 0 : 5;
+	}
 
 	if (!a.scan) {
 		preview::PreviewSim sim;
@@ -605,6 +754,12 @@ int main(int argc, char** argv)
 		for (int t = 0; t <= end; t += a.every) {
 			sim.getStateAt(t, st);
 			PrintState(st);
+			if (a.opponentTrace) {
+				const auto pose = opponent::Resolve(main, sim.rootVisitTrack(), t, a.extended);
+				std::printf("opponent tick=%d found=%d source=%d/%d ef=%d visit=%u entry=%d elapsed=%d target=%d/%d release=%d vector=%d facingLeft=%d\n",
+					t, pose.found, pose.sourcePattern, pose.sourceState, pose.effect, pose.visit, pose.entryTick, pose.elapsed,
+					pose.pose.pattern, pose.pose.state, pose.pose.release, pose.pose.vector, pose.facingLeft);
+			}
 		}
 		if (a.events) {
 			for (const auto& e : sim.events())

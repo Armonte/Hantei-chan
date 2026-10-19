@@ -32,15 +32,30 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	};
 
 	unsigned int flagIndex = -1;
-	if(BitField("Movement Flags", &as->movementFlags, &flagIndex, 8)) {
-		markModified();
-	}
-	switch (flagIndex)
-	{
-		case 0: Tooltip("Set Y"); break;
-		case 4: Tooltip("Set X"); break;
-		case 1: Tooltip("Add Y"); break;
-		case 5: Tooltip("Add X"); break;
+	if (gSettings.compactUi) {
+		if (ui::BeginInspectorTable("##axis_movement",6)) {
+			im::TableSetupColumn("##label",ImGuiTableColumnFlags_WidthFixed,ui::Em(3.2f));
+			for(int c=1;c<6;++c) im::TableSetupColumn("##value",ImGuiTableColumnFlags_WidthStretch);
+			ui::InspectorCell(0,0);ui::RowLabel("Flags");
+			ui::InspectorCell(0,1);im::SetCursorPosX(im::GetCursorPosX()+ui::LabelTextW("X")+im::GetStyle().ItemInnerSpacing.x);if(ui::AxisFlags(&as->movementFlags,0)) markModified();ui::InspectorItem("move.x.flags");
+			ui::InspectorCell(0,2);ui::RowLabel("Accel");
+			ui::InspectorCell(0,3);im::SetCursorPosX(im::GetCursorPosX()+ui::LabelTextW("Y")+im::GetStyle().ItemInnerSpacing.x);if(ui::AxisFlags(&as->movementFlags,1)) markModified();ui::InspectorItem("move.y.flags");
+			ui::InspectorCell(0,4);ui::RowLabel("Accel");
+			ui::InspectorCell(0,5);ui::RowLabel("Max X");
+			ui::InspectorCell(1,0);ui::RowLabel("Speed");
+			ui::InspectorCell(1,1);ui::AxisLabel(0);if(im::InputInt("##speedX",&as->speed[0],0,0)) markModified();ui::InspectorItem("move.x.speed");
+			ui::InspectorCell(1,2);if(im::InputInt("##accelX",&as->accel[0],0,0)) markModified();ui::InspectorItem("move.x.accel");
+			ui::InspectorCell(1,3);ui::AxisLabel(1);if(im::InputInt("##speedY",&as->speed[1],0,0)) markModified();ui::InspectorItem("move.y.speed");
+			ui::InspectorCell(1,4);if(im::InputInt("##accelY",&as->accel[1],0,0)) markModified();ui::InspectorItem("move.y.accel");
+			ui::InspectorCell(1,5);if(im::InputInt("##maxSpeedX",&as->maxSpeedX,0,0)) markModified();
+			im::EndTable();
+		}
+	} else {
+		if(BitField("Movement Flags", &as->movementFlags, &flagIndex, 8)) markModified();
+		switch(flagIndex) {
+			case 0: Tooltip("Set Y");break;case 4: Tooltip("Set X");break;
+			case 1: Tooltip("Add Y");break;case 5: Tooltip("Add X");break;
+		}
 	}
 
 	// Label-first form (ui_style.h LabelForm): one label column for every section of this display.
@@ -48,7 +63,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	const float lw = ui::LabelColW({LBL("Speed"), LBL("Max X speed"), LBL("Accel"), LBL("Number of hits"),
 		LBL("Player can move"), LBL("State"), LBL("Invincibility"), LBL("Counterhit"), LBL("Cancel normal"),
 		LBL("Cancel special"), LBL("Sinewave"), LBL("Phases"), uniAs ? LBL("ASCF") : ""});
-	if(ui::BeginLabelForm("##as_move", lw)) {
+	if(!gSettings.compactUi && ui::BeginLabelForm("##as_move", lw)) {
 		if(im::InputInt2(ui::FormRow(LBL("Speed")), as->speed)) {
 			markModified();
 		}
@@ -79,6 +94,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 		case 31: Tooltip("Vector initialization only at the beginning (?)"); break;
 	}
 
+	im::Dummy(ImVec2(0,ui::Em(.2f)));
 	flagIndex = -1;
 	if(BitField("Flagset 2", &as->statusFlags[1], &flagIndex)) {
 		markModified();
@@ -91,6 +107,21 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	}
 
 	ui::FormSection(TXT("State"));
+	if (gSettings.compactUi) {
+		if(ui::InlineInt("Hits",&as->hitsNumber,ui::Em(2.5f))) markModified();
+		im::SameLine(0,ui::Em(1));ui::RowLabel("Can Move");im::SameLine();
+		if(im::Checkbox("##canMove",&as->canMove)) markModified();
+		if (ui::BeginInspectorTable("##state_options",5)) {
+			const char* names[]={"Stance","Invincibility","Counterhit","Cancel normal","Cancel special"};
+			for(const char* name:names) {im::TableNextColumn();im::TextUnformatted(TXT(name));}
+			im::TableNextColumn();im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##stance",&as->stanceState,stateList,IM_ARRAYSIZE(stateList))) markModified();
+			im::TableNextColumn();im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##invul",&as->invincibility,invulList,IM_ARRAYSIZE(invulList))) markModified();
+			im::TableNextColumn();im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##counter",&as->counterType,counterList,IM_ARRAYSIZE(counterList))) markModified();
+			im::TableNextColumn();im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##normal",&as->cancelNormal,cancelList,IM_ARRAYSIZE(cancelList))) markModified();
+			im::TableNextColumn();im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##special",&as->cancelSpecial,cancelList,IM_ARRAYSIZE(cancelList))) markModified();
+			im::EndTable();
+		}
+	} else {
 	if(ui::BeginLabelForm("##as_state", lw)) {
 		if(im::InputInt(ui::FormRow(LBL("Number of hits")), &as->hitsNumber, 0, 0)) {
 			markModified();
@@ -114,6 +145,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 			markModified();
 		}
 		ui::EndLabelForm();
+	}
 	}
 
 	if(im::CollapsingHeader(LBL("Sine flags"))) {
