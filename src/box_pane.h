@@ -35,6 +35,9 @@ private:
 
 	// Timeline (issue #10)
 	float timelineZoom = 1.0f;
+	// Timeline order: true = file (absolute) order, the ruler, scrub, playhead, lanes and spawn bars follow the keyframes as
+	// written (Go to / loops do not repeat frames); false = playback (simulated) order with every jump (issue #88).
+	bool timelineFileOrder = true;
 	struct { bool active = false; int srcFrame = -1; int efIndex = -1; bool copy = false; } spawnDrag;
 };
 
