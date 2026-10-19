@@ -6,6 +6,7 @@
 #include "cg.h"
 #include "parts/parts.h"
 #include "undo_manager.h"
+#include "ha6_notes_undo.h"
 #include "parts/parts_undo.h"
 #include "mv_script.h"
 #include <memory>
@@ -67,7 +68,7 @@ public:
 	bool isModified() const;
 	// Annotations side file (<ha6>.notes.json, issue #58)
 	void loadNotes();
-	bool saveNotes(const std::string& ha6Path);
+	bool saveNotes(const std::string& ha6Path, bool onlyIfChanged = false);
 	const std::string& notesError() const { return m_notesError; }
 
 	// File paths
@@ -101,12 +102,15 @@ public:
 	UndoManager undoManager;
 	// PAT-editor edits of a French-Bread character join undoManager's history through this channel (parts/parts_undo.h).
 	PartsUndoChannel partsUndo{&parts};
+	Ha6NotesUndoChannel notesUndo{&frameData.notes};
 
 	// RBO / GOF2 CG window: whole-bank snapshots of sprite imports (max 8), per character.
 	std::vector<std::vector<char>> cgImportUndo, cgImportRedo;
 
 	// Why the last save()/saveAs() failed (empty when the reason is only "could not write the file").
 	const std::string& lastSaveError() const { return m_lastSaveError; }
+	// Set when the last save wrote the HA6 but not its notes side file (the save still succeeded).
+	const std::string& lastSaveWarning() const { return m_lastSaveWarning; }
 
 	// Render state (per-character)
 	int renderX = 0;
@@ -142,6 +146,7 @@ private:
 	MvScriptIndex m_mvScripts;     // MBTL move-script spawns (may be empty)
 	std::string m_notesError;
 	std::string m_lastSaveError;
+	std::string m_lastSaveWarning;
 	bool m_patDocument = false;
 	std::vector<Sequence> m_patUndoDoc;              // empty pattern list the undo manager diffs in a PAT document
 	std::unique_ptr<PartsUndoChannel> m_patDocUndo;  // declared after undoManager: destroyed first

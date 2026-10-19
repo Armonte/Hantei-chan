@@ -1,4 +1,7 @@
+#include "app_log.h"
 #include "main_frame.h"
+#include "app_log.h"
+#include "timeline_navigation.h"
 #include "ui/ui_style.h"
 #include "startup_args.h"
 #include "render_target.h"
@@ -66,7 +69,9 @@ MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
-	// User key bindings (issue #9); unknown or stale entries are ignored.
+	// Opt-in layouts first (they move defaults), then the user's key bindings (issue #9); unknown or stale
+	// entries are ignored.
+	shortcuts.registry().applyLayoutOptions(gSettings.jlFrameStep, gSettings.pageKeysStepStates);
 	for (const auto& line : gSettings.keyBindings)
 		shortcuts.registry().applyOverride(line);
 	// Hand the background renderer/camera to the GL Render so its Draw()
@@ -96,6 +101,7 @@ context(context_)
 
 MainFrame::~MainFrame()
 {
+	abrowser::ShutdownWorkers();
 	if (!gStartup.headless) authoring::SaveSettings();   // --headless leaves the user's settings alone
 	clearStage();
 	ImGui::SaveIniSettingsToDisk(ImGui::GetCurrentContext()->IO.IniFilename);   // null under --headless: no write
@@ -180,6 +186,7 @@ void MainFrame::Draw()
 #include "ui/editor_tools_impl.h"
 #include "paste_notice.h"
 #include "ui/tool_windows_impl.h"
+#include "ui/state_transfer_impl.h"
 
 // ============================================================================
 // PAT editor: auto backup, PAT documents, UV drag, navigation, layer tools
@@ -556,6 +563,7 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 		std::string err; bool had = false;
 		if (!abrowser::SaveEntryBytesIntoArchive(character->getTopHA6Path(), &err, &had) && had) { requestErrorPopup("Save Error", std::string(TXT("Saved the working copy, but could not write back into the archive: ")) + err); return false; }
 		onFileSaved(character, AnsiToUtf8(character->getTopHA6Path()));   // UNI2 / MBTL: IM mod folder + fpan-im hot reload
+		reportSaveWarning(character);
 		return true;
 	}
 	const std::string& path = character->getTopHA6Path();
@@ -577,12 +585,20 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	return false;
 }
 
+// The HA6 reached disk but its notes side file did not: the save counts (the tab is clean), the notes stay dirty.
+void MainFrame::reportSaveWarning(CharacterInstance* character)
+{
+	if (!character || character->lastSaveWarning().empty()) return;
+	HC_LOG_WARN("Saved {} without its notes: {}", character->getTopHA6Path(), character->lastSaveWarning());
+	requestErrorPopup("Notice", std::string(TXT("Saved, but: ")) + character->lastSaveWarning());
+}
+
 bool MainFrame::saveCharacterAs(CharacterInstance* character, const std::string& path)
 {
 	if (!character) return false;
 	if (character->isPatDocument()) return savePatOf(character, path);
 	backupBeforeSave(path, false);
-	if (character->saveAs(path)) return true;
+	if (character->saveAs(path)) { reportSaveWarning(character); return true; }
 	if (!character->lastSaveError().empty()) { requestErrorPopup("Save Error", std::string(TXT("Not saved: ")) + character->lastSaveError()); return false; }
 	if (character->frameData.isHan2() && !han2::LastSaveError().empty()) { requestErrorPopup("Save Error", std::string(TXT("RBO / GOF2 file not saved: ")) + han2::LastSaveError()); return false; }
 	requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + path);
@@ -708,6 +724,8 @@ void MainFrame::loadProjectFromPath(const std::string& path, bool isRecent)
 		views = std::move(newViews);
 		characters = std::move(newCharacters);
 		activeViewIndex = newActiveView;
+		m_opponentSettingsView = 0;
+		m_opponentCache.clear();
 
 		// Apply loaded UI state
 		LoadTheme(loadedTheme);

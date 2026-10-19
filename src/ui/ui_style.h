@@ -9,8 +9,18 @@
 #include <cstdio>
 #include <cstring>
 #include <initializer_list>
+#include <vector>
 
 namespace ui {
+
+inline constexpr ImU32 EffectsColor = IM_COL32(80, 180, 255, 255);
+inline constexpr ImU32 ConditionsColor = IM_COL32(255, 150, 60, 255);
+inline ImVec4 AxisColor(int axis) {
+	return axis == 0 ? ImVec4(.95f,.30f,.30f,1) : axis == 1 ? ImVec4(.32f,.83f,.32f,1) : ImVec4(.25f,.70f,1,1);
+}
+// Stack follows successful table begins, not the active host/tab. Nested forms
+// and simultaneous detached panes must never borrow another form's layout mode.
+inline std::vector<int> propertyFormStack; // 0 label form, 1 inline grid, 2 label-above grid
 
 // The font size the hand-tuned pixel widths in the code were picked at (ini.h gSettings.fontSize default).
 constexpr float kDesignFontPx = 18.f;
@@ -112,9 +122,26 @@ inline bool BeginLabelForm(const char *id, float labelW)
 	if (!ImGui::BeginTable(id, 2, ImGuiTableFlags_SizingFixedFit | ImGuiTableFlags_NoSavedSettings)) return false;
 	ImGui::TableSetupColumn("##label", ImGuiTableColumnFlags_WidthFixed, labelW);
 	ImGui::TableSetupColumn("##value", ImGuiTableColumnFlags_WidthStretch);
+	propertyFormStack.push_back(false);
 	return true;
 }
-inline void EndLabelForm() { ImGui::EndTable(); }
+inline void EndLabelForm() { ImGui::EndTable(); propertyFormStack.pop_back(); }
+inline int PropertyColumns(float available, float minimum, int maximum)
+{
+	return std::max(1, std::min(maximum, int(available / std::max(1.f, minimum))));
+}
+// Opt-in only: compound rows (pickers, toolbars, multiline editors) keep their
+// full width unless the caller explicitly groups them. Existing widgets and
+// modification callbacks stay in one path in both layouts.
+inline bool BeginPropertyForm(const char* id, float labelW, bool compact, int maximum, float minimum, bool stacked = false)
+{
+	const int columns = PropertyColumns(ImGui::GetContentRegionAvail().x, minimum, maximum);
+	const bool grid = compact && columns > 1 && (!stacked || columns >= 3);
+	if (!grid) return BeginLabelForm(id, labelW);
+	if (!ImGui::BeginTable(id, columns, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) return false;
+	propertyFormStack.push_back(stacked ? 2 : 1);
+	return true;
+}
 // "##<label>": the hidden-label id of a field whose label is drawn in the label column ("##日本語###Damage" keeps the
 // English "###Damage" id, so switching language keeps widget state).
 inline const char *HiddenId(const char *label)
@@ -129,6 +156,25 @@ inline const char *HiddenId(const char *label)
 // Returns the hidden id to give the field.
 inline const char *FormRow(const char *label)
 {
+	if (!propertyFormStack.empty() && propertyFormStack.back()) {
+		ImGui::TableNextColumn();
+		const char* end = std::strstr(label, "##");
+		if (propertyFormStack.back() == 2) {
+			ImGui::TextUnformatted(label, end);
+			ImGui::SetNextItemWidth(-FLT_MIN);
+			return HiddenId(label);
+		}
+		const float labelW = ImGui::GetContentRegionAvail().x * .46f;
+		const auto p = ImGui::GetCursorScreenPos();
+		const ImVec2 textMin(p.x, p.y + ImGui::GetStyle().FramePadding.y);
+		const ImVec2 textMax(p.x + labelW, textMin.y + ImGui::GetTextLineHeight());
+		ImGui::RenderTextEllipsis(ImGui::GetWindowDrawList(), textMin, textMax, textMax.x, label, end, nullptr);
+		ImGui::Dummy(ImVec2(labelW, ImGui::GetFrameHeight()));
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%.*s", end ? int(end-label) : int(std::strlen(label)), label);
+		ImGui::SameLine();
+		ImGui::SetNextItemWidth(-FLT_MIN);
+		return HiddenId(label);
+	}
 	ImGui::TableNextRow();
 	ImGui::TableSetColumnIndex(0);
 	ImGui::AlignTextToFramePadding();
@@ -136,7 +182,10 @@ inline const char *FormRow(const char *label)
 	const float colW = ImGui::GetContentRegionAvail().x;
 	const bool overflow = ImGui::CalcTextSize(label, end).x > colW;
 	ImGui::PushTextWrapPos(ImGui::GetCursorPosX() + colW);
+	const bool axis = label[0] && !label[1] && (label[0]=='X'||label[0]=='Y'||label[0]=='Z');
+	if(axis) ImGui::PushStyleColor(ImGuiCol_Text,AxisColor(label[0]=='X'?0:label[0]=='Y'?1:2));
 	ImGui::TextUnformatted(label, end);
+	if(axis) ImGui::PopStyleColor();
 	ImGui::PopTextWrapPos();
 	if (overflow && ImGui::IsItemHovered()) ImGui::SetTooltip("%.*s", end ? int(end - label) : int(std::strlen(label)), label);
 	ImGui::TableSetColumnIndex(1);

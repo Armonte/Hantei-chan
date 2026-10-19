@@ -48,7 +48,7 @@ bool ScheduledSpawn::operator==(const ScheduledSpawn& o) const
 
 bool Options::operator==(const Options& o) const
 {
-	return rootFacingLeft == o.rootFacingLeft && ownerSlotOdd == o.ownerSlotOdd &&
+	return simulateMovement == o.simulateMovement && rootStartState == o.rootStartState && authoredRoot == o.authoredRoot && rootFacingLeft == o.rootFacingLeft && ownerSlotOdd == o.ownerSlotOdd &&
 	       opponentX == o.opponentX && cameraX == o.cameraX && cameraY == o.cameraY &&
 	       cameraZoom == o.cameraZoom && defaultIfAssumption == o.defaultIfAssumption &&
 	       ifOverrides == o.ifOverrides && rngSeed == o.rngSeed &&
@@ -231,6 +231,7 @@ struct PreviewSim::Impl {
 	uint64_t fingerprint = 0;
 
 	std::vector<int> rootTrack;   // root frame at each frontier tick
+	std::vector<RootVisitSample> rootVisits;
 	int rootEnd = -1;
 	RootEndKind rootEndKind = RootEndKind::None;
 	int settled = -1;             // first tick with only a finished root left
@@ -256,6 +257,7 @@ struct Ctx {
 	std::vector<SpawnRecord>* records;
 	std::vector<SimEvent>* events;
 	std::set<IfKey>* reportedUnmodeled;
+	std::vector<RootVisitSample>* rootVisits = nullptr;
 };
 
 constexpr size_t kMaxEvents = 20000;
@@ -572,6 +574,18 @@ void EnterFrame(Ctx& c, PreviewSim::State& s, size_t idx, int frame, int tick, i
 	const auto& af = seq->frames[frame].AF;
 	if (af.loopCount) a.loopCounter = (uint8_t)af.loopCount;   // AF +20
 	if (af.priority) a.zPriority = af.priority;               // AFPR only if non-zero
+	const auto& movement=seq->frames[frame].AS;
+	FrameData* owner=a.effectHa6?c.effect:c.main;
+	if(c.opt->simulateMovement && owner && owner->game()==Ha6Game::MBAACC && (a.movementPatternEntry || !(movement.statusFlags[0]&0x80000000u))) {
+		const unsigned fx=(movement.movementFlags>>4)&15,fy=movement.movementFlags&15;
+		const int facing=a.facingLeft?-1:1;
+		if(fx) { if(fx==1) a.velocityX=0; a.velocityX+=std::int64_t(movement.speed[0])*facing; a.accelerationX=std::int64_t(movement.accel[0])*facing; }
+		if(fy) { if(fy==1) a.velocityY=0; a.velocityY+=movement.speed[1]; a.accelerationY=movement.accel[1]; }
+	}
+	a.movementPatternEntry=false;
+	// Capture at the producer, not from end-of-tick snapshots: an IF can enter
+	// another state in the same tick. Cursor/checkpoint replay must not duplicate events.
+	if (c.recording && a.isRoot && c.rootVisits) c.rootVisits->emplace_back(a);
 	DispatchEFs(c, s, idx, tick, depthGuard);
 }
 
@@ -608,6 +622,7 @@ void StartPattern(Ctx& c, PreviewSim::State& s, size_t idx, int pattern, int tic
 		return;
 	}
 	s.actors[idx].pattern = pattern;
+	s.actors[idx].movementPatternEntry=true;
 	Event(c, tick, EventKind::PatternChange, s.actors[idx].id, 0, pattern);
 	EnterFrame(c, s, idx, 0, tick, depthGuard);
 }
@@ -650,6 +665,7 @@ IfAssume ResolveAssumption(const Options& o, const IfKey& k)
 void RunConditions(Ctx& c, PreviewSim::State& s, size_t idx, int tick)
 {
 	SimActor a = s.actors[idx];
+	if(a.isRoot && c.opt->authoredRoot) return;
 	if (a.frame < 0 || a.isPreset || (a.isRoot && a.rootEnded)) return;
 	Sequence* seq = GetSeq(c, a.effectHa6, a.pattern);
 	if (!seq || a.frame >= (int)seq->frames.size()) return;
@@ -742,6 +758,11 @@ void Update(Ctx& c, PreviewSim::State& s, size_t idx, int tick)
 
 	a.frameTimer++;
 	if (a.frameTimer < af.duration) return; // frame lasts max(1, duration) ticks
+	if(a.isRoot && c.opt->authoredRoot) {
+		if(a.frame+1<int(seq->frames.size())) JumpToFrame(c,s,idx,a.frame+1,tick);
+		else EndRoot(c,s,idx,tick,0,"authored timeline ended");
+		return;
+	}
 
 	switch (st.type) {
 	case 0: {
@@ -826,7 +847,7 @@ void InitState(Ctx& c, PreviewSim::State& s, int rootPattern)
 		if (c.records->empty()) c.records->resize(1);
 		(*c.records)[0] = r;
 	}
-	EnterFrame(c, s, 0, 0, 0, 0);
+	EnterFrame(c, s, 0, c.opt->rootStartState, 0, 0);
 	RunScheduled(c, s, 0);
 	Sweep(s);
 }
@@ -835,8 +856,40 @@ void InitState(Ctx& c, PreviewSim::State& s, int rootPattern)
 bool IsQuiescent(const PreviewSim::State& s, const std::vector<ScheduledSpawn>& sched)
 {
 	if (s.actors.size() != 1 || !s.actors[0].isRoot || !s.actors[0].rootEnded) return false;
+	if(s.actors[0].velocityX || s.actors[0].velocityY || s.actors[0].accelerationX || s.actors[0].accelerationY) return false;
 	for (const auto& e : sched) if (e.tick > s.tick) return false;
 	return true;
+}
+
+// Free-flight movement only: no collision, stage clamp, momentum, sine or
+// homing reconstruction. Native 0x45F450 sets AS before EF dispatch; the
+// effect loop 0x453B80 integrates 0x4620B0 after UpdateCharacterObject.
+void AdvanceMovement(PreviewSim::State& s, size_t index)
+{
+	auto& actor = s.actors[index];
+	if (actor.frame < 0 || actor.isPreset) return;
+	actor.velocityX += actor.accelerationX;
+	actor.velocityY += actor.accelerationY;
+	const float dx = float(actor.velocityX / 256.0), dy = float(actor.velocityY / 256.0);
+	actor.x += dx;
+	actor.y += dy;
+	if (dx == 0 && dy == 0) return;
+	// Carry position-linked children (link flag 4) along, breadth first. Each actor moves at most
+	// once: a parentId cycle (A->B->A, or a child pointing back at the mover) must not loop forever
+	// or move anyone twice.
+	std::vector<char> moved(s.actors.size(), 0);
+	moved[index] = 1;
+	std::vector<int> parents{actor.id};
+	for (size_t i = 0; i < parents.size(); ++i) {
+		for (size_t k = 0; k < s.actors.size(); ++k) {
+			auto& child = s.actors[k];
+			if (moved[k] || child.frame < 0 || child.parentId != parents[i] || !(child.linkFlags & 4)) continue;
+			moved[k] = 1;
+			child.x += dx;
+			child.y += dy;
+			parents.push_back(child.id);
+		}
+	}
 }
 
 void Step(Ctx& c, PreviewSim::State& s)
@@ -853,6 +906,7 @@ void Step(Ctx& c, PreviewSim::State& s)
 	for (size_t i = 0; i < n && i < s.actors.size(); i++) {
 		if (s.actors[i].spawnTick == tick && !s.actors[i].isRoot) continue;
 		Update(c, s, i, tick);
+		if(c.opt->simulateMovement) AdvanceMovement(s,i);
 	}
 	RunScheduled(c, s, tick);
 	Sweep(s);
@@ -869,6 +923,9 @@ uint64_t FingerprintSeq(Sequence* s)
 		int v[9] = {af.duration, af.aniType, (int)af.aniFlag, af.jump, af.loopCount, af.loopEnd,
 		            af.priority, (!af.layers.empty() && af.layers[0].usePat) ? 1 : 0, (int)f.IF.size()};
 		h = Fnv(h, v, sizeof(v));
+		const auto& as=f.AS;
+  const int movement[]={int(as.movementFlags),as.speed[0],as.speed[1],as.accel[0],as.accel[1],int(as.statusFlags[0])};
+  h=Fnv(h,movement,sizeof(movement));
 		if (!f.EF.empty()) h = Fnv(h, f.EF.data(), f.EF.size() * sizeof(Frame_EF));
 		if (!f.IF.empty()) h = Fnv(h, f.IF.data(), f.IF.size() * sizeof(Frame_IF));
 	}
@@ -956,6 +1013,7 @@ void PreviewSim::invalidate()
 	I.frontier = State();
 	I.touched.clear();
 	I.rootTrack.clear();
+	I.rootVisits.clear();
 	I.reportedUnmodeled.clear();
 	I.rootEnd = -1;
 	I.rootEndKind = RootEndKind::None;
@@ -1007,11 +1065,12 @@ void PreviewSim::ensureSimulatedTo(int tick)
 	tick = std::clamp(tick, 0, m_options.horizonTicks);
 
 	Ctx c{m_main, m_effect, &m_options, &m_scheduled, &I.touched, true, &m_records, &m_events,
-	      &I.reportedUnmodeled};
+	      &I.reportedUnmodeled, &I.rootVisits};
 
 	if (!I.valid) {
 		if (!m_main || !m_main->get_sequence(m_rootPattern) ||
-		    m_main->get_sequence(m_rootPattern)->frames.empty()) {
+		    m_main->get_sequence(m_rootPattern)->frames.empty() || m_options.rootStartState<0 ||
+		    m_options.rootStartState>=int(m_main->get_sequence(m_rootPattern)->frames.size())) {
 			I.rootValid = false;
 			return;
 		}
@@ -1148,6 +1207,12 @@ const std::vector<int>& PreviewSim::rootFrameTrack()
 	return m_impl->rootTrack;
 }
 
+const std::vector<RootVisitSample>& PreviewSim::rootVisitTrack()
+{
+	ensureSimulatedTo(0);
+	return m_impl->rootVisits;
+}
+
 void ApplyRoundStartStandIn(Options& o)
 {
 	// Root = P1 at -64 px, opponent P2 at +64 px, camera at 0 (see Options::opponentX). Shifted so the root
@@ -1159,4 +1224,25 @@ void ApplyRoundStartStandIn(Options& o)
 	o.cameraZoom = 1.f;
 }
 
+std::vector<DiscoveredRoute> DiscoverRoutes(FrameData* data,FrameData* effects,int pattern,Options options)
+{
+	std::vector<DiscoveredRoute> routes;
+	auto* seq=data?data->get_sequence(pattern):nullptr; if(!seq || seq->frames.empty()) return routes;
+	std::vector<bool> covered(seq->frames.size(),false);
+	int budget=12000;
+	options.authoredRoot=false;
+	for(int start=0;start<int(covered.size()) && routes.size()<64 && budget>0;++start) {
+		if(covered[start]) continue;
+		options.rootStartState=start; options.horizonTicks=std::min({600,std::max(1,options.horizonTicks),budget});
+		PreviewSim sim; sim.setInputs(data,effects,pattern,options); sim.ensureSimulatedTo(options.horizonTicks);
+		const auto& track=sim.rootFrameTrack(); if(track.empty()) continue;
+		const int end=sim.settledTick(); const int last=end>=0?std::min(end,int(track.size())-1):int(track.size())-1;
+		std::vector<bool> visited(covered.size(),false); int count=0;
+		for(int t=0;t<=last;++t) if(track[t]>=0 && track[t]<int(covered.size())) {
+			covered[track[t]]=true; if(!visited[track[t]]) { visited[track[t]]=true; ++count; }
+		}
+		routes.push_back({start,last,count,end<0}); budget-=options.horizonTicks;
+	}
+	return routes;
+}
 } // namespace preview

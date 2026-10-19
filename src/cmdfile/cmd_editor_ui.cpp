@@ -5,6 +5,7 @@
 #include "cmd_notes.h"
 #include "cmd_validate.h"
 #include "cmd_workspace.h"
+#include "cmd_grab_profiles.h"
 #include "../extension_profile.h"
 
 #include <imgui.h>
@@ -97,6 +98,7 @@ struct CommandFileEditor::View {
 	bool hasFocus = false;
 	int teamIn = 0, teamOut = 0;
 	bool teamEditing = false;
+	int grabId = 1, grabDomain = 1, grabContext = 0;
 
 	// Selection (command-region line uids, so comments are selectable too).
 	std::set<std::uint64_t> selected;
@@ -170,6 +172,7 @@ struct CommandFileEditor::View {
 	void drawCheckDetail();
 	void drawTagTab();
 	void drawOtherTab();
+	void drawGrabProfiles();
 	void drawProblemsTab(const std::vector<Diagnostic>& diagnostics);
 	void drawPopups();
 	void handleShortcuts();
@@ -293,6 +296,7 @@ void CommandFileEditor::View::drawWindow(const std::string& title, const Documen
 			if (tab(checksLabel.c_str(), 1)) { drawChecksTab(); ImGui::EndTabItem(); }
 			if (tab(LBL("Tag data"), 2)) { drawTagTab(); ImGui::EndTabItem(); }
 			if (tab(LBL("Other sections"), 3)) { drawOtherTab(); ImGui::EndTabItem(); }
+			if (ExtendedProfileEnabled() && doc().dialect == Dialect::MBAACC && tab(LBL("Grab profiles (BOF)"), 5)) { drawGrabProfiles(); ImGui::EndTabItem(); }
 			const std::size_t errors = CountSeverity(diagnostics, Severity::Error), warnings = CountSeverity(diagnostics, Severity::Warning);
 			const std::string problemsLabel = std::string(TXT("Problems")) + " (" + std::to_string(errors) + "E/" + std::to_string(warnings) + "W)###problems";
 			if (errors) ImGui::PushStyleColor(ImGuiCol_Text, kErrorColor);
@@ -1061,6 +1065,64 @@ void CommandFileEditor::View::drawProblemsTab(const std::vector<Diagnostic>& dia
 }
 
 // ---------------------------------------------------------------------------------------
+
+void CommandFileEditor::View::drawGrabProfiles()
+{
+    ImGui::TextWrapped("%s", TXT("Extended Melty / BOF only. Attacker-authored tech profiles; patterns belong to this character. Edits are staged with command edits and use the same undo/save workflow."));
+    const char* domains[] = { "Base", "Ground", "Air" };
+    const char* contexts[] = { "Default", "Raw", "Combo", "Counter" };
+    if (ui::BeginLabelForm("##grab_selection", ui::Em(13))) {
+        if (ImGui::InputInt(ui::FormRow(LBL("Profile ID (1..255)")), &grabId, 0, 0)) grabId = std::clamp(grabId, 1, 255);
+        ImGui::Combo(ui::FormRow(LBL("Domain")), &grabDomain, domains, 3);
+        ImGui::BeginDisabled(grabDomain == 0);
+        ImGui::Combo(ui::FormRow(LBL("Context")), &grabContext, contexts, 4);
+        ImGui::EndDisabled();
+        ui::EndLabelForm();
+    }
+    const int context = grabDomain ? grabContext : 0;
+    ImGui::TextDisabled("%s", TXT("Inheritance: context -> domain default -> base. None explicitly disables a result; Inherit removes only this override."));
+    auto apply = [&](const char* section, const std::string& key, std::optional<std::string> value) {
+        queue([section = std::string(section), key, value](WorkspaceSnapshot& s) { return s.document.setGrabProfileValue(section, key, value); });
+    };
+    for (const char* role : { "Defender", "Attacker" }) {
+        ImGui::PushID(role);
+        if (ImGui::TreeNodeEx(role, ImGuiTreeNodeFlags_DefaultOpen)) {
+            const auto key = grab::Key(grabId, role, grabDomain, context);
+            const auto route = grab::Effective(doc(), grab::Routes, grabId, role, grabDomain, context);
+            const auto vector = grab::Effective(doc(), grab::Vectors, grabId, role, grabDomain, context);
+            ImGui::TextWrapped("Route: %s%s", route ? route->c_str() : "<unset>", grab::Exact(doc(), grab::Routes, key) ? " (override)" : " (inherited)");
+            int pattern = 0; const bool knownRoute = grab::Pattern(route, pattern);
+            if (route && *route != "None" && !knownRoute) ImGui::TextColored(kWarnColor, "%s", TXT("Unrecognized route preserved. Editing below replaces it."));
+            if (ui::BeginLabelForm("##grab_route", ui::Em(13))) {
+                if (ImGui::InputInt(ui::FormRow(LBL("Pattern")), &pattern, 0, 0) && pattern >= 0 && pattern <= 65534) apply(grab::Routes, key, "Pattern:" + std::to_string(pattern));
+                ui::EndLabelForm();
+            }
+            if (ImGui::SmallButton(LBL("None##route"))) apply(grab::Routes, key, std::string("None"));
+            ImGui::SameLine(); if (ImGui::SmallButton(LBL("Inherit##route"))) apply(grab::Routes, key, std::nullopt);
+            ImGui::TextWrapped("Vector: %s%s", vector ? vector->c_str() : "<unset>", grab::Exact(doc(), grab::Vectors, key) ? " (override)" : " (inherited)");
+            int id = 0, step = 0, direction = 0; const bool knownVector = grab::Vector(vector, id, step, direction);
+            if (vector && *vector != "None" && !knownVector) ImGui::TextColored(kWarnColor, "%s", TXT("Unrecognized vector preserved. Editing below replaces it."));
+            const char* directions[] = { "Away", "Toward", "Left", "Right" };
+            bool changed = false;
+            if (ui::BeginLabelForm("##grab_vector", ui::Em(13))) {
+                changed = ImGui::InputInt(ui::FormRow(LBL("HitVector (0..254)")), &id, 0, 0);
+                changed |= ImGui::InputInt(ui::FormRow(LBL("Step (0..4)")), &step, 0, 0);
+                changed |= ImGui::Combo(ui::FormRow(LBL("Direction")), &direction, directions, 4);
+                ui::EndLabelForm();
+            }
+            if (changed && id >= 0 && id <= 254 && step >= 0 && step <= 4) apply(grab::Vectors, key, grab::VectorText(id, step, direction));
+            if (ImGui::SmallButton(LBL("None##vector"))) apply(grab::Vectors, key, std::string("None"));
+            ImGui::SameLine(); if (ImGui::SmallButton(LBL("Inherit##vector"))) apply(grab::Vectors, key, std::nullopt);
+            ImGui::TreePop();
+        }
+        ImGui::PopID();
+    }
+    if (ImGui::TreeNode(LBL("All authored profile values"))) {
+        for (const auto& a : doc().assignments) if (a.section == grab::Routes || a.section == grab::Vectors)
+            ImGui::TextWrapped("[%s] %s = %s", a.section == grab::Routes ? "Route" : "Vector", a.key.c_str(), a.value.c_str());
+        ImGui::TreePop();
+    }
+}
 
 void CommandFileEditor::View::doSave(bool overwrite)
 {

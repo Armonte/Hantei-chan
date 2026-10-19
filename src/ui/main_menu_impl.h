@@ -41,6 +41,13 @@ void MainFrame::addRecentFile(const std::string& path)
 void MainFrame::openAnyFile(const std::string& path)
 {
 	namespace fs = std::filesystem;
+	// Resolve PAT before generic UTF-8 sniffing: the native dialog supplies
+	// ACP paths, while archive/browser/drop paths are UTF-8.
+	std::string ext;
+	const size_t dot = path.find_last_of('.');
+	if (dot != std::string::npos) ext = path.substr(dot);
+	for (auto& c : ext) c = (char)tolower((unsigned char)c);
+	if (ext == ".pat") { createPatEditorView(path); return; }
 	std::vector<uint8_t> head;
 	{
 		std::ifstream f(fs::u8path(path), std::ios::binary);
@@ -48,8 +55,6 @@ void MainFrame::openAnyFile(const std::string& path)
 		f.read((char*)head.data(), (std::streamsize)head.size());
 		head.resize((size_t)f.gcount());
 	}
-	std::string ext = fs::u8path(path).extension().string();
-	for (auto& c : ext) c = (char)tolower((unsigned char)c);
 	auto starts = [&](const char* m, size_t n) { return head.size() >= n && memcmp(head.data(), m, n) == 0; };
 	auto fail = [&](const std::string& why) {
 		requestErrorPopup("Load Error", why + "\n" + path);
@@ -496,6 +501,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 						if (!active->saveModifiedOnly(modPath)) {
 							requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + modPath);
+						} else {
+							reportSaveWarning(active);
 						}
 					}
 				}
@@ -718,6 +725,12 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		}
 		if (ImGui::BeginMenu(LBL("View")))
 		{
+			if (ImGui::MenuItem(LBL("Compact UI"), nullptr, &gSettings.compactUi))
+				ImGui::MarkIniSettingsDirty();
+			if (ImGui::IsItemHovered())
+				ImGui::SetTooltip("Arrange related properties in responsive grids. Applies to all views; font size is unchanged.");
+			if(ImGui::MenuItem(LBL("Pattern list"),nullptr,&gSettings.showPatternList,gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
+			ImGui::Separator();
 			auto* active = getActiveCharacter();
 			if (ImGui::BeginMenu(LBL("Zoom level")))
 			{
@@ -822,8 +835,11 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				han2ui::showAnimWindow = !han2ui::showAnimWindow;
 			if (ImGui::MenuItem(LBL("Changes against the loaded RBO / GOF2 file (diff)..."), nullptr, han2ui::showDiffWindow, hasActive && active->frameData.isHan2()))
 				han2ui::showDiffWindow = !han2ui::showDiffWindow;
+			if (ImGui::MenuItem("State property transfer...", nullptr, false, hasActive && active->frameData.game()==Ha6Game::MBAACC))
+                OpenStateTransfer(getToolView());
 			if (ImGui::MenuItem(LBL("Pattern manager"), nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem(LBL("Pattern comparison"), nullptr, m_showCompare)) m_showCompare = !m_showCompare;
+			if (ImGui::MenuItem("Opponent pose preview", nullptr, m_showOpponent)) { if(auto* v=getToolView()) m_opponentSettingsView=v->getId(); m_showOpponent = !m_showOpponent; }
 			if (ImGui::MenuItem(LBL("Variable references (batch replace)"), nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
 			if (ImGui::MenuItem(LBL("Stage card (select name, preview, round call)"), nullptr, stageCardWindow.open)) stageCardWindow.open = !stageCardWindow.open;
 			if (ImGui::MenuItem(LBL("Sound effects (SeList / se\\battle_se)"), nullptr, seWindow.open)) {

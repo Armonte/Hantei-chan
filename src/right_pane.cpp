@@ -3,7 +3,9 @@
 #include "i18n.h"
 #include "frame_disp.h"
 #include "paste_notice.h"
+#include "ui/compact_inspector.h"
 #include <imgui.h>
+#include <imgui_stdlib.h>
 
 // --ui-script `framenodes MASK` (1 Attack data, 2 Effects, 4 Conditions; 0 = normal): hold those nodes
 // open so a scripted capture shows the frame's AT/EF/IF records (startup_args.cpp). Never set by normal use.
@@ -14,19 +16,18 @@ void DrawRecordNote(Ha6Notes& notes, const std::string& key);
 
 void RightPane::Draw()
 {
-	// Track view changes to restore scroll position when switching tabs
-	static FrameState* lastViewState = nullptr;
-	bool viewJustChanged = (lastViewState != &currState);
+	ui::CompactInspectorScope compactScope(gSettings.compactUi);
 
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(8, 8));
-	ImGui::Begin(windowName("Right Pane").c_str(), 0);
+	if (gSettings.compactUi) {
+		auto* previous=ImGui::FindWindowByName(windowName("Right Pane").c_str());
+		const float width=previous?previous->Size.x-32.f:0;
+		ImGui::SetNextWindowContentSize(ImVec2(std::max(ui::Em(35),width),0));
+	}
+	ImGui::Begin(windowName("Right Pane").c_str(), 0, gSettings.compactUi?ImGuiWindowFlags_HorizontalScrollbar:0);
 	ImGui::PopStyleVar();
 
-	// Restore scroll position when switching views
-	if (viewJustChanged) {
-		ImGui::SetScrollY(currState.rightPaneScrollY);
-		lastViewState = &currState;
-	}
+	const bool viewJustChanged=RestorePaneScroll(currState.rightPaneScrollY);
 
 	auto seq = frameData->get_sequence(currState.pattern);
 	if(seq)
@@ -59,26 +60,22 @@ void RightPane::Draw()
 					  "Add an attack box (25+) to make it active."));
 			if (atOpen)
 			{
-				AtDisplay(&frame.AT, frameData, currState.pattern, [this]() { markModified(); });
-				if(ImGui::Button(LBL("Copy AT"))) {
-					currState.copied->at = frame.AT;
-				}
-				ImGui::SameLine(0,20.f);
-				if(ImGui::Button(LBL("Paste AT"))) {
-					frame.AT = currState.copied->at;
-					currState.pasteNotice = FormatConvertNotice(frameData->conformPastedAT(frame.AT));
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-				ImGui::SameLine(0,20.f);
-				if(ImGui::Button(LBL("Reset AT"))) {
-					frame.AT = Frame_AT{};
-					frame.AT.correction = 100; // what a freshly parsed ATST starts from
-					frameData->mark_modified(currState.pattern);
-					markModified();
-				}
-				if (ImGui::IsItemHovered())
-					ImGui::SetTooltip(TXT("Reset every attack field to its default."));
+				auto attackClipboard = [&]() {
+					auto copy = [&]() {if(ImGui::Button(LBL("Copy AT"))) currState.copied->at=frame.AT;};
+					auto paste = [&]() {if(ImGui::Button(LBL("Paste AT"))) {
+						frame.AT=currState.copied->at;
+						currState.pasteNotice=FormatConvertNotice(frameData->conformPastedAT(frame.AT));
+						frameData->mark_modified(currState.pattern);markModified();
+					}};
+					auto reset = [&]() {if(ImGui::Button(LBL("Reset AT"))) {
+						frame.AT=Frame_AT{};frame.AT.correction=100;
+						frameData->mark_modified(currState.pattern);markModified();
+					} if(ImGui::IsItemHovered()) ImGui::SetTooltip(TXT("Reset every attack field to its default."));};
+					copy();ImGui::SameLine();
+					if(gSettings.compactUi) {reset();paste();} else {paste();ImGui::SameLine(0,20.f);reset();}
+				};
+				AtDisplay(&frame.AT,frameData,currState.pattern,[this](){markModified();},attackClipboard);
+				if(!gSettings.compactUi) attackClipboard();
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
@@ -89,14 +86,20 @@ void RightPane::Draw()
 				DrawRecordNote(frameData->notes, Ha6Notes::RecordKey(notePattern, noteFrame, isEffect, index, type));
 			};
 			ScriptOpenNode(2);
-			if(ImGui::TreeNode(LBL("Effects")))
+			if (gSettings.compactUi) ImGui::PushStyleColor(ImGuiCol_Text, ui::EffectsColor);
+			const bool effectsOpen = ImGui::TreeNode(LBL("Effects"));
+			if (gSettings.compactUi) ImGui::PopStyleColor();
+			if(effectsOpen)
 			{
 				EfDisplay(&frame.EF, &currState.copied->efSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->efGroup);
 				ImGui::TreePop();
 				ImGui::Separator();
 			}
 			ScriptOpenNode(4);
-			if(ImGui::TreeNode(LBL("Conditions")))
+			if (gSettings.compactUi) ImGui::PushStyleColor(ImGuiCol_Text, ui::ConditionsColor);
+			const bool conditionsOpen = ImGui::TreeNode(LBL("Conditions"));
+			if (gSettings.compactUi) ImGui::PopStyleColor();
+			if(conditionsOpen)
 			{
 				IfDisplay(&frame.IF, &currState.copied->ifSingle, frameData, currState.pattern, [this]() { markModified(); }, &currState.copied->ifGroup);
 				ImGui::TreePop();
@@ -115,6 +118,11 @@ void RightPane::Draw()
 					// Update visualization when toggled
 				}
 
+				ImGui::SameLine();
+    if(ImGui::Checkbox("Simulate movement",&currState.previewOptions.simulateMovement)) {
+     currState.forceSpawnTreeRebuild=true; if(onModified) onModified();
+    }
+    if(ImGui::IsItemHovered()) ImGui::SetTooltip("Optional AS free-flight motion for the character and its spawns. Off keeps static editing origins. No collision, hitstop, homing or stage bounds.");
 				if(vizSettings.showSpawnedPatterns)
 				{
 					ImGui::Checkbox(LBL("Auto-detect from effects"), &vizSettings.autoDetect);
@@ -216,8 +224,22 @@ void RightPane::Draw()
 		}
 	}
 
+	// Annotation controls follow the editing/visualization controls, never lead them.
+	if (seq && !seq->frames.empty()) {
+		if (currState.scriptOpenTrees) ImGui::SetNextItemOpen(true);
+		if (ImGui::TreeNode(LBL("State note"))) {
+			const auto key = Ha6Notes::StateKey(currState.pattern, currState.frame);
+			const auto* note = frameData->notes.get(key);
+			std::string text = note ? *note : std::string();
+			if (ImGui::InputTextMultiline("##state-note", &text, ImVec2(-1, ImGui::GetTextLineHeight() * 4))) {
+				frameData->notes.set(key, text);
+				markModified();
+			}
+			ImGui::TreePop();
+		}
+	}
 	// Save scroll position before ending
-	currState.rightPaneScrollY = ImGui::GetScrollY();
+	if(!viewJustChanged) currState.rightPaneScrollY = ImGui::GetScrollY();
 
 	ImGui::End();
 }
@@ -329,12 +351,12 @@ void RightPane::DisplaySpawnNode(int spawnIndex, int displayNumber)
 void DrawRecordNote(Ha6Notes& notes, const std::string& key)
 {
 	const std::string* note = notes.get(key);
-	static char buf[1024];
+	static std::string buf;
 	ImGui::PushID(key.c_str());
 	if (ImGui::BeginPopupContextItem("##notectx")) {
-		if (ImGui::IsWindowAppearing()) snprintf(buf, sizeof(buf), "%s", note ? note->c_str() : "");
+		if (ImGui::IsWindowAppearing()) buf = note ? *note : std::string();
 		ImGui::TextDisabled(TXT("Note (saved beside the HA6, not in it)"));
-		ImGui::InputTextMultiline("##note", buf, sizeof(buf), ImVec2(360, 80));
+		ImGui::InputTextMultiline("##note", &buf, ImVec2(360, 80));
 		if (ImGui::Button(LBL("Save note"))) { notes.set(key, buf); ImGui::CloseCurrentPopup(); }
 		ImGui::SameLine();
 		if (note && ImGui::Button(LBL("Remove note"))) { notes.set(key, ""); ImGui::CloseCurrentPopup(); }

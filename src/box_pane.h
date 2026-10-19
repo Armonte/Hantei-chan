@@ -2,6 +2,7 @@
 #define BOX_PANE_H_GUARD
 
 #include "draw_window.h"
+#include "timeline_navigation.h"
 
 //This is the main pane on the left
 class BoxPane : public DrawWindow
@@ -18,9 +19,16 @@ public:
 
 	void AdvanceBox(int dir);
 	int SelectedBoxId() const { return currentBox; }   // [game-view] the hitbox id selected in this pane
+	void SetTimelineZoom(float value) { timelineZoom=std::clamp(value,.25f,16.f); }
 
 	// Viewport position tool (handles drawn/driven by MainFrame).
 	bool positionTool = false;
+	timeline::ResizeBinding durationResizeBinding;
+	std::function<bool(int,int,int)> onResizeDuration;
+	bool BeginDurationResize(int state,float mouseX,float tickWidth);
+	void UpdateDurationResize(float mouseX);
+	bool EndDurationResize(bool cancel);
+	bool DurationResizeActive() const { return durationDrag.active; }
 
 private:
 	// Helper to draw spawn timeline
@@ -35,6 +43,7 @@ private:
 
 	// Timeline (issue #10)
 	float timelineZoom = 1.0f;
+	struct { bool active=false; int pattern=-1,state=-1,original=0,preview=0; float mouseX=0,width=1; uint64_t version=0; } durationDrag;
 	struct { bool active = false; int srcFrame = -1; int efIndex = -1; bool copy = false; } spawnDrag;
 };
 

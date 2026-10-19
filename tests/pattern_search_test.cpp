@@ -26,6 +26,10 @@
 #include <string>
 #include <vector>
 
+// frame_disp_if.h reads gSettings (compact UI). The real definition lives in ini.cpp, which drags in
+// the parts/stage3d stack; this headless test only needs the defaults (the 0.1.2 layout).
+Settings gSettings;
+
 static int g_asserts = 0;
 static ImSearchFlags g_searchFlags = kPatternSearchFlags; // --highlight: upstream default (0)
 static std::string g_typed; // query typed so far, for the failure report

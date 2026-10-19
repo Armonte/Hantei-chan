@@ -2,6 +2,7 @@
 #define IMAGE_H_INCLUDED
 #include <string>
 #include "cg.h"
+#include "sprite_pick.h"
 #include <memory>
 
 extern int pal;
@@ -13,6 +14,8 @@ public: //public only for ease of reading access, do not write anything.
 	unsigned int id; //OpenGL texture id.
 	bool isLoaded;
 	bool isApplied;
+	mutable std::shared_ptr<const spritepick::Mask> pickMask;
+	std::shared_ptr<const spritepick::Mask> coverage() const;
 	bool isIndexed = false; //8bpp GL_R8 texture; palette resolved in shader.
 	
 public:

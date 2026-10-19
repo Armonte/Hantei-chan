@@ -481,6 +481,37 @@ if(MINGW)
 	target_link_options(preview_sim_tool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME preview_sim COMMAND preview_sim_tool --selftest)
+add_executable(cg_sprite_transform_test tests/cg_sprite_transform_test.cpp)
+target_include_directories(cg_sprite_transform_test PRIVATE ".")
+target_link_libraries(cg_sprite_transform_test PRIVATE glm)
+if(MINGW)
+	target_link_options(cg_sprite_transform_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME cg_sprite_transform COMMAND cg_sprite_transform_test)
+add_executable(sprite_pick_test tests/sprite_pick_test.cpp)
+target_include_directories(sprite_pick_test PRIVATE ".")
+if(MINGW)
+	target_link_options(sprite_pick_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME sprite_pick COMMAND sprite_pick_test)
+add_executable(timeline_navigation_test tests/timeline_navigation_test.cpp)
+target_include_directories(timeline_navigation_test PRIVATE ".")
+if(MINGW)
+	target_link_options(timeline_navigation_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME timeline_navigation COMMAND timeline_navigation_test)
+add_executable(position_selection_test tests/position_selection_test.cpp)
+target_include_directories(position_selection_test PRIVATE ".")
+if(MINGW)
+    target_link_options(position_selection_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME position_selection COMMAND position_selection_test)
+add_executable(opponent_release_test tests/opponent_release_test.cpp)
+target_include_directories(opponent_release_test PRIVATE ".")
+if(MINGW)
+	target_link_options(opponent_release_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME opponent_release COMMAND opponent_release_test)
 
 # Debug tool: dump PAT part-set data via the real loader (headless).
 add_executable(pat_dump
@@ -566,6 +597,7 @@ add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/e
 # pattern_search_test: pattern-name search (ImSearch) headless, asserts enabled (issue #81).
 add_executable(pattern_search_test
 	tests/pattern_search_test.cpp
+	src/ha6_notes.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
@@ -671,6 +703,14 @@ if(MINGW)
 	target_link_options(cgm_preview_layout_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME cgm_preview_layout COMMAND cgm_preview_layout_test)
+add_executable(vector_parser_test tests/vector_parser_test.cpp src/vectors.cpp src/misc.cpp)
+target_include_directories(vector_parser_test PRIVATE "." "src" "third_party")
+target_link_libraries(vector_parser_test PRIVATE imgui)
+if(MINGW)
+    target_link_options(vector_parser_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME vector_parser_bounds COMMAND vector_parser_test)
+
 # refs_test: variable / pattern reference tools (issues #75, #44).
 add_executable(refs_test
 	tests/refs_test.cpp
@@ -691,6 +731,17 @@ if(MINGW)
 	target_link_options(refs_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME refs COMMAND refs_test)
+
+add_executable(ha6_notes_test tests/ha6_notes_test.cpp src/ha6_notes.cpp src/undo_manager.cpp src/pattern_refs.cpp
+	src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp
+	src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES} src/misc.cpp tinyalloc/tinyalloc.c)
+target_include_directories(ha6_notes_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(ha6_notes_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(ha6_notes_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(ha6_notes_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME ha6_notes_contract COMMAND ha6_notes_test)
 # bgm_test: bgm.txt parsing, Ogg decoding and loop wrap (issue #66).
 add_executable(bgm_test
 	tests/bgm_test.cpp
@@ -917,6 +968,12 @@ if(MINGW)
 	target_link_options(undo_manager_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME undo_manager COMMAND undo_manager_test)
+add_executable(state_transfer_test tests/state_transfer_test.cpp src/undo_manager.cpp)
+target_include_directories(state_transfer_test PRIVATE "src")
+if(MINGW)
+    target_link_options(state_transfer_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME state_transfer COMMAND state_transfer_test)
 # pat_safety_test: PAT editor file safety (S2): auto-backup rotation, atomic .pat save, the PAT document's dirty flag
 # and undo through the parts undo channel (src/parts/parts_undo.h). Uses a gamedata .pat when one is passed.
 add_executable(pat_safety_test
@@ -944,6 +1001,14 @@ if(MINGW)
 	target_link_options(pat_safety_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME pat_safety COMMAND pat_safety_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+if(WIN32)
+	find_program(HANTEI_PWSH NAMES pwsh HINTS "$ENV{ProgramFiles}/PowerShell/7")
+	if(HANTEI_PWSH)
+		add_test(NAME pat_open_routes COMMAND "${HANTEI_PWSH}" -NoProfile -File
+			"${CMAKE_SOURCE_DIR}/tools/test_pat_open_routes.ps1" -Executable $<TARGET_FILE:gonptechan>)
+		set_tests_properties(pat_open_routes PROPERTIES LABELS gpu TIMEOUT 180)
+	endif()
+endif()
 # Real UNI2 / MBTL / MBAACC files when the local game data is there (never committed; docs/audit_2026_10_14 plan, Phase 0).
 set(PAT_SAFETY_SAMPLES "")
 foreach(_s "dev/hantei-chan/gamedata/uni2/data/chr000/chr000.pat" "dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.pat" "games/mbaacc_tag/data/arc.pat")
@@ -1401,6 +1466,13 @@ if(_has AND _has2)
 	endif()
 endif()
 
+add_executable(bof_authoring_test tests/bof_authoring_test.cpp)
+target_include_directories(bof_authoring_test PRIVATE src)
+if(MINGW)
+    target_link_options(bof_authoring_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME bof_authoring_contract COMMAND bof_authoring_test)
+
 # Game-data-free HA6 load -> save byte round trip on the committed fixture (runs in CI; the full corpus is tools/uni/uni_regress.sh).
 add_test(NAME ha6_roundtrip_fixture COMMAND roundtrip --bytes tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/ha6_roundtrip_fixture.ha6" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # Opens a real (hidden) OpenGL 3.3 window: CI runners have no GPU driver, so CI runs `ctest -LE gpu`.
@@ -1408,3 +1480,48 @@ set_tests_properties(headless_export PROPERTIES LABELS gpu)
 # Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.
 get_property(_hc_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${_hc_all_tests} PROPERTIES SKIP_RETURN_CODE 77)
+
+if(WIN32)
+    find_program(HANTEI_SHUTDOWN_PWSH NAMES pwsh HINTS "$ENV{ProgramFiles}/PowerShell/7")
+    if(HANTEI_SHUTDOWN_PWSH)
+        add_test(NAME browser_shutdown COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_browser_shutdown.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(browser_shutdown PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME detached_surface COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_detached_surface_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(detached_surface PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME detached_tools COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_detached_tools_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(detached_tools PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME tab_reorder COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_tab_reorder_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(tab_reorder PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME actor_motion COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_actor_motion_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(actor_motion PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME static_preview COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_static_preview_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(static_preview PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME mbaacc_pat_vertices COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_mbaacc_pat_vertices.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(mbaacc_pat_vertices PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME state_transfer_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_state_transfer_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(state_transfer_live PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME compact_ui_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_compact_ui_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(compact_ui_live PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME transport_cgm_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_transport_cgm_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(transport_cgm_live PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME pat_picking COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_pat_picking_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(pat_picking PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME grab_pool COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_grab_pool_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
+        set_tests_properties(grab_pool PROPERTIES LABELS gpu TIMEOUT 180)
+        add_test(NAME detached_opponent COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
+            "${CMAKE_SOURCE_DIR}/tools/test_opponent_pose_edit_live.ps1" -Executable $<TARGET_FILE:gonptechan> -Detached)
+        set_tests_properties(detached_opponent PROPERTIES LABELS gpu TIMEOUT 180)
+    endif()
+endif()

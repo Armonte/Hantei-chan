@@ -8,6 +8,7 @@
 #include "pattern_search.h"
 #include "i18n.h"
 #include "ui/ui_style.h"
+#include "ui/compact_inspector.h"
 #include "fpanim_play.h"
 #include "paste_notice.h"
 
@@ -37,6 +38,7 @@ void MainPane::RegenerateNames()
 
 void MainPane::Draw()
 {
+	ui::CompactInspectorScope compactScope(gSettings.compactUi);
 	namespace im = ImGui;
 	im::Begin(windowName("Left Pane").c_str(),0);
 	if(frameData->m_loaded)
@@ -163,6 +165,21 @@ void MainPane::Draw()
 		if(seq)
 		{
 			int nframes = seq->frames.size() - 1;
+			auto patternClipboard = [&]() {
+				auto button = [](const char* label) { return gSettings.compactUi ? im::SmallButton(label) : im::Button(label); };
+				if (button(LBL("Copy pattern"))) currState.copied->pattern = *seq;
+				if (gSettings.compactUi) i18n::SameLineFit(i18n::ButtonWidth(LBL("Paste pattern")));
+				else im::SameLine(0,20.f);
+				if (button(LBL("Paste pattern"))) {
+					Sequence pasted; pasted = currState.copied->pattern;
+					currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(pasted));
+					*seq = std::move(pasted);
+					frameData->notes.archivePattern(currState.pattern);
+					frameData->mark_modified(currState.pattern); markModified();
+					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
+					nframes = seq->frames.size() - 1;
+				}
+			};
 			if(nframes >= 0)
 			{			
 				float spacing = im::GetStyle().ItemInnerSpacing.x;
@@ -173,7 +190,7 @@ void MainPane::Draw()
 				// spawns instead of the newly selected frame's.
 				if (im::SliderInt("##frameSlider", &currState.frame, 0, nframes)) {
 					// Sync ticks when slider changes
-					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.InspectState(frameData,currState.frame);
 					currState.activeSpawns.clear();
 				}
 				im::SameLine();
@@ -181,14 +198,14 @@ void MainPane::Draw()
 				if(im::ArrowButton("##left", ImGuiDir_Left)) {
 					currState.frame--;
 					// Sync ticks when manually seeking
-					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.InspectState(frameData,currState.frame);
 					currState.activeSpawns.clear();
 				}
 				im::SameLine(0.0f, spacing);
 				if(im::ArrowButton("##right", ImGuiDir_Right)) {
 					currState.frame++;
 					// Sync ticks when manually seeking
-					currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, currState.frame);
+					currState.InspectState(frameData,currState.frame);
 					currState.activeSpawns.clear();
 				}
 				im::PopButtonRepeat();
@@ -225,17 +242,40 @@ void MainPane::Draw()
 				
 			}
 
-			im::BeginChild("FrameInfo", {0, 0}, false);
+			if (gSettings.compactUi) {
+				i18n::SameLineFit(i18n::ButtonWidth(LBL("Copy pattern")));
+				patternClipboard();
+			}
+			const float edgePadding=ui::Em(.6f);
+			if(gSettings.compactUi) {
+				im::SetNextWindowContentSize(ImVec2(std::max(ui::Em(32),im::GetContentRegionAvail().x-2*edgePadding-im::GetStyle().ScrollbarSize),0));
+				im::PushStyleVar(ImGuiStyleVar_WindowPadding,ImVec2(edgePadding,0));
+			}
+			im::BeginChild("FrameInfo", {0, 0}, gSettings.compactUi ? ImGuiChildFlags_AlwaysUseWindowPadding : 0, gSettings.compactUi ? ImGuiWindowFlags_HorizontalScrollbar : 0);
+			if(gSettings.compactUi) im::PopStyleVar();
 			// Keep this view's scroll position across tab switches (#73; the
 			// Right Pane already does the same).
-			{
-				static FrameState* lastLeftView = nullptr;
-				if (lastLeftView != &currState) {
-					im::SetScrollY(currState.leftPaneScrollY);
-					lastLeftView = &currState;
-				}
-			}
+			const bool leftViewChanged=RestorePaneScroll(currState.leftPaneScrollY);
 
+			bool pastePatternStack=false;
+			auto drawPatternStack=[&]() {
+				if(im::Button(LBL("Push pattern copy"))) {
+					patCopyStack.push_back(SequenceWId{currState.pattern, *seq});
+				}
+				im::SameLine(0,20.f);
+				if(im::Button(LBL("Pop all and paste"))) {
+					pastePatternStack = true;
+				}
+				im::SameLine(0,20.f);
+				im::Text(TXT("%zu copies"), patCopyStack.size());
+				if(!patCopyStack.empty()) {
+					im::SameLine();
+					if(im::SmallButton(LBL("Drop last"))) patCopyStack.pop_back();
+					im::SameLine();
+					if(im::SmallButton(LBL("Clear"))) patCopyStack.clear();
+				}
+				i18n::TextDisabledWrapped("%s", TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
+			};
 			if (im::TreeNode(LBL("Pattern data")))
 			{
 				// Strings are already stored as UTF-8 in memory
@@ -247,54 +287,31 @@ void MainPane::Draw()
 					markModified();
 					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
 				}
+				if (gSettings.compactUi) PatternDisplay(seq, frameData, currState.pattern);
 				// Pattern note (issue #58), kept beside the HA6, not in it.
-				{
+				if (!gSettings.compactUi || im::TreeNode(LBL("Pattern note"))) {
 					const std::string key = Ha6Notes::PatternKey(currState.pattern);
 					const std::string* note = frameData->notes.get(key);
 					noteEditBuffer = note ? *note : std::string();
 					if(im::InputTextMultiline(LBL("Pattern note"), &noteEditBuffer, ImVec2(0, im::GetTextLineHeight() * 3)))
 						frameData->notes.set(key, noteEditBuffer);
+					if (gSettings.compactUi) im::TreePop();
 				}
-				PatternDisplay(seq, frameData, currState.pattern);
+				if (!gSettings.compactUi) PatternDisplay(seq, frameData, currState.pattern);
 				if (drawScriptRefs) drawScriptRefs(frameData, currState.pattern);
 
-				if(im::Button(LBL("Copy pattern"))) {
-					currState.copied->pattern = *seq;
-				}
-				im::SameLine(0,20.f);
-				if(im::Button(LBL("Paste pattern"))) {
-					Sequence pasted;
-					pasted = currState.copied->pattern;
-					// Convert before it lands: an empty file adopts the pasted format instead.
-					currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(pasted));
-					*seq = std::move(pasted);
-					frameData->mark_modified(currState.pattern);
-					markModified();
-					decoratedNames[currState.pattern] = frameData->GetDecoratedName(currState.pattern);
-					nframes = seq->frames.size() - 1;
-				}
+				if (!gSettings.compactUi) patternClipboard();
 
-				if(im::Button(LBL("Push pattern copy"))) {
-					patCopyStack.push_back(SequenceWId{currState.pattern, *seq});
-				}
-				im::SameLine(0,20.f);
-				if(im::Button(LBL("Pop all and paste"))) {
-					PopCopies();
-					RegenerateNames();
-					nframes = seq->frames.size() - 1;
-				}
-				im::SameLine(0,20.f);
-				im::Text(TXT("%zu copies"), patCopyStack.size());
-				if(!patCopyStack.empty()) {
-					im::SameLine();
-					if(im::SmallButton(LBL("Drop last"))) patCopyStack.pop_back();
-					im::SameLine();
-					if(im::SmallButton(LBL("Clear"))) patCopyStack.clear();
-				}
-				i18n::TextDisabledWrapped("%s", TXT("Windows > Pattern manager: multi-select, paste slots, move with references."));
+				if (!gSettings.compactUi) drawPatternStack();
 
 				im::TreePop();
 				im::Separator();
+			}
+
+			if(pastePatternStack) {
+				PopCopies();RegenerateNames();nframes=(int)seq->frames.size()-1;
+				currState.frame=std::clamp(currState.frame,0,std::max(0,nframes));
+				currState.InspectState(frameData,currState.frame);currState.activeSpawns.clear();pastePatternStack=false;
 			}
 			if(nframes >= 0)
 			{
@@ -398,6 +415,7 @@ void MainPane::Draw()
 					if(im::Button(LBL("Paste frame")))
 					{
 						frame = currState.copied->frame;
+						frameData->notes.archiveState(currState.pattern, currState.frame);
 						currState.pasteNotice = FormatConvertNotice(frameData->conformPasted(frame));
 						frameData->mark_modified(currState.pattern);
 						markModified();
@@ -537,6 +555,7 @@ void MainPane::Draw()
 						{
 							// Manually copy frames with cross-allocator assignment
 							Ha6ConvertReport conv;
+							frameData->notes.insert(currState.pattern, -1, false, insertPos, (int)currState.copied->frames.size(), (int)seq->frames.size());
 							for (size_t i = 0; i < currState.copied->frames.size(); i++) {
 								Frame temp;
 								temp = currState.copied->frames[i];
@@ -548,6 +567,8 @@ void MainPane::Draw()
 							markModified();
 						}
 					}
+
+					if(gSettings.compactUi) {im::Separator();drawPatternStack();}
 
 					im::TreePop();
 					im::Separator();
@@ -620,6 +641,7 @@ void MainPane::Draw()
 				case KeyframeOp::Append:
 				{
 					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					if (copyThisFrame) frameData->notes.cloneState(currState.pattern, at, (int)seq->frames.size());
 					seq->frames.push_back(std::move(newFrame));
 					break;
 				}
@@ -628,15 +650,19 @@ void MainPane::Draw()
 					// Copy first: insert(pos, {}) picked the initializer_list
 					// overload and inserted nothing.
 					Frame newFrame = copyThisFrame ? seq->frames[at] : Frame{};
+					frameData->notes.insert(currState.pattern, -1, false, at, 1, (int)seq->frames.size());
+					if (copyThisFrame) frameData->notes.cloneState(currState.pattern, at + 1, at);
 					seq->frames.insert(seq->frames.begin() + at, std::move(newFrame));
 					break;
 				}
 				case KeyframeOp::Delete:
+					frameData->notes.erase(currState.pattern, -1, false, at, (int)seq->frames.size());
 					seq->frames.erase(seq->frames.begin() + at);
 					break;
 				case KeyframeOp::AppendNextSprite:
 				{
 					Frame newFrame = seq->frames.back();
+					frameData->notes.cloneState(currState.pattern, (int)seq->frames.size() - 1, (int)seq->frames.size());
 					if (newFrame.AF.layers.empty()) newFrame.AF.layers.push_back({});
 					if (newFrame.AF.layers[0].spriteId >= 0) newFrame.AF.layers[0].spriteId += 1;
 					seq->frames.push_back(std::move(newFrame));
@@ -652,18 +678,56 @@ void MainPane::Draw()
 					currState.frame = count - 1;
 				if(currState.frame < 0)
 					currState.frame = 0;
-				currState.currentTick = count > 0
-					? CalculateTickFromFrame(frameData, currState.pattern, currState.frame) : 0;
+				currState.InspectState(frameData,currState.frame);
 				currState.activeSpawns.clear();
 				frameData->mark_modified(currState.pattern);
 				markModified();
 			}
 			}
+
+			if(pastePatternStack) {
+				PopCopies();RegenerateNames();nframes=(int)seq->frames.size()-1;
+				currState.frame=std::clamp(currState.frame,0,std::max(0,nframes));
+				currState.InspectState(frameData,currState.frame);currState.activeSpawns.clear();pastePatternStack=false;
+			}
+
 			// The space the (collapsed) trees leave holds the pattern list, so the pane is not half empty
-			// (docs/ui/LAYOUT_AUDIT_2026-10-16.md #10). Picking a row is the same as picking it in the Pattern combo.
-			if (im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
+			// (docs/ui/LAYOUT_AUDIT_2026-10-16.md #10), unless the list was moved to its own window.
+			if (!gSettings.patternListWindow && im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
 			{
 				im::SeparatorText(TXT("Pattern"));
+				DrawPatternListBody();
+			}
+			if(!leftViewChanged) currState.leftPaneScrollY = im::GetScrollY();
+			im::EndChild();
+		}
+	}
+	else
+		im::Text(TXT("Load some data first."));
+
+	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
+	im::End();
+}
+
+void MainPane::DrawPatternList()
+{
+	namespace im=ImGui;
+	// Opt-in (Settings > Pattern list in its own window); by default the list stays inline in the pane (0.1.2).
+	if(gSettings.patternListWindow && gSettings.showPatternList && frameData->m_loaded && decoratedNames) {
+		im::SetNextWindowSize(ImVec2(ui::Em(22),ui::Em(30)),ImGuiCond_FirstUseEver);
+		const bool wasOpen=gSettings.showPatternList;
+		if(im::Begin(windowName("Pattern list").c_str(),&gSettings.showPatternList))
+			DrawPatternListBody();
+		im::End();
+		if(wasOpen!=gSettings.showPatternList) im::MarkIniSettingsDirty();
+	}
+}
+
+void MainPane::DrawPatternListBody()
+{
+	namespace im=ImGui;
+	{
+		{
 				const int count = frameData->get_sequence_count();
 				// The selection follows currState.pattern both ways: a click here sets it, and a change anywhere else (combo,
 				// ID field, search, shortcuts) moves the selection and scrolls the row into view once. The scroll is held
@@ -683,11 +747,12 @@ void MainPane::Draw()
 						{
 							const bool sel = currState.pattern == n;
 							im::PushID(n);
-							if (im::Selectable(decoratedNames[n].c_str(), sel))
+							if (im::Selectable(frameData->GetDecoratedName(n).c_str(), sel))
 							{
 								currState.pattern = n;   // same as picking it in the Pattern combo
 								currState.frame = 0;
-								currState.currentTick = 0;
+								currState.InspectState(frameData,0);
+								currState.activeSpawns.clear();
 								patternListShown = n;
 							}
 							im::PopID();
@@ -702,16 +767,8 @@ void MainPane::Draw()
 						}
 				}
 				im::EndChild();
-			}
-			currState.leftPaneScrollY = im::GetScrollY();
-			im::EndChild();
 		}
 	}
-	else
-		im::Text(TXT("Load some data first."));
-
-	//im::Text("Application average %.3f ms/frame (%.1f FPS)", 1000.0f / im::GetIO().Framerate, im::GetIO().Framerate);
-	im::End();
 }
 
 void MainPane::PopCopies()
@@ -719,6 +776,7 @@ void MainPane::PopCopies()
 	for(auto &pat : patCopyStack)
 	{
 		*frameData->get_sequence(pat.id) = pat.seq;
+		frameData->notes.archivePattern(pat.id);
 		frameData->mark_modified(pat.id);
 		markModified();
 	}

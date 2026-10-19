@@ -24,6 +24,7 @@ CharacterInstance::CharacterInstance()
 	partsUndo.enabled = [this] { return parts.fbPartModel && frameData.isHan2(); };
 	partsUndo.onSheetsRestored = [this] { han2::UploadPartsTextures(parts); };
 	undoManager.addChannel(&partsUndo);
+	undoManager.addChannel(&notesUndo);
 	state.pattern = 0;
 	state.frame = 0;
 	state.spriteId = -1;
@@ -242,21 +243,32 @@ void CharacterInstance::loadNotes()
 {
 	if (m_topHA6Path.empty()) return;
 	std::string error;
-	if (!frameData.notes.load(Ha6Notes::PathFor(m_topHA6Path), &error))
+	if (!frameData.notes.loadForHa6(m_topHA6Path, frameData.m_sequences, &error))
 		m_notesError = error;
 	else
 		m_notesError.clear();
 }
 
-bool CharacterInstance::saveNotes(const std::string& ha6Path)
+bool CharacterInstance::saveNotes(const std::string& ha6Path, bool onlyIfChanged)
 {
 	// Only touch the side file when there is something to write: notes exist,
 	// or the user removed the last one (dirty). A notes file that failed to
-	// parse is never overwritten.
-	if (!m_notesError.empty()) return false;
-	if (frameData.notes.notes.empty() && !frameData.notes.dirty) return true;
-	if (!frameData.notes.save(Ha6Notes::PathFor(ha6Path))) return false;
-	frameData.notes.dirty = false;
+	// parse is never overwritten. The HA6 is already on disk when this runs, so
+	// a failure here is reported as a warning (m_lastSaveWarning), never as a
+	// failed save; the notes stay dirty and the next save retries them.
+	if (!m_notesError.empty()) {
+		m_lastSaveWarning = "Notes were not saved (the notes file could not be loaded): " + m_notesError;
+		return false;
+	}
+	if (onlyIfChanged ? !frameData.notes.dirty : (frameData.notes.notes.empty() && !frameData.notes.dirty)) return true;
+	const std::string notesPath = Ha6Notes::PathFor(ha6Path);
+	if (!frameData.notes.save(notesPath)) {
+		m_lastSaveWarning = "Notes were not saved: could not write " + notesPath;
+		return false;
+	}
+	frameData.notes.markSaved();
+	frameData.notes.legacyPayload.clear();   // backed up beside this save; later saves need not check it again
+	frameData.notes.event("sidecar saved");
 	return true;
 }
 
@@ -299,6 +311,7 @@ static void SyncHa4Cg(CharacterInstance& ch)
 bool CharacterInstance::save()
 {
 	m_lastSaveError.clear();
+	m_lastSaveWarning.clear();
 	if (m_topHA6Path.empty()) {
 		return false;
 	}
@@ -316,15 +329,16 @@ bool CharacterInstance::save()
 		return false;
 	}
 	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, m_topHA6Path, &perr)) { m_lastSaveError = perr; return false; } }
-	saveNotes(m_topHA6Path);
 	m_isModified = false;
 	undoManager.markClean();  // undoing back to this revision clears dirty
+	saveNotes(m_topHA6Path);  // a failure only sets m_lastSaveWarning: the HA6 itself is saved
 	return true;
 }
 
 bool CharacterInstance::saveAs(const std::string& ha6Path)
 {
 	m_lastSaveError.clear();
+	m_lastSaveWarning.clear();
 	undoManager.flush();
 	SyncHa4Cg(*this);
 	if (frameData.isHan2()) {
@@ -336,7 +350,7 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 	}
 	if (frameData.isHan2()) { std::string perr; if (!han2::SaveCompanions(*this, ha6Path, &perr)) { m_lastSaveError = perr; return false; } }
 	frameData.notes.dirty = frameData.notes.dirty || !frameData.notes.notes.empty();
-	saveNotes(ha6Path);
+	saveNotes(ha6Path);  // a failure only sets m_lastSaveWarning: the HA6 itself is saved
 	m_topHA6Path = ha6Path;
 
 	// Update ha6 paths list
@@ -350,9 +364,13 @@ bool CharacterInstance::saveAs(const std::string& ha6Path)
 
 bool CharacterInstance::saveModifiedOnly(const std::string& ha6Path)
 {
+	m_lastSaveError.clear();
+	m_lastSaveWarning.clear();
+	undoManager.flush();
 	if (!frameData.save_modified_only(ha6Path.c_str())) {
 		return false;
 	}
+	saveNotes(ha6Path, true);  // only when the notes changed; a failure only sets m_lastSaveWarning
 
 	// Add to .txt if we have one
 	if (!m_txtPath.empty()) {

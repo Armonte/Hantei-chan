@@ -10,6 +10,8 @@ bool MainFrame::openHan2File(const std::string& path)
 		f.read((char*)head.data(), 0x40);
 		head.resize((size_t)f.gcount());
 	}
+	if (head.size() >= 12 && memcmp(head.data(), "PAniDataFile", 12) == 0)
+		return createPatEditorView(path);
 	if (const auto fk = fbarc::Detect(head.data(), head.size()); fk == fbarc::Kind::PkFileInfo || fk == fbarc::Kind::MbFilePacA) {
 		std::string err = han2ui::AddArchive(path);
 		if (!err.empty()) requestErrorPopup("Load Error", err);

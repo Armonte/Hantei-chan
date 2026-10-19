@@ -8,6 +8,8 @@
 #include "../framedata_labels.h"
 #include <functional>
 #include "../i18n.h"
+#include "../ini.h"
+#include "../ui/inspector_rows.h"
 
 namespace im = ImGui;
 

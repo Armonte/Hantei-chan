@@ -1,4 +1,5 @@
 // Archive browser: model, worker thread, decoders, write-back. The ImGui side is archive_browser_ui.cpp.
+#include "app_log.h"
 #include "archive_browser_state.h"
 #include "game_table.h"
 #include "tlog.h"
@@ -110,20 +111,23 @@ struct Worker {
 	std::deque<std::function<void()>> hi, lo;
 	std::deque<std::function<void()>> results;
 	bool started = false, stop = false;
+	std::vector<std::thread> threads;
 	std::atomic<int> active{0};
 	void start()
 	{
 		if (started) return;
 		started = true;
 		for (int i = 0; i < 3; i++) {
-			std::thread th([this] {
+			threads.emplace_back([this] {
 				han2::SetNoGlUpload(true);   // thumbnails load characters without creating GL textures
 				for (;;) {
 					std::function<void()> f;
 					{
 						std::unique_lock<std::mutex> lk(mx);
 						cv.wait(lk, [this] { return stop || !hi.empty() || !lo.empty(); });
-						if (stop) return;
+						// On shutdown finish the high-priority work already accepted (extraction writes); the
+						// low-priority queue (thumbnails, previews) was cancelled by ShutdownWorkers.
+						if (stop && hi.empty()) return;
 						if (!hi.empty()) { f = std::move(hi.front()); hi.pop_front(); }
 						else { f = std::move(lo.back()); lo.pop_back(); }
 						active++;
@@ -132,17 +136,44 @@ struct Worker {
 					active--;
 				}
 			});
-			th.detach();
 		}
 	}
 };
-Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
+Worker &W() { static Worker *w = new Worker(); return *w; } // process-owned; explicitly joined before UI/static teardown
+}
+
+void ShutdownWorkers()
+{
+	Worker &w = W();
+	// Cancel the low-priority queue instead of draining it: a folder of queued thumbnail loads must not
+	// hold the window open. Captures are destroyed outside mx (a capture's destructor must not run under it).
+	std::deque<std::function<void()>> cancelled;
+	{
+		std::lock_guard<std::mutex> lk(w.mx);
+		if (w.stop) return; // UI thread only; shutdown is terminal and idempotent.
+		w.stop = true;
+		cancelled.swap(w.lo);
+		HC_LOG_DEBUG("archive browser: stopping {} worker(s), active={} high={} cancelled low={} results={}",
+		             w.threads.size(), w.active.load(), w.hi.size(), cancelled.size(), w.results.size());
+	}
+	cancelled.clear();
+	w.cv.notify_all();
+	for (auto &thread : w.threads) if (thread.joinable()) thread.join();
+	// Never run result callbacks while destroying the UI.
+	std::deque<std::function<void()>> discarded;
+	{
+		std::lock_guard<std::mutex> lk(w.mx);
+		discarded.swap(w.results);
+		cancelled.swap(w.lo);   // anything a running job queued after the cancel
+	}
+	cancelled.clear();
+	HC_LOG_DEBUG("archive browser: joined, discarded {} result(s)", discarded.size());
 }
 
 void PostJob(std::function<void()> f, bool low)
 {
 	Worker &w = W();
-	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
+	{ std::lock_guard<std::mutex> lk(w.mx); if (w.stop) return; w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
 }
 void PostMain(std::function<void()> f) { Worker &w = W(); std::lock_guard<std::mutex> lk(w.mx); w.results.push_back(std::move(f)); }

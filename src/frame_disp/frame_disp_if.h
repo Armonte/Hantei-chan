@@ -3,6 +3,7 @@
 
 #include "frame_disp_common.h"
 #include "bof_extensions.h"
+#include "bof_post_port.h"
 #include "../cg.h"
 #include <vector>
 #include "../i18n.h"
@@ -63,6 +64,12 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 	};
 
 	std::vector<Frame_IF> & ifList = *ifList_;
+	int noteFrame = -1;
+	if (frameData && patternIndex >= 0) {
+		auto* seq = frameData->get_sequence(patternIndex);
+		if (seq) for (int f = 0; f < (int)seq->frames.size(); ++f)
+			if (&seq->frames[f].IF == ifList_) { noteFrame = f; break; }
+	}
 	const float width = ui::Px(75.f);   // follows the font size (ui_style.h); bof:: helpers and manual combos
 
 	// Label-first form (ui_style.h LabelForm). The rows of one condition share a label column; a form is opened lazily by
@@ -208,7 +215,9 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 		if(!collapsedStates[i]) {
 			flags |= ImGuiTreeNodeFlags_DefaultOpen;
 		}
+		if (gSettings.compactUi) im::PushStyleColor(ImGuiCol_Text, ui::ConditionsColor);
 		bool isOpen = im::CollapsingHeader(headerLabel, flags);
+		if (gSettings.compactUi) im::PopStyleColor();
 		collapsedStates[i] = !isOpen; // Update stored state
 		if(CurrentRecordNoteHook().draw) CurrentRecordNoteHook().draw(false, i, ifList[i].type);
 		
@@ -877,6 +886,10 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				i18n::TextDisabledWrapped("%s", TXT("No parameters"));
 				break;
 
+			case 158: case 159:
+				FormBreak();
+				if (bof::DrawPostCondition(ifList[i].type, p, width, frameData, markModified)) break;
+				[[fallthrough]];
 			case 154: case 155: case 156: case 157: // BOF only (Extended profile)
 				FormBreak();
 				if(bof::DrawCondition(ifList[i].type, p, width, frameData, markModified)) break;
@@ -984,6 +997,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 						if(insertPos > ifList.size()) insertPos = ifList.size();
 						
 						// Insert at target position
+						if (noteFrame >= 0) frameData->notes.move(patternIndex, noteFrame, false, sourceIdx, insertPos, (int)ifList.size() + 1);
 						ifList.insert(ifList.begin() + insertPos, temp);
 						manualEditMode.insert(manualEditMode.begin() + insertPos, tempManual);
 						collapsedStates.insert(collapsedStates.begin() + insertPos, tempCollapsed);
@@ -1003,6 +1017,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 
 	if(deleteI >= 0) {
+		if (noteFrame >= 0) frameData->notes.erase(patternIndex, noteFrame, false, deleteI, (int)ifList.size());
 		ifList.erase(ifList.begin() + deleteI);
 		manualEditMode.erase(manualEditMode.begin() + deleteI);
 		collapsedStates.erase(collapsedStates.begin() + deleteI);
@@ -1025,6 +1040,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			CopyVectorContents<Frame_IF>(*groupClipboard, ifList);
 		}
 		if(grid.Button(LBL("Paste all"))) {
+			if (noteFrame >= 0) frameData->notes.remap(patternIndex, noteFrame, false, std::vector<int>(ifList.size(), -1));
 			CopyVectorContents<Frame_IF>(ifList, *groupClipboard);
 			markModified();
 		}
