@@ -16,6 +16,7 @@
 #include "../png_writer.h" // BrowseForFolderUtf8
 
 #include <ImGuiColorTextEdit/TextEditor.h>
+#include "squirrel/script_outline.h"
 #include <imgui.h>
 #include <imgui_internal.h> // MarkIniSettingsDirty (hot reload settings)
 #include <json/json.hpp>
@@ -377,14 +378,11 @@ struct ScriptPanel::Impl {
 	std::vector<ScriptProblem> pendingMissing;  // save prompt: referenced moves that do not exist
 	bool askMissingMoves = false, skipMovePromptOnce = false;
 	// Outline (P5): command entries of a _cmd_ table, t.Mv_* move blocks, functions. Rebuilt on change.
-	struct OutlineItem {
-		std::string name, command, move; // command: the command = [...] list; move: UpdateTable name
-		size_t line = 0;
-		int depth = 0;
-	};
 	std::vector<OutlineItem> outline;
 	bool outlineDirty = true;
 	std::string outlineFilter;
+	std::set<std::string> outlineOpen;   // expanded groups, by group name + first line
+	std::vector<OutlineRow> outlineRows;
 
 	// Hot reload through the fpan-im in-game pipe (fpanim_link.h). Pipe calls run on a worker (a reload reply waits for the
 	// next battle frame); the UI polls hotJob each frame. A save while a job runs replaces hotPending (latest wins).
@@ -576,51 +574,11 @@ struct ScriptPanel::Impl {
 
 	void buildOutline()
 	{
-		outline.clear();
 		outlineDirty = false;
-		const size_t n = editor.GetLineCount();
-		int depth = 0;
-		bool inBlockComment = false;
-		static const std::regex member(R"(^\s*([A-Za-z_]\w*)\s*=\s*(\{|$))");
-		static const std::regex slot(R"(^\s*(?:[A-Za-z_]\w*\.)+([A-Za-z_]\w*)\s*<-)");
-		static const std::regex func(R"(^\s*function\s+([A-Za-z_][\w:.]*)\s*\()");
-		static const std::regex cmd(R"(\bcommand\s*=\s*\[([^\]]*)\])");
-		static const std::regex mv(R"re(\bname\s*=\s*"(Mv_\w+)")re");
-		OutlineItem* open = nullptr;
-		int openDepth = -1;
-		for (size_t i = 0; i < n; i++) {
-			const std::string line = editor.GetLineText(i);
-			// Strip comments and string contents for brace counting.
-			std::string code;
-			bool str = false;
-			for (size_t k = 0; k < line.size(); k++) {
-				const char c = line[k];
-				if (inBlockComment) { if (c == '*' && k + 1 < line.size() && line[k + 1] == '/') { inBlockComment = false; k++; } continue; }
-				if (str) { if (c == '\\') k++; else if (c == '"') str = false; continue; }
-				if (c == '"') { str = true; code += c; continue; }
-				if (c == '/' && k + 1 < line.size() && line[k + 1] == '/') break;
-				if (c == '/' && k + 1 < line.size() && line[k + 1] == '*') { inBlockComment = true; k++; continue; }
-				code += c;
-			}
-			std::smatch m;
-			const int before = depth;
-			if (std::regex_search(code, m, slot)) {
-				outline.push_back({m[1].str(), "", "", i, 0});
-				open = &outline.back(); openDepth = before;
-			} else if (std::regex_search(code, m, func) && before <= 2) {
-				outline.push_back({m[1].str() + "()", "", "", i, before});
-			} else if (before == 1 && std::regex_search(code, m, member)) {
-				outline.push_back({m[1].str(), "", "", i, 0});
-				open = &outline.back(); openDepth = before;
-			}
-			if (open) {
-				if (std::regex_search(line, m, cmd) && open->command.empty()) open->command = m[1].str();
-				if (std::regex_search(line, m, mv) && open->move.empty()) open->move = m[1].str();
-			}
-			for (char c : code) depth += c == '{' ? 1 : c == '}' ? -1 : 0;
-			if (open && depth <= openDepth && i > open->line) open = nullptr;
-		}
+		outline = BuildOutline(editor.GetLineCount(), [this](size_t i) { return editor.GetLineText(i); });
 	}
+
+	static std::string GroupKey(const std::string& group, size_t line) { return group + "@" + std::to_string(line); }
 
 	void drawOutline()
 	{
@@ -629,26 +587,42 @@ struct ScriptPanel::Impl {
 		char buf[64];
 		snprintf(buf, sizeof buf, "%s", outlineFilter.c_str());
 		if (ImGui::InputTextWithHint("##ofilter", "outline filter", buf, sizeof buf)) outlineFilter = buf;
-		for (size_t i = 0; i < outline.size(); i++) {
-			const auto& o = outline[i];
-			if (!outlineFilter.empty() && o.name.find(outlineFilter) == std::string::npos && o.move.find(outlineFilter) == std::string::npos) continue;
-			ImGui::PushID(static_cast<int>(i));
-			if (o.depth) ImGui::Indent(10.0f * o.depth);
-			if (ImGui::Selectable(o.name.c_str())) {
-				editor.SetCursor(TextEditor::DocPos(o.line, 0));
-				editor.ScrollToLine(o.line, TextEditor::Scroll::alignTop);
-			}
-			if (!o.command.empty() || !o.move.empty()) {
-				if (ImGui::IsItemHovered()) {
-					ImGui::BeginTooltip();
-					if (!o.command.empty()) ImGui::Text(TXT("command = [%s]"), o.command.c_str());
-					if (!o.move.empty()) ImGui::Text("-> %s", o.move.c_str());
-					ImGui::EndTooltip();
+		outlineRows = OutlineRows(outline, outlineFilter, [this](const std::string& g, size_t first) { return outlineOpen.count(GroupKey(g, outline[first].line)) > 0; });
+		// only the visible rows are submitted (a 100k-line table has thousands of entries)
+		ImGuiListClipper clip;
+		clip.Begin(static_cast<int>(outlineRows.size()));
+		while (clip.Step()) {
+			for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) {
+				const OutlineRow& row = outlineRows[static_cast<size_t>(r)];
+				const auto& o = outline[row.item];
+				ImGui::PushID(r);
+				if (row.count) {   // group header: click folds / unfolds, the line jumps to the first entry
+					const std::string k = GroupKey(o.group, o.line);
+					const bool isOpen = outlineOpen.count(k) > 0;
+					char label[160];
+					snprintf(label, sizeof label, "%s %s (%zu)", isOpen ? "v" : ">", o.group.c_str(), row.count);
+					if (ImGui::Selectable(label)) { if (isOpen) outlineOpen.erase(k); else outlineOpen.insert(k); }
+					ImGui::PopID();
+					continue;
 				}
-				if (!o.command.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", o.command.c_str()); }
+				const float indent = 10.0f * o.depth + (row.child ? 12.0f : 0.0f);
+				if (indent > 0) ImGui::Indent(indent);
+				if (ImGui::Selectable(o.name.c_str())) {
+					editor.SetCursor(TextEditor::DocPos(o.line, 0));
+					editor.ScrollToLine(o.line, TextEditor::Scroll::alignTop);
+				}
+				if (!o.command.empty() || !o.move.empty()) {
+					if (ImGui::IsItemHovered()) {
+						ImGui::BeginTooltip();
+						if (!o.command.empty()) ImGui::Text(TXT("command = [%s]"), o.command.c_str());
+						if (!o.move.empty()) ImGui::Text("-> %s", o.move.c_str());
+						ImGui::EndTooltip();
+					}
+					if (!o.command.empty()) { ImGui::SameLine(); ImGui::TextDisabled("%s", o.command.c_str()); }
+				}
+				if (indent > 0) ImGui::Unindent(indent);
+				ImGui::PopID();
 			}
-			if (o.depth) ImGui::Unindent(10.0f * o.depth);
-			ImGui::PopID();
 		}
 	}
 	std::map<std::string, std::vector<ApiSym>> api; // by native name; one name can live in several tables
@@ -1667,6 +1641,18 @@ bool ScriptPanel::scriptCommand(const std::string& sub, const std::string& arg, 
 		out = std::string(d.ok ? "ok" : "error line " + std::to_string(d.line) + ": " + d.message) + (loaded ? ", character load ran" : ", single file") +
 			", " + std::to_string(m->loadProblems.size()) + " load problem(s)";
 		for (const auto& p : m->loadProblems) out += "\n  " + p.file + ":" + std::to_string(p.line + 1) + " " + p.message;
+	}
+	else if (sub == "drawstats") {   // the last frame's draw lists with the most vertices (16-bit index budget = 65535 per draw cmd)
+		const ImGuiIO& io = ImGui::GetIO();
+		out = std::string("VtxOffset ") + ((io.BackendFlags & ImGuiBackendFlags_RendererHasVtxOffset) ? "on" : "OFF") + ", ImDrawIdx " + std::to_string(sizeof(ImDrawIdx) * 8) + "-bit, " +
+			std::to_string(m->editor.GetLineCount()) + " lines, " + std::to_string(m->outline.size()) + " outline items, " +
+			std::to_string(m->outlineRows.size()) + " outline rows, visible rows " + std::to_string(m->editor.GetFirstVisibleRow() + 1) + "-" + std::to_string(m->editor.GetLastVisibleRow() + 1);
+		if (const ImDrawData* dd = ImGui::GetDrawData()) {
+			std::vector<const ImDrawList*> ls(dd->CmdLists.begin(), dd->CmdLists.end());
+			std::sort(ls.begin(), ls.end(), [](auto a, auto b) { return a->VtxBuffer.Size > b->VtxBuffer.Size; });
+			for (size_t i = 0; i < ls.size() && i < 4; ++i)
+				out += "\n  " + std::string(ls[i]->_OwnerName ? ls[i]->_OwnerName : "?") + ": " + std::to_string(ls[i]->VtxBuffer.Size) + " vtx, " + std::to_string(ls[i]->IdxBuffer.Size) + " idx, " + std::to_string(ls[i]->CmdBuffer.Size) + " cmds";
+		}
 	}
 	else if (sub == "tab") { m->bottomTab = atoi(arg.c_str()); m->selectBottomTab = true; }
 	else if (sub == "type") { m->editor.ReplaceTextInCurrentCursor(arg); }
