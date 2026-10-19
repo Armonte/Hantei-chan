@@ -77,17 +77,15 @@ bool Init(const InitDesc& desc, std::string& error)
 		SDL_Quit();
 		return false;
 	}
-	SDL_SetWindowPosition(g.window, desc.x, desc.y);
-	if (desc.maximized && !desc.headless)
-		SDL_MaximizeWindow(g.window);
-
 	// Client-size correction. The old CreateWindowEx took the ini's winSizeX/Y
 	// as the OUTER window size, so a 1280x800 setting gave a 1264x761 client
 	// area (16 px of side border, 39 px of title bar on Windows 10). SDL's
 	// SDL_CreateWindow takes the CLIENT size, so the requested size has to be
 	// reduced by the border/title size to land on the same client area and keep
 	// the corpus byte-identical. "--size WxH" and the headless FBO follow
-	// clientRect, so both sides see the same number.
+	// clientRect, so both sides see the same number. The position is the outer
+	// rectangle's too, and SDL positions the client area, so it moves by the
+	// top-left border.
 	{
 		int top = 0, left = 0, bottom = 0, right = 0;
 		if (SDL_GetWindowBordersSize(g.window, &top, &left, &bottom, &right)) {
@@ -96,7 +94,10 @@ bool Init(const InitDesc& desc, std::string& error)
 			if (clientW != desc.w || clientH != desc.h)
 				SDL_SetWindowSize(g.window, clientW, clientH);
 		}
+		SDL_SetWindowPosition(g.window, desc.x + left, desc.y + top);
 	}
+	if (desc.maximized && !desc.headless)
+		SDL_MaximizeWindow(g.window);
 
 	if (desc.openGL) {
 		g.gl = SDL_GL_CreateContext(g.window);
@@ -155,6 +156,19 @@ void WindowPos(int& x, int& y)
 {
 	x = 0; y = 0;
 	if (g.window) SDL_GetWindowPosition(g.window, &x, &y);
+}
+
+void WindowOuterRect(int& x, int& y, int& w, int& h)
+{
+	x = y = w = h = 0;
+	if (!g.window) return;
+	SDL_GetWindowPosition(g.window, &x, &y);
+	SDL_GetWindowSize(g.window, &w, &h);
+	int top = 0, left = 0, bottom = 0, right = 0;
+	if (SDL_GetWindowBordersSize(g.window, &top, &left, &bottom, &right)) {
+		x -= left; y -= top;
+		w += left + right; h += top + bottom;
+	}
 }
 
 bool IsMaximized()

@@ -26,7 +26,7 @@ struct AppWindow;
 // like the old WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE window.
 struct InitDesc {
 	std::string title;      // UTF-8
-	int x = 0, y = 0;
+	int x = 0, y = 0;       // outer window rectangle, as the ini stores it
 	int w = 1280, h = 720;
 	bool headless = false;
 	bool maximized = false;
@@ -51,8 +51,11 @@ void ClientSize(int& w, int& h);
 // Window size in screen coordinates (what the OS window drag/resize changes).
 void WindowSize(int& w, int& h);
 
-// Window position, saved into the ini on move/resize.
+// Window position (of the client area, SDL's convention).
 void WindowPos(int& x, int& y);
+// The outer window rectangle, title bar and borders included (GetWindowRect):
+// what the ini's posX/posY/sizeX/sizeY hold and InitDesc x/y/w/h take.
+void WindowOuterRect(int& x, int& y, int& w, int& h);
 bool IsMaximized();
 void SetTitle(const std::string& utf8Title);
 

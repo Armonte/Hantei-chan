@@ -480,6 +480,23 @@ int main(int argC, char** argV)
 	// Build version string with build number and git hash
 	std::string windowTitle = "gonpt\xc3\xa9chan v" VERSION_WITH_COMMIT;
 
+	// The ImGui context and the ini come first: the window is created from the
+	// ini's position, size, maximised flag and detachable-windows preference.
+	// The old WndProc read the ini in WM_CREATE and then moved the window there
+	// (MoveWindow); SDL creates the window in one step, so the ini is read before.
+	IMGUI_CHECKVERSION();
+	ImGui::CreateContext();
+	ImSearch::CreateContext();
+	{
+		ImGuiIO& io = ImGui::GetIO();
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		io.IniFilename = useIni ? iniLocation : nullptr;
+		if (useIni) InitIni();
+		if (gStartup.headless)
+			io.IniFilename = nullptr;   // settings and layout are read, never written back
+		io.ConfigWindowsMoveFromTitleBarOnly = true;
+	}
+
 	// --headless: a hidden window and a hidden GL context, never shown and with
 	// no taskbar entry (SDL_WINDOW_HIDDEN | SDL_WINDOW_UTILITY, the old
 	// WS_EX_TOOLWINDOW | WS_EX_NOACTIVATE). Views render into their FBOs and
@@ -508,19 +525,9 @@ int main(int argC, char** argV)
 	clientRect = ImVec2((float)cw, (float)ch);
 
 	// ImGui platform + GL backend. The window and context are already up, so
-	// this is the WM_CREATE body without the wgl/glad part.
+	// this is the rest of the WM_CREATE body without the wgl/glad part.
 	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImSearch::CreateContext();
 		ImGuiIO& io = ImGui::GetIO();
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
-		io.IniFilename = useIni ? iniLocation : nullptr;
-		if (useIni) InitIni();
-		if (gStartup.headless)
-			io.IniFilename = nullptr;   // settings and layout are read, never written back
-		io.ConfigWindowsMoveFromTitleBarOnly = true;
-
 		LoadJapaneseFonts(io);
 		ImGui_ImplSDL3_InitForOpenGL((SDL_Window*)platform::Window(), platform::GlContextHandle());
 		ImGui_ImplOpenGL3_Init("#version 330 core");
@@ -542,15 +549,20 @@ int main(int argC, char** argV)
 	handlers.user = frame;
 	handlers.onResize = [](int fbW, int fbH, void* user) {
 		MainFrame* mf = (MainFrame*)user;
-		int ww = 0, wh = 0; platform::WindowSize(ww, wh);
+		// The ini keeps the OUTER window rectangle (GetWindowRect), as before.
+		int px = 0, py = 0, ww = 0, wh = 0;
+		platform::WindowOuterRect(px, py, ww, wh);
 		gSettings.winSizeX = ww; gSettings.winSizeY = wh;
-		int px = 0, py = 0; platform::WindowPos(px, py);
 		gSettings.posX = px; gSettings.posY = py;
 		gSettings.maximized = platform::IsMaximized();
 		clientRect = ImVec2((float)fbW, (float)fbH);
 		if (mf) mf->UpdateBackProj(clientRect.x, clientRect.y);
 	};
-	handlers.onMove = [](int x, int y, void*) { gSettings.posX = x; gSettings.posY = y; };
+	handlers.onMove = [](int, int, void*) {
+		int px = 0, py = 0, ww = 0, wh = 0;
+		platform::WindowOuterRect(px, py, ww, wh);
+		gSettings.posX = px; gSettings.posY = py;
+	};
 	handlers.onDropPoint = [](float sx, float sy, float cx, float cy, void* user) {
 		if (user) ((MainFrame*)user)->setDropPoint(sx, sy, cx, cy);
 	};
