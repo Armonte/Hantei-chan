@@ -199,6 +199,38 @@ std::string StripAngles(const std::string& v)
 	return Trim(o);
 }
 
+// An effect-only angle annotation block (NAME < string UIName = "..."; >) is not
+// valid HLSL, so it is dropped from a uniform declaration before MakePassHlsl
+// emits it. A '<' only opens an annotation when the matching '>' is followed by
+// the declaration's own ';', which leaves a comparison like (a < b) alone.
+std::string DropAnnotations(const std::string& decl)
+{
+	std::string o;
+	for (size_t i = 0; i < decl.size(); ++i) {
+		if (decl[i] != '<') {
+			o += decl[i];
+			continue;
+		}
+		const size_t close = decl.find('>', i + 1);
+		if (close == std::string::npos) {
+			o += decl[i];
+			continue;
+		}
+		size_t after = close + 1;
+		while (after < decl.size() && (unsigned char)decl[after] <= ' ') ++after;
+		if (after < decl.size() && decl[after] == ';') {
+			i = close;   // skip the whole <...>
+			continue;
+		}
+		if (after >= decl.size()) {
+			i = close;
+			continue;
+		}
+		o += decl[i];
+	}
+	return Trim(o);
+}
+
 bool ParseShaderRef(const std::string& value, ShaderRef& out)
 {
 	Scanner s(value);
@@ -595,7 +627,7 @@ bool ParseEffect(const std::string& utf8, Effect& out, std::string& err)
 			while (s.cur() == ';') s.adv();
 			Function f;
 			f.name = u.name;
-			f.text = Trim(src.substr(start, bodyStart)) + " " + Trim(src.substr(bodyStart, s.i - bodyStart));
+			f.text = Trim(src.substr(start, bodyStart - start)) + " " + Trim(src.substr(bodyStart, s.i - bodyStart));
 			Item it;
 			it.kind = Item::Kind::Function;
 			it.index = (int)out.functions.size();
@@ -654,7 +686,7 @@ std::string MakePassHlsl(const Effect& e, const Technique& t, const Pass& p)
 			out += it.text + "\n";
 			break;
 		case Item::Kind::Uniform:
-			out += e.uniforms[(size_t)it.index].decl + ";\n";
+			out += DropAnnotations(e.uniforms[(size_t)it.index].decl) + ";\n";
 			break;
 		case Item::Kind::Function:
 			out += e.functions[(size_t)it.index].text + "\n";
