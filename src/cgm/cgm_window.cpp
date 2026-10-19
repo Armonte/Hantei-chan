@@ -1,4 +1,5 @@
 #include "cgm_window.h"
+#include "cgm_preview_layout.h"
 #include "../ui/ui_style.h"
 #include "../ui/ui_layout2.h"
 #include "../cg.h"
@@ -287,6 +288,8 @@ bool Window::fetch(CharacterInstance &ch, int id, int pal, int pups, std::vector
 
 void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int maxSide, bool linear) {
 	std::vector<uint8_t> tmp; const uint8_t *px = src.data(); int tw = w, th = h;
+	GLint maxTex = 0; glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);   // sheets over 2048 px upload whole; only past the GPU limit are they scaled
+	if (maxTex > 0 && std::max(w, h) > maxTex && (maxSide <= 0 || maxSide > maxTex)) maxSide = maxTex;
 	if (maxSide > 0 && std::max(w, h) > maxSide) {   // box filter down to the thumbnail size
 		const float s = (float)maxSide / (float)std::max(w, h);
 		tw = std::max(1, (int)(w * s)); th = std::max(1, (int)(h * s));
@@ -310,11 +313,49 @@ void Window::upload(Thumb &t, const std::vector<uint8_t> &src, int w, int h, int
 	t.w = tw; t.h = th;
 }
 
+// Transparency checker over [a, b), anchored at a. Only the squares inside the draw list's clip rect are emitted: a big image
+// zoomed in (2048x1504 at x2 is ~100k squares) used to push hundreds of thousands of vertices into one draw list, which broke
+// the rest of the pane (no sprite, a half-drawn checker).
 static void Checker(ImDrawList *dl, ImVec2 a, ImVec2 b) {
-	dl->AddRectFilled(a, b, IM_COL32(58, 58, 62, 255));
+	const ImVec2 cmin = dl->GetClipRectMin(), cmax = dl->GetClipRectMax();
+	const ImVec2 va(std::max(a.x, cmin.x), std::max(a.y, cmin.y)), vb(std::min(b.x, cmax.x), std::min(b.y, cmax.y));
+	if (vb.x <= va.x || vb.y <= va.y) return;
+	dl->AddRectFilled(va, vb, IM_COL32(58, 58, 62, 255));
 	const float s = 8.f;
-	for (float y = a.y, r = 0; y < b.y; y += s, r++) for (float x = a.x + (((int)r & 1) ? s : 0); x < b.x; x += 2 * s)
-		dl->AddRectFilled(ImVec2(x, y), ImVec2(std::min(x + s, b.x), std::min(y + s, b.y)), IM_COL32(78, 78, 84, 255));
+	const int r0 = (int)std::floor((va.y - a.y) / s), c0 = (int)std::floor((va.x - a.x) / s);
+	for (int r = r0; a.y + r * s < vb.y; r++) {
+		const float y = a.y + r * s;
+		for (int c = c0 + ((c0 + r) & 1 ? 1 : 0) ; a.x + c * s < vb.x; c += 2) {   // lighter squares where (row + column) is even
+			const float x = a.x + c * s;
+			dl->AddRectFilled(ImVec2(std::max(x, va.x), std::max(y, va.y)), ImVec2(std::min(x + s, vb.x), std::min(y + s, vb.y)), IM_COL32(78, 78, 84, 255));
+		}
+	}
+}
+
+// The scrollable image preview of the Browser and CG + .pat textures tabs, drawn inside the current child window: the image is
+// centred, Fit shrinks one larger than the pane to the pane, the checker covers exactly the image, and a zoom past the pane
+// scrolls (scrollbars, wheel, or a middle / right drag pans). Returns the image's top-left on screen and the zoom used.
+static ImVec2 DrawImagePreview(unsigned tex, int w, int h, float zoom, bool fit, float &usedZoom) {
+	const ImGuiStyle &st = ImGui::GetStyle();
+	const ImVec2 ws = ImGui::GetWindowSize();
+	const float paneW = std::floor(ws.x - 2 * st.WindowPadding.x), paneH = std::floor(ws.y - 2 * st.WindowPadding.y);
+	PreviewLayout L = ComputePreviewLayout(paneW, paneH, w, h, zoom, fit);
+	if (!fit && (L.w > paneW || L.h > paneH)) {   // scrollbars take room: lay out again in what is left
+		L = ComputePreviewLayout(paneW - (L.h > paneH ? st.ScrollbarSize : 0.f), paneH - (L.w > paneW ? st.ScrollbarSize : 0.f), w, h, zoom, fit);
+	}
+	usedZoom = L.zoom;
+	const ImVec2 p0 = ImGui::GetCursorScreenPos();
+	ImGui::Dummy(ImVec2(L.contentW, L.contentH));
+	const ImVec2 a(p0.x + L.x, p0.y + L.y), b(a.x + L.w, a.y + L.h);
+	ImDrawList *dl = ImGui::GetWindowDrawList();
+	Checker(dl, a, b);
+	dl->AddImage((ImTextureID)(intptr_t)tex, a, b);
+	dl->AddRect(ImVec2(a.x - 1, a.y - 1), ImVec2(b.x + 1, b.y + 1), IM_COL32(110, 110, 120, 255));   // the image bounds
+	if (ImGui::IsWindowHovered() && (ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f) || ImGui::IsMouseDragging(ImGuiMouseButton_Right, 0.f))) {
+		const ImVec2 d = ImGui::GetIO().MouseDelta;
+		ImGui::SetScrollX(ImGui::GetScrollX() - d.x); ImGui::SetScrollY(ImGui::GetScrollY() - d.y);
+	}
+	return a;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------------------------
@@ -946,10 +987,21 @@ void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
 
 void Window::drawBlockOverlay(const ImVec2 &p0, float z, int x1, int y1) {
 	ImDrawList *dl = ImGui::GetWindowDrawList();
+	const ImVec2 cmin = dl->GetClipRectMin(), cmax = dl->GetClipRectMax();
 	const int cu = bank->cellUnit();
+	if (cu * z < 6.f) {   // cells too small to outline (a big image shrunk by Fit): one fill per run of disabled cells keeps the vertex count low
+		for (int cy = 0; cy < blk.rows; cy++) for (int cx = 0; cx < blk.cols;) {
+			if (blk.mask[(size_t)cy * blk.cols + cx]) { cx++; continue; }
+			int ex = cx; while (ex < blk.cols && !blk.mask[(size_t)cy * blk.cols + ex]) ex++;
+			dl->AddRectFilled(ImVec2(p0.x + (blk.ox + cx * cu - x1) * z, p0.y + (blk.oy + cy * cu - y1) * z), ImVec2(p0.x + (blk.ox + ex * cu - x1) * z, p0.y + (blk.oy + (cy + 1) * cu - y1) * z), IM_COL32(220, 60, 60, 90));
+			cx = ex;
+		}
+		return;
+	}
 	for (int cy = 0; cy < blk.rows; cy++) for (int cx = 0; cx < blk.cols; cx++) {
 		const float ax = p0.x + (blk.ox + cx * cu - x1) * z, ay = p0.y + (blk.oy + cy * cu - y1) * z;
 		const ImVec2 a(ax, ay), b(ax + cu * z, ay + cu * z);
+		if (b.x < cmin.x || b.y < cmin.y || a.x > cmax.x || a.y > cmax.y) continue;   // off screen: bounded vertex count at any zoom
 		if (blk.mask[(size_t)cy * blk.cols + cx]) dl->AddRect(a, b, IM_COL32(60, 220, 90, 200));
 		else { dl->AddRectFilled(a, b, IM_COL32(220, 60, 60, 60)); dl->AddRect(a, b, IM_COL32(220, 60, 60, 160)); }
 	}
@@ -1308,6 +1360,8 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 				if (ch->cg.pupsBankCount() > 1) { if (ImGui::InputInt(ui::FormRow(LBL("PUPS bank")), &previewPups, 1, 1)) { previewPups = std::clamp(previewPups, 0, ch->cg.pupsBankCount() - 1); clearThumbs(); previewId = -1; } }
 			}
 			ImGui::SliderFloat(ui::FormRow(LBL("Zoom")), &zoom, 0.25f, 8.f);
+			ImGui::SameLine(); ImGui::Checkbox(LBL("Fit##cgmfit"), &fit);
+			ImGui::SetItemTooltip("%s", TXT("Shrink an image larger than the preview to fit it. Off: the zoom is exact and the preview scrolls (middle or right drag pans)."));
 			ui::EndLabelForm();
 		}
 		if (previewId != selected || previewGen != cgGen) {
@@ -1328,13 +1382,11 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 		} else ImGui::TextDisabled("%s", TXT("Not referenced by any frame of this character."));
 		ImGui::BeginChild("##cgmprev", ImVec2(0, 0), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
 		if (preview.w > 0 && ok) {
-			const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(preview.w * zoom, preview.h * zoom);
-			ImGui::Dummy(sz);
-			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)preview.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
+			float z = zoom;
+			const ImVec2 p0 = DrawImagePreview(preview.tex, preview.w, preview.h, zoom, fit, z);
 			if (bank && blk.id == selected && blk.show) {
-				drawBlockOverlay(p0, zoom, x1, y1);
-				if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) clickBlock(p0, zoom, x1, y1);
+				drawBlockOverlay(p0, z, x1, y1);
+				if (ImGui::IsItemClicked(ImGuiMouseButton_Left)) clickBlock(p0, z, x1, y1);
 			}
 		}
 		ImGui::EndChild();
@@ -1688,7 +1740,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 				std::string er; status = !dst.empty() && RestoreModFile(dst, &er) ? Fmt(TXT("Restored %s"), dst.c_str()) : er;
 			}
 		}
-		if (ui::BeginLabelForm("##cgmtbzoom", ui::LabelColW({LBL("Zoom##cgmtb")}))) { ImGui::SliderFloat(ui::FormRow(LBL("Zoom##cgmtb")), &tb.zoom, 0.125f, 8.f); ui::EndLabelForm(); }
+		if (ui::BeginLabelForm("##cgmtbzoom", ui::LabelColW({LBL("Zoom##cgmtb")}))) { ImGui::SliderFloat(ui::FormRow(LBL("Zoom##cgmtb")), &tb.zoom, 0.125f, 8.f); ImGui::SameLine(); ImGui::Checkbox(LBL("Fit##cgmtbfit"), &tb.fit); ui::EndLabelForm(); }
 		// view
 		ImGui::BeginChild("##cgmtbview", ImVec2(0, std::max(ui::Em(6.f), ImGui::GetContentRegionAvail().y - (split ? st.CellPadding.y : 0.f))), ImGuiChildFlags_Borders, ImGuiWindowFlags_HorizontalScrollbar);
 		// .pat side: also keyed on the record's pixel pointers, so an undo made in the PAT editor / han2 pane refreshes the view
@@ -1698,12 +1750,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 			tb.viewKind = tb.kind; tb.viewId = tb.sel; tb.viewGen = gen;
 			Rgba px; if (e.present && src.decode(tb.sel, px) && px.w > 0) upload(tb.view, px.px, px.w, px.h, 0, false); else tb.view.w = tb.view.h = 0;
 		}
-		if (tb.view.w > 0) {
-			const ImVec2 p0 = ImGui::GetCursorScreenPos(), sz(tb.view.w * tb.zoom, tb.view.h * tb.zoom);
-			ImGui::Dummy(sz);
-			Checker(ImGui::GetWindowDrawList(), p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-			ImGui::GetWindowDrawList()->AddImage((ImTextureID)(intptr_t)tb.view.tex, p0, ImVec2(p0.x + sz.x, p0.y + sz.y));
-		} else ImGui::TextDisabled("%s", TXT("Nothing to show."));
+		if (tb.view.w > 0) { float z; DrawImagePreview(tb.view.tex, tb.view.w, tb.view.h, tb.zoom, tb.fit, z); } else ImGui::TextDisabled("%s", TXT("Nothing to show."));
 		ImGui::EndChild();
 	}
 	ImGui::EndGroup();
@@ -1721,6 +1768,7 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 	if (cmd == "select") { selected = atoi(arg.c_str()); previewId = -1; return true; }
 	if (cmd == "texsel") { tb.kind = atoi(arg.c_str()); tb.sel = atoi(arg.c_str() + arg.find(' ') + 1); return true; }   // "texsel <0 CG | 1 .pat> <id>"
 	if (cmd == "texzoom") { tb.zoom = std::clamp((float)atof(arg.c_str()), 0.125f, 8.f); return true; }
+	if (cmd == "texfit") { tb.fit = atoi(arg.c_str()) != 0; return true; }
 	if (cmd == "texgame") { tb.game = atoi(arg.c_str()); return true; }
 	if (cmd == "texdir") { const int gi = tb.game < 0 ? 0 : tb.game; tb.gameDir[gi] = arg; return true; }
 	if (cmd == "set") {
@@ -1738,6 +1786,8 @@ bool Window::script(const std::string &cmd, const std::string &arg, std::string 
 		if (key == "palPreviewMode") return num(pp.mode);
 		if (key == "palPreviewImage") return num(pp.image);
 		if (key == "previewPal") return num(previewPal);
+		if (key == "zoom") { zoom = std::clamp((float)atof(arg.c_str() + arg.find(' ') + 1), 0.25f, 8.f); return true; }
+		if (key == "fit") { int f = 0; num(f); fit = f != 0; return true; }
 		if (msg) *msg = "unknown field " + key; return false;
 	}
 	if (cmd == "status") { if (msg) *msg = "status: " + status + (g_scriptPress.empty() ? "" : " (press '" + g_scriptPress + "' still pending)"); return false; }

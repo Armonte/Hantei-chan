@@ -261,3 +261,5 @@
 {"New PUPS bank %d", "新規PUPSバンク %d"},
 {"Export for PovertyCaster", "PovertyCaster用に書き出し"},
 {"Import folder", "フォルダーから読み込み"},
+{"Shrink an image larger than the preview to fit it. Off: the zoom is exact and the preview scrolls (middle or right drag pans).", "プレビューより大きい画像を縮小して収めます。オフ: 指定ズームのまま表示し、スクロールします (中ボタン/右ボタンのドラッグでパン)。"},
+{"Fit", "フィット"},
