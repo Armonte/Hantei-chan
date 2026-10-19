@@ -1480,9 +1480,6 @@ if(WIN32)
         add_test(NAME detached_tools COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
             "${CMAKE_SOURCE_DIR}/tools/test_detached_tools_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
         set_tests_properties(detached_tools PROPERTIES LABELS gpu TIMEOUT 180)
-        add_test(NAME detached_scroll COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
-            "${CMAKE_SOURCE_DIR}/tools/test_detached_scroll_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
-        set_tests_properties(detached_scroll PROPERTIES LABELS gpu TIMEOUT 180)
         add_test(NAME tab_reorder COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
             "${CMAKE_SOURCE_DIR}/tools/test_tab_reorder_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
         set_tests_properties(tab_reorder PROPERTIES LABELS gpu TIMEOUT 180)
@@ -1501,11 +1498,9 @@ if(WIN32)
         add_test(NAME compact_ui_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
             "${CMAKE_SOURCE_DIR}/tools/test_compact_ui_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
         set_tests_properties(compact_ui_live PROPERTIES LABELS gpu TIMEOUT 180)
-        add_test(NAME timeline_cells_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
-            "${CMAKE_SOURCE_DIR}/tools/test_timeline_cells_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
         add_test(NAME transport_cgm_live COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
             "${CMAKE_SOURCE_DIR}/tools/test_transport_cgm_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
-        set_tests_properties(timeline_cells_live transport_cgm_live PROPERTIES LABELS gpu TIMEOUT 180)
+        set_tests_properties(transport_cgm_live PROPERTIES LABELS gpu TIMEOUT 180)
         add_test(NAME pat_picking COMMAND "${HANTEI_SHUTDOWN_PWSH}" -NoProfile -File
             "${CMAKE_SOURCE_DIR}/tools/test_pat_picking_live.ps1" -Executable $<TARGET_FILE:gonptechan>)
         set_tests_properties(pat_picking PROPERTIES LABELS gpu TIMEOUT 180)

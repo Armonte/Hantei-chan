@@ -43,8 +43,15 @@ quill::Logger *Get()
 		quill::PatternFormatterOptions pattern{"[%(time)] [%(log_level)] %(message)", "%H:%M:%S.%Qms",
 			quill::Timezone::LocalTime};
 		logger = quill::Frontend::create_or_get_logger("hc", std::move(sink), pattern);
+		if (const char *dbg = std::getenv("HC_LOG_DEBUG"); dbg && *dbg && *dbg != '0')
+			logger->set_log_level(quill::LogLevel::Debug);
 	});
 	return logger;
+}
+
+void EnableDebug()
+{
+	Get()->set_log_level(quill::LogLevel::Debug);
 }
 
 } // namespace applog

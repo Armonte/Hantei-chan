@@ -137,20 +137,6 @@ inline bool BeginPropertyForm(const char* id, float labelW, bool compact, int ma
 {
 	const int columns = PropertyColumns(ImGui::GetContentRegionAvail().x, minimum, maximum);
 	const bool grid = compact && columns > 1 && (!stacked || columns >= 3);
-	// Bounded real-pane trace, kept through manual acceptance of the layout.
-	static unsigned serial = 0;
-	const ImGuiID key = ImGui::GetID(id);
-	auto* storage = ImGui::GetStateStorage();
-	const int mode = (compact ? 100 : 0) + (grid ? columns : 1);
-	if (storage->GetInt(key, -1) != mode) {
-		storage->SetInt(key, mode);
-		if (auto* f = std::fopen("compact_ui_trace.log", serial++ % 256 == 0 ? "w" : "a")) {
-			std::fprintf(f, "frame=%d window=%s viewport=%u form=%s compact=%d columns=%d width=%.1f font=%.1f\n",
-				ImGui::GetFrameCount(), ImGui::GetCurrentWindow()->Name, ImGui::GetWindowViewport()->ID,
-				id, compact, grid ? columns : 1, ImGui::GetContentRegionAvail().x, ImGui::GetFontSize());
-			std::fclose(f);
-		}
-	}
 	if (!grid) return BeginLabelForm(id, labelW);
 	if (!ImGui::BeginTable(id, columns, ImGuiTableFlags_SizingStretchSame | ImGuiTableFlags_NoSavedSettings)) return false;
 	propertyFormStack.push_back(stacked ? 2 : 1);

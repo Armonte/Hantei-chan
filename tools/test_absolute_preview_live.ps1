@@ -15,7 +15,7 @@ if($p.ExitCode -ne 0) { throw 'Absolute preview diagnostic failed' }
 $log=Get-Content ($script+'.log') -Raw
 if($log -notmatch 'Release approximation:.*elapsed=1' -or ([regex]::Matches($log,'positiongesturetest: footprint=1 move=1 rotation=1')).Count -ne 2) { throw "Absolute gesture/release failure: $log" }
 foreach($file in @('later','again')) {
-    $rows=@(Get-Content "$out/$file.jsonl" | ForEach-Object { $_ | ConvertFrom-Json })
+    $rows=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log "$out/hanteichan.log" -Tag "$out/$file.jsonl")
     foreach($pat in @(149,400,26)) { if(@($rows | Where-Object { $_.pattern -eq $pat -and $_.texture_available }).Count -lt 1) { throw "Missing pattern $pat from absolute $file scene" } }
     if(@($rows | Where-Object { $_.pattern -eq 149 -and $_.state -eq 1 }).Count -ne 1) { throw 'Root followed self-jump during absolute scrub' }
 }

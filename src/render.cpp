@@ -15,10 +15,23 @@
 
 #include "hitbox.h"
 #include "app_log.h"
+#include <cstdarg>
+#include <cstdio>
 #include "parts/parts.h"
 #include "enums.h"  // For RenderMode enum
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
+
+// Formats one transformtrace record piece; only runs while a transformtrace request is active.
+static void TraceAppend(std::string& out, const char* fmt, ...)
+{
+	char buf[512];
+	va_list ap; va_start(ap, fmt);
+	const int n = std::vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+	if (n > 0) out.append(buf, std::min<size_t>(size_t(n), sizeof buf - 1));
+}
+
 
 constexpr int maxBoxes = 33;
 
@@ -1088,21 +1101,23 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
    // Capture the exact submitted geometry and shader matrix, not a reconstructed
    // picker quad. Bounded, opt-in evidence for per-game PAT transform comparisons.
    if(m_transformTrace && m_transformTraceCount++<64 && scale!=0) {
-    fprintf(m_transformTrace,"{\"kind\":\"pat\",\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"viewport\":[%d,%d],\"rotation\":[%.9g,%.9g,%.9g],\"vertex_count\":%zu,\"vertices\":[",m_traceRootPattern,m_traceRootFrame,m_traceTick,layer.tracePattern,layer.traceFrame,layer.spriteId,x,y,scale,pass.width,pass.height,layer.rotX,layer.rotY,layer.rotZ,count);
+    std::string t;
+    TraceAppend(t,"{\"kind\":\"pat\",\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"viewport\":[%d,%d],\"rotation\":[%.9g,%.9g,%.9g],\"vertex_count\":%zu,\"vertices\":[",m_traceRootPattern,m_traceRootFrame,m_traceTick,layer.tracePattern,layer.traceFrame,layer.spriteId,x,y,scale,pass.width,pass.height,layer.rotX,layer.rotY,layer.rotZ,count);
     auto base=glm::scale(glm::mat4(1),glm::vec3(scale,scale,1));
     base=glm::translate(base,glm::vec3(x,y,0));
     const auto normalized=glm::inverse(base)*glm::inverse(projection)*submittedMatrix;
     for(size_t i=0;i<std::min(count,size_t(96));++i) {
      const auto* v=vertices+i*7; const auto clip=submittedMatrix*glm::vec4(v[0],v[1],v[2],1);
-     fprintf(m_transformTrace,"%s{\"local\":[%.9g,%.9g,%.9g],\"clip\":[%.9g,%.9g,%.9g,%.9g]",i?",":"",v[0],v[1],v[2],clip.x,clip.y,clip.z,clip.w);
+     TraceAppend(t,"%s{\"local\":[%.9g,%.9g,%.9g],\"clip\":[%.9g,%.9g,%.9g,%.9g]",i?",":"",v[0],v[1],v[2],clip.x,clip.y,clip.z,clip.w);
      const auto n=normalized*glm::vec4(v[0],v[1],v[2],1);
      if(std::isfinite(n.w) && std::abs(n.w)>1e-6f)
-      fprintf(m_transformTrace,",\"normalized\":[%.9g,%.9g]",n.x/n.w,n.y/n.w);
-     fprintf(m_transformTrace,"}");
+      TraceAppend(t,",\"normalized\":[%.9g,%.9g]",n.x/n.w,n.y/n.w);
+     TraceAppend(t,"}");
     }
-    fprintf(m_transformTrace,"],\"submitted_matrix\":[");
-    for(int row=0;row<4;++row) for(int col=0;col<4;++col) fprintf(m_transformTrace,"%s%.9g",row||col?",":"",submittedMatrix[col][row]);
-    fprintf(m_transformTrace,"]}\n");
+    TraceAppend(t,"],\"submitted_matrix\":[");
+    for(int row=0;row<4;++row) for(int col=0;col<4;++col) TraceAppend(t,"%s%.9g",row||col?",":"",submittedMatrix[col][row]);
+    TraceAppend(t,"]}");
+    HC_LOG_DEBUG("transform-trace {} {}",m_transformTraceTag,t);
    }
    if(!capturePosition || layer.positionKind<0) return;
    auto mask=tex.coverage(); if(!mask) return;
@@ -1119,10 +1134,6 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
      p.uv[j]=glm::vec2(v[3],v[4]);
     }
     if(valid) { p.quad[3]=p.quad[2]; p.uv[3]=p.uv[2]; positionFootprints.push_back(std::move(p)); }
-   }
-   static uint64_t samples=0; static unsigned rows=0;
-   if(samples++<32 || samples%128==0) if(auto* f=fopen("pat_pick_trace.log",rows++%512==0?"w":"a")) {
-    fprintf(f,"kind=%d index=%d sprite=%d viewport=%dx%d submitted=%zu captured=%zu mask=%dx%d solid=%d\n",layer.positionKind,layer.positionIndex,layer.spriteId,pass.width,pass.height,count/3,positionFootprints.size()-before,mask->width,mask->height,solid); fclose(f);
    }
   };
  }
@@ -1197,16 +1208,18 @@ void Render::TraceSpriteMatrix(const glm::mat4& matrix)
 	base = glm::translate(base, glm::vec3(x,y,0.f));
 	const glm::mat4 normalized = glm::inverse(base) * matrix;
 	const auto& l = *m_traceLayer;
-	fprintf(m_transformTrace, "{\"texture_available\":%s,", spriteTex ? "true" : "false");
-	fprintf(m_transformTrace, "\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"offset\":[%d,%d],\"scale\":[%.9g,%.9g],\"rotation\":[%.9g,%.9g,%.9g],\"afrt\":%d,\"normalized_matrix\":[",
+	std::string t;
+	TraceAppend(t, "{\"texture_available\":%s,", spriteTex ? "true" : "false");
+	TraceAppend(t, "\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"offset\":[%d,%d],\"scale\":[%.9g,%.9g],\"rotation\":[%.9g,%.9g,%.9g],\"afrt\":%d,\"normalized_matrix\":[",
 		m_traceRootPattern,m_traceRootFrame,m_traceTick,l.tracePattern,l.traceFrame,l.spriteId,x,y,scale,offsetX,offsetY,scaleX,scaleY,rotX,rotY,rotZ,AFRT);
-	for (int row=0; row<4; ++row) for (int col=0; col<4; ++col) fprintf(m_transformTrace,"%s%.9g", row||col ? ",":"",normalized[col][row]);
-	fprintf(m_transformTrace,"],\"local_vertices\":[");
+	for (int row=0; row<4; ++row) for (int col=0; col<4; ++col) TraceAppend(t,"%s%.9g", row||col ? ",":"",normalized[col][row]);
+	TraceAppend(t,"],\"local_vertices\":[");
 	const int indices[] = {0,1,2,4};
-	for(int j=0;j<4;++j) fprintf(m_transformTrace,"%s[%.9g,%.9g]",j?",":"",imageVertex[indices[j]*4],imageVertex[indices[j]*4+1]);
-	fprintf(m_transformTrace,"],\"normalized_vertices\":[");
-	for(int j=0;j<4;++j) { const auto v=normalized*glm::vec4(imageVertex[indices[j]*4],imageVertex[indices[j]*4+1],0.f,1.f); fprintf(m_transformTrace,"%s[%.9g,%.9g]",j?",":"",v.x,v.y); }
-	fprintf(m_transformTrace,"]}\n");
+	for(int j=0;j<4;++j) TraceAppend(t,"%s[%.9g,%.9g]",j?",":"",imageVertex[indices[j]*4],imageVertex[indices[j]*4+1]);
+	TraceAppend(t,"],\"normalized_vertices\":[");
+	for(int j=0;j<4;++j) { const auto v=normalized*glm::vec4(imageVertex[indices[j]*4],imageVertex[indices[j]*4+1],0.f,1.f); TraceAppend(t,"%s[%.9g,%.9g]",j?",":"",v.x,v.y); }
+	TraceAppend(t,"]}");
+	HC_LOG_DEBUG("transform-trace {} {}", m_transformTraceTag, t);
 }
 
 void Render::DrawLayers()
@@ -1214,9 +1227,9 @@ void Render::DrawLayers()
 	if (renderLayers.empty()) {
 		return;
 	}
-	if (!m_transformTracePath.empty()) {
-		m_transformTrace = fopen(m_transformTracePath.c_str(), "w");
-		m_transformTracePath.clear(); m_transformTraceCount = 0;
+	if (m_transformTraceRequested) {
+		applog::EnableDebug();
+		m_transformTrace = true; m_transformTraceRequested = false; m_transformTraceTag = m_transformTraceRequestTag; m_transformTraceCount = 0;
 	}
 
 	// Save every piece of shared state the per-item draws mutate.

@@ -751,8 +751,7 @@ void FrameState::InspectState(FrameData* data,int state,int offset)
 	frame=std::clamp(state,0,int(seq->frames.size())-1);
 	authoredOffset=std::clamp(offset,0,std::max(1,seq->frames[frame].AF.duration)-1);
 	authoredInspection=true; animating=false; playbackFinished=false;
-	static int count=0;
-	if(count++<128) if(auto* f=fopen("timeline_navigation_trace.log","a")) { fprintf(f,"authored pattern=%d state=%d offset=%d runtime_tick=%d\n",pattern,frame,authoredOffset,currentTick); fclose(f); }
+	HC_LOG_DEBUG("timeline authored pattern={} state={} offset={} runtime_tick={}",pattern,frame,authoredOffset,currentTick);
 }
 
 int FrameState::AuthoredTick(FrameData* data) const
@@ -785,8 +784,7 @@ void FrameState::SeekTimelineTick(FrameData* data,FrameData* effects,int tick,co
 	preview::TickState ts; sim.getStateAt(currentTick,ts);
 	const auto* root=ts.root(); if(root) frame=root->frame;
 	authoredInspection=false; playbackFinished=false;
-	static int count=0;
-	if(count++<256) if(auto* f=fopen("timeline_navigation_trace.log","a")) { fprintf(f,"seek origin=%s pattern=%d requested=%d tick=%d state=%d timer=%d visit=%u if=%d\n",origin,pattern,tick,currentTick,frame,root?root->frameTimer:-1,root?root->visitSerial:0,int(previewOptions.defaultIfAssumption)); fclose(f); }
+	HC_LOG_DEBUG("timeline seek origin={} pattern={} requested={} tick={} state={} timer={} visit={} if={}",origin,pattern,tick,currentTick,frame,root?root->frameTimer:-1,root?root->visitSerial:0u,int(previewOptions.defaultIfAssumption));
 }
 
 void FrameState::DiscoverPaths(FrameData* data,FrameData* effects)
@@ -798,10 +796,7 @@ void FrameState::DiscoverPaths(FrameData* data,FrameData* effects)
 	routeData=data; routeEffects=effects; routeVersion=data?data->dataVersion:0;
 	routeEffectVersion=effects?effects->dataVersion:0; routeOptions=previewOptions;
 	playAllRoutes=false;
-	static int count=0;
-	if(count++<64) if(auto* f=fopen("timeline_navigation_trace.log","a")) {
-		fprintf(f,"discover pattern=%d routes=%zu version=%llu if=%d\n",pattern,discoveredRoutes.size(),(unsigned long long)routeVersion,int(options.defaultIfAssumption)); fclose(f);
-	}
+	HC_LOG_DEBUG("timeline discover pattern={} routes={} version={} if={}",pattern,discoveredRoutes.size(),(unsigned long long)routeVersion,int(options.defaultIfAssumption));
 }
 
 void FrameState::SelectPath(FrameData* data,FrameData* effects,int start)
