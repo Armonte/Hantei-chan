@@ -92,6 +92,27 @@ else()
 	message(STATUS "  d3d9_smoke: skipped (${HANTEI_DXVK_DIR}/lib/libdxvk_d3d9.so missing)")
 endif()
 
+# ---- vkd3d-shader HLSL smoke (deliverable 5) --------------------------------------------
+# libvkd3d-shader is built out of tree into build-linux/vkd3d by build_linux.sh
+# (autotools; docs/render/linux.md section 11), and linked dynamically: it is
+# LGPL-2.1 and PLAN.md section 9 requires the dynamic link.
+set(HANTEI_VKD3D_DIR "${CMAKE_BINARY_DIR}/vkd3d")
+set(HANTEI_VKD3D_SO "${HANTEI_VKD3D_DIR}/.libs/libvkd3d-shader.so")
+if(EXISTS "${HANTEI_VKD3D_SO}")
+	add_executable(hlsl_smoke tools/linux/hlsl_smoke.cpp)
+	target_include_directories(hlsl_smoke PRIVATE "${CMAKE_SOURCE_DIR}/deps/vkd3d/include")
+	target_link_libraries(hlsl_smoke PRIVATE "${HANTEI_VKD3D_SO}")
+	target_link_options(hlsl_smoke PRIVATE "-Wl,-rpath,${HANTEI_VKD3D_DIR}/.libs")
+	add_test(NAME hlsl_smoke COMMAND hlsl_smoke "${CMAKE_SOURCE_DIR}/res/shaders")
+	set_tests_properties(hlsl_smoke PROPERTIES LABELS native)
+	list(APPEND HANTEI_LINUX_TARGETS hlsl_smoke)
+	set(HANTEI_LINUX_TARGETS "${HANTEI_LINUX_TARGETS}" CACHE STRING "Targets the native Linux build compiles" FORCE)
+	list(APPEND HANTEI_LINUX_NATIVE_TESTS hlsl_smoke)
+	set(HANTEI_LINUX_NATIVE_TESTS "${HANTEI_LINUX_NATIVE_TESTS}" CACHE STRING "ctest names the native Linux build runs" FORCE)
+else()
+	message(STATUS "  hlsl_smoke: skipped (${HANTEI_VKD3D_SO} missing)")
+endif()
+
 # ninja with no target builds `all`, which still reaches a target through its own
 # directory even when EXCLUDE_FROM_ALL is set, so name the native targets. Write
 # the list next to the build so build_linux.sh does not keep a second copy; one
