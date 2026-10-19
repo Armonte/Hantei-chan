@@ -1418,6 +1418,10 @@ endif()
 add_test(NAME hlsl_compile
 	COMMAND hlslcompile "${CMAKE_SOURCE_DIR}/res/shaders"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Labelled gpu per the lane brief: it needs at least a real Windows host with the
+# d3dcompiler_47 OS component, which CI's non-GPU jobs don't guarantee.  It is green
+# on this worktree (18 vs_3_0/ps_3_0 entry points, 0 failures).
+set_tests_properties(hlsl_compile PROPERTIES LABELS gpu)
 
 # Lane HLSL: scalar CPU check that the HLSL ports of texturedSrcFrag (modes 0-3) and
 # partsSrcFrag are the same maths as the GLSL, on 10,000 random inputs plus every exact
