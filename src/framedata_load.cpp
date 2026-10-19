@@ -4,7 +4,6 @@
 #include <string>
 #include <cstdint>
 #include <cstring>
-#include <windows.h>
 #include "framedata_load.h"
 #include "misc.h"
 #include "app_log.h"

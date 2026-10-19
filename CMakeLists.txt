@@ -1487,6 +1487,49 @@ set_tests_properties(headless_export PROPERTIES LABELS gpu)
 get_property(_hc_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${_hc_all_tests} PROPERTIES SKIP_RETURN_CODE 77)
 
+# src/platform/portable: the same signature on Windows and POSIX (lane LINUX).
+# src/misc.cpp and src/framedata_load.cpp call it, and those two are linked into
+# nearly every tool, so the library is attached to every target that compiles
+# misc.cpp. Doing it with a loop (rather than listing the sources 35 times) keeps
+# the Windows and Linux builds from drifting apart.
+add_library(hc_portable STATIC
+	src/platform/portable/paths.cpp
+	src/platform/portable/process.cpp
+	src/platform/portable/pipe.cpp
+	src/platform/portable/steam.cpp
+)
+target_include_directories(hc_portable PUBLIC "." "src")
+target_compile_definitions(hc_portable PRIVATE WIN32_LEAN_AND_MEAN)
+
+# Every executable whose sources include misc.cpp links hc_portable. The list is
+# read off the target's own SOURCES, so a target added later is covered without a
+# second list to keep in step.
+function(hc_attach_portable target)
+	if(NOT TARGET ${target})
+		return()
+	endif()
+	get_target_property(_srcs ${target} SOURCES)
+	if(NOT _srcs)
+		return()
+	endif()
+	foreach(_s IN LISTS _srcs)
+		if(_s MATCHES "misc\.cpp$" OR _s MATCHES "framedata_load\.cpp$")
+			target_link_libraries(${target} PRIVATE hc_portable)
+			return()
+		endif()
+	endforeach()
+endfunction()
+
+# Walk every target CMake knows about and attach where needed. ALIAS/GLOBAL
+# targets without SOURCES are skipped by the function.
+get_property(_hc_targets DIRECTORY PROPERTY BUILDSYSTEM_TARGETS)
+foreach(_hc_t IN LISTS _hc_targets)
+	hc_attach_portable(${_hc_t})
+endforeach()
+if(TARGET ${EXE})
+	hc_attach_portable(${EXE})
+endif()
+
 # Native Linux build support (lane LINUX, PLAN.md P5 step 1). No-op unless
 # build_linux.sh set HANTEI_LINUX=ON, so the Windows build is unchanged.
 include(linux)

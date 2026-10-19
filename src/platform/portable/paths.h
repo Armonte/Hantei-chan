@@ -37,6 +37,16 @@ std::string Utf8ToAnsi(const std::string& utf8);
 std::wstring Utf8ToWide(const std::string& utf8);
 std::string WideToUtf8(const std::wstring& wide);
 
+// CP932 (Shift-JIS) <-> UTF-8, the pair misc.cpp exported as sj2utf8/utf82sj.
+// The game files name their characters in CP932, so this is the conversion the
+// HA6 loaders run on every name. On Windows it is the two-call
+// MultiByteToWideChar/WideCharToMultiByte pair with the same fallback (a strict
+// attempt with MB_ERR_INVALID_CHARS, then a lenient one); on POSIX it is iconv
+// with the same two attempts. Both return "" when the input cannot be
+// converted at all.
+std::string SjisToUtf8(const std::string& sjis);
+std::string Utf8ToSjis(const std::string& utf8);
+
 // ---- paths ------------------------------------------------------------------------------------------------------
 
 // Absolute path of the running executable, UTF-8: "C:\...\gonptechan.exe" or
@@ -72,6 +82,11 @@ bool CreateDirectories(const std::string& utf8Dir, std::string* error = nullptr)
 // is untouched on failure and the temp file is removed.
 bool ReplaceFileAtomic(const std::string& utf8Path, const void* data, size_t size);
 bool ReadWholeFile(const std::string& utf8Path, std::vector<uint8_t>& out);
+// misc.cpp's ReadInMem: a whole-file read into a caller-owned `new char[]`
+// (the caller does `delete[]`), shared for read so another program may hold the
+// file open. Empty files give size 0 and a one-byte buffer, exactly as before;
+// false leaves both outputs untouched.
+bool ReadFileAlloc(const std::string& utf8Path, char*& data, unsigned& size);
 
 // ---- ini --------------------------------------------------------------------------------------------------------
 // GetPrivateProfile* / WritePrivateProfile* on Windows; on POSIX the same text
