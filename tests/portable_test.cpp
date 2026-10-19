@@ -108,6 +108,32 @@ static void TestPaths(const TempDir& tmp)
 	CHECK(portable::ReplaceFileAtomic(hand, body.data(), body.size()));
 	CHECK(portable::IniGetString(hand, "s", "key") == "spaced");
 	CHECK(portable::IniGetInt(hand, "s", "other", 0) == 1);
+
+	// ReadFileAlloc is misc.cpp's ReadInMem: a caller-owned buffer, a one-byte
+	// allocation for an empty file, and false (no allocation) on a missing one.
+	const std::string blob = (tmp.path / "blob.bin").u8string();
+	CHECK(portable::ReplaceFileAtomic(blob, "0123456789", 10));
+	char* data = nullptr;
+	unsigned size = 0;
+	CHECK(portable::ReadFileAlloc(blob, data, size));
+	CHECK(size == 10 && data && std::memcmp(data, "0123456789", 10) == 0);
+	delete[] data;
+	data = nullptr; size = 0;
+	CHECK(!portable::ReadFileAlloc((tmp.path / "nope.bin").u8string(), data, size));
+	CHECK(data == nullptr && size == 0);
+
+	// The CP932 pair: the games' Japanese names. The bytes are the CP932 form of
+	// "テスト", the same string the encoding checks above round-trip through
+	// wchar_t. A byte sequence CP932 cannot decode gives "" (strict) or a
+	// replacement character (lenient), never a crash.
+	const std::string sjis("\x83\x65\x83\x58\x83\x67");
+	const std::string utf8("\u30c6\u30b9\u30c8");
+	CHECK(portable::SjisToUtf8(sjis) == utf8);
+	CHECK(portable::Utf8ToSjis(utf8) == sjis);
+	CHECK(portable::SjisToUtf8("") == "");
+	CHECK(portable::Utf8ToSjis("") == "");
+	// A lone lead byte that cannot start a CP932 pair is not valid input.
+	CHECK(portable::SjisToUtf8("\x83").size() <= 3);
 }
 
 static void TestSteam()
