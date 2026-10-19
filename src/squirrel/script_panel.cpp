@@ -475,18 +475,17 @@ struct ScriptPanel::Impl {
 		if (hasHotPending) { hasHotPending = false; startHot(hotPending); }
 	}
 	// After a save: the file (relative to the opened game root) goes to the same path under <mods>, then
-	//  - data/chrNNN/<file>: reloadchara chrNNN [live];
+	//  - data/<character>/<file> (chrNNN or a custom UNI2-IM name such as Okita): reloadchara <character> [live];
 	//  - a shared battle file (every script/*.txt, data/_combase / VectorTable / BattleInfo / BoundEff.txt), which the
 	//    game loads once per process: reloadstd [live] (re-runs them, then rebuilds every character against them).
 	void hotReloadSaved()
 	{
 		if (!gSettings.sqHotReload) return;
-		static const std::regex re(R"(^data/(chr\d+)/([^/]+)$)");
-		std::smatch mm;
 		HotTask t;
 		t.shared = FpanimIsSharedFile(currentRel);
-		if (!t.shared && !std::regex_match(currentRel, mm, re)) {
-			hotStatus = "not a data/chrNNN or shared script/data file: not reloaded";
+		const std::string chr = t.shared ? std::string() : FpanimCharaFolder(currentRel);
+		if (!t.shared && chr.empty()) {
+			hotStatus = "not a character file (data/<character>/<character>...) or shared script/data file: not reloaded";
 			hotStatusOk = false;
 			return;
 		}
@@ -498,8 +497,8 @@ struct ScriptPanel::Impl {
 		t.rel = currentRel;   // the data/... key: a pack / mod copy reloads like the archived file it replaces
 		if (const ScriptLayer* l = layerOfPath(t.srcFile)) t.copy = !(l->served && l->enabled);
 		if (!t.shared) {
-			t.chr = mm[1].str();
-			t.fileName = mm[2].str();
+			t.chr = chr;
+			t.fileName = currentRel.substr(currentRel.find_last_of('/') + 1);
 		}
 		startHot(t);
 	}
