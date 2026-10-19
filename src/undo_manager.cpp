@@ -32,6 +32,9 @@ static_assert(std::is_trivially_copyable<Han2FrameRaw>::value && std::is_trivial
 #if defined(__x86_64__) || defined(_M_X64)
 static_assert(sizeof(Layer_Type) == 60, "Layer layout changed: update layerEquals() in undo_manager.cpp, then this size");
 static_assert(sizeof(Frame_AF) == 80, "Frame_AF layout changed: update afEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Frame_AS) == 92, "Frame_AS layout changed: update asEquals() in undo_manager.cpp, then this size");
+static_assert(sizeof(Ha6FrameEnc) == 960 && sizeof(Ha6SeqEnc) == 148, "HA6 encoding layout changed: update ha6FrameEncEquals()/ha6SeqEncEquals(), then these sizes");
+static_assert(sizeof(Ha4FrameRaw) == 1416, "Ha4FrameRaw layout changed: update ha4FrameRawEquals(), then this size");
 static_assert(sizeof(Sequence) == 248 + sizeof(Ha6SeqEnc) + 4 + sizeof(Han2SeqRaw), "Sequence layout changed: update SequenceContentEquals() in undo_manager.cpp, then this size");
 #endif
 static_assert(sizeof(Frame) == sizeof(Frame_AF) + sizeof(Frame_AS) + sizeof(Frame_AT)
@@ -132,17 +135,86 @@ bool han2SeqRawEquals(const Han2SeqRaw& a, const Han2SeqRaw& b)
 		&& std::memcmp(a.name, b.name, sizeof(a.name)) == 0 && std::memcmp(a.gofHdr, b.gofHdr, sizeof(a.gofHdr)) == 0;
 }
 
+// Structs with padding are compared member by member: memcmp would read padding bytes, which neither
+// value-initialization through a user constructor (Ha6FrameEnc) nor member-wise copies at -O3 keep in sync.
+bool asEquals(const Frame_AS& a, const Frame_AS& b)
+{
+	return a.movementFlags == b.movementFlags
+		&& std::memcmp(a.speed, b.speed, sizeof(a.speed)) == 0
+		&& std::memcmp(a.accel, b.accel, sizeof(a.accel)) == 0
+		&& a.maxSpeedX == b.maxSpeedX
+		&& a.canMove == b.canMove   // followed by 3 padding bytes
+		&& a.stanceState == b.stanceState
+		&& a.cancelNormal == b.cancelNormal
+		&& a.cancelSpecial == b.cancelSpecial
+		&& a.counterType == b.counterType
+		&& a.hitsNumber == b.hitsNumber
+		&& a.invincibility == b.invincibility
+		&& std::memcmp(a.statusFlags, b.statusFlags, sizeof(a.statusFlags)) == 0
+		&& a.sineFlags == b.sineFlags
+		&& std::memcmp(a.sineParameters, b.sineParameters, sizeof(a.sineParameters)) == 0
+		&& std::memcmp(a.sinePhases, b.sinePhases, sizeof(a.sinePhases)) == 0
+		&& a.ascf == b.ascf;
+}
+
+bool ha4FrameRawEquals(const Ha4FrameRaw& a, const Ha4FrameRaw& b)
+{
+	// 6 padding bytes sit between box and boxMask.
+	return a.valid == b.valid && a.hadAT == b.hadAT
+		&& std::memcmp(a.rec, b.rec, sizeof(a.rec)) == 0 && std::memcmp(a.at, b.at, sizeof(a.at)) == 0
+		&& std::memcmp(a.ifr, b.ifr, sizeof(a.ifr)) == 0 && std::memcmp(a.efr, b.efr, sizeof(a.efr)) == 0
+		&& std::memcmp(a.box, b.box, sizeof(a.box)) == 0 && a.boxMask == b.boxMask;
+}
+
+bool ha6ExtraEquals(const Ha6ExtraTag& a, const Ha6ExtraTag& b)
+{
+	return std::memcmp(a.tag, b.tag, sizeof(a.tag)) == 0 && a.block == b.block && a.nwords == b.nwords
+		&& std::memcmp(a.w, b.w, sizeof(a.w)) == 0;
+}
+
+bool ha6FrameEncEquals(const Ha6FrameEnc& a, const Ha6FrameEnc& b)
+{
+	// Padding after boxRef, nExtra, layerTags, inside each Ha6ExtraTag and at the tail; the
+	// user-provided constructor leaves all of it indeterminate (this broke state_transfer at -O3).
+	if (!(a.valid == b.valid && a.hadAT == b.hadAT
+		&& std::memcmp(a.fsn, b.fsn, sizeof(a.fsn)) == 0
+		&& a.asPool == b.asPool && a.asRef == b.asRef
+		&& std::memcmp(a.boxPool, b.boxPool, sizeof(a.boxPool)) == 0
+		&& std::memcmp(a.boxRef, b.boxRef, sizeof(a.boxRef)) == 0
+		&& std::memcmp(a.boxXY, b.boxXY, sizeof(a.boxXY)) == 0
+		&& a.boxMask == b.boxMask && a.nEF == b.nEF && a.nIF == b.nIF
+		&& std::memcmp(a.efSlot, b.efSlot, sizeof(a.efSlot)) == 0
+		&& std::memcmp(a.ifSlot, b.ifSlot, sizeof(a.ifSlot)) == 0
+		&& a.nExtra == b.nExtra
+		&& a.afTags == b.afTags
+		&& std::memcmp(a.layerTags, b.layerTags, sizeof(a.layerTags)) == 0
+		&& a.asTags == b.asTags && a.atTags == b.atTags))
+		return false;
+	for (int i = 0; i < Ha6FrameEnc::kMaxExtra; ++i)
+		if (!ha6ExtraEquals(a.extra[i], b.extra[i])) return false;
+	return true;
+}
+
+bool ha6SeqEncEquals(const Ha6SeqEnc& a, const Ha6SeqEnc& b)
+{
+	// 3 tail padding bytes after utf8Names.
+	return a.valid == b.valid && a.hasPTT2 == b.hasPTT2 && a.hasPTCN == b.hasPTCN && a.hadPTIT == b.hadPTIT
+		&& a.ptt2Len == b.ptt2Len && std::memcmp(a.ptt2, b.ptt2, sizeof(a.ptt2)) == 0
+		&& a.ptcnLen == b.ptcnLen && std::memcmp(a.ptcn, b.ptcn, sizeof(a.ptcn)) == 0
+		&& a.pds2Unused == b.pds2Unused && a.utf8Names == b.utf8Names;
+}
+
 bool frameEquals(const Frame& a, const Frame& b)
 {
-	return bytesEqual(a.AS, b.AS)
+	return asEquals(a.AS, b.AS)
 		&& bytesEqual(a.AT, b.AT)
 		&& afEquals(a.AF, b.AF)
 		&& podVectorEqual(a.EF, b.EF)
 		&& podVectorEqual(a.IF, b.IF)
 		&& boxesEqual(a.hitboxes, b.hitboxes)
-		&& bytesEqual(a.ha4, b.ha4)    // original MBAC .DAT bytes (ha4_raw.h)
+		&& ha4FrameRawEquals(a.ha4, b.ha4)    // original MBAC .DAT bytes (ha4_raw.h)
 		&& han2FrameRawEquals(a.han2, b.han2)   // original RBO / GOF2 frame bytes (han2_raw.h)
-		&& bytesEqual(a.ha6, b.ha6);   // HA6 encoding as loaded (ha6_enc.h)
+		&& ha6FrameEncEquals(a.ha6, b.ha6);   // HA6 encoding as loaded (ha6_enc.h)
 }
 
 } // namespace
@@ -157,7 +229,7 @@ bool UndoManager::SequenceContentEquals(const Sequence& a, const Sequence& b)
 	if (a.name != b.name || a.codeName != b.codeName) return false;
 	if (!bytesEqual(a.ha4, b.ha4)) return false;   // MBAC pattern header/name bytes
 	if (!han2SeqRawEquals(a.han2, b.han2)) return false;   // RBO / GOF2 pattern entry/name bytes
-	if (!bytesEqual(a.ha6, b.ha6)) return false;   // HA6 raw name buffers (ha6_enc.h)
+	if (!ha6SeqEncEquals(a.ha6, b.ha6)) return false;   // HA6 raw name buffers (ha6_enc.h)
 	for (size_t i = 0; i < a.frames.size(); ++i) {
 		if (!frameEquals(a.frames[i], b.frames[i])) return false;
 	}
