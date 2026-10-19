@@ -1,5 +1,6 @@
 // "RBO / GOF2 (HAN2)" inspector: every field of the current frame record, named after the IDA struct it is generated from.
 #include "han2_character.h"
+#include "imgui_utils.h"
 #include "ui/ui_style.h"
 #include "han2_thumbs.h"
 #include "character_instance.h"
@@ -494,7 +495,7 @@ void DrawAnimWindow(CharacterInstance *ch, FrameState &state, void *onionPtr)
 				unsigned tex; int tw, th;
 				if (ImGui::IsRectVisible(q, ImVec2(q.x + C, q.y + C)) && FrameThumb(*ch, state.pattern, (int)i, tex, tw, th)) {
 					const float z = std::min((C - ui::Px(6)) / tw, picH / th); const ImVec2 sz(tw * z, th * z); const ImVec2 a(q.x + (C - sz.x) * 0.5f, q.y + ui::Px(2) + (picH - sz.y) * 0.5f);
-					sdl->AddImage((ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y));
+					ui::ImageWithOwnSampler(sdl, (ImTextureID)(intptr_t)tex, a, ImVec2(a.x + sz.x, a.y + sz.y));
 				}
 				char l[32]; snprintf(l, sizeof l, "%zu  %dt", i, seq->frames[i].AF.duration);
 				sdl->AddText(ImVec2(q.x + ui::Px(3), q.y + C - ImGui::GetFontSize() - ui::Px(2)), ImGui::GetColorU32(ImGuiCol_Text), l);
