@@ -27,5 +27,7 @@ target_compile_definitions(imgui PRIVATE IMGUI_IMPL_OPENGL_LOADER_GLAD IMGUI_IMP
 # 32-bit draw indices for every translation unit that sees imgui.h: the backend is built on its ES2 path (no
 # glDrawElementsBaseVertex, so ImGuiBackendFlags_RendererHasVtxOffset stays off) and a 16-bit index wraps once a
 # single draw list passes 65535 vertices (a large Squirrel file in the Script panel went blank).
-target_compile_definitions(imgui PUBLIC "ImDrawIdx=unsigned int")
+# C/C++ only: windres (the .rc in every target that links imgui) gets the definitions too, and splits "unsigned int"
+# at the space, failing with "int: No such file or directory" on the native Windows build.
+target_compile_definitions(imgui PUBLIC "$<$<COMPILE_LANGUAGE:C,CXX>:ImDrawIdx=unsigned int>")
 target_link_libraries(imgui PUBLIC glad imm32 dwmapi)
