@@ -864,18 +864,32 @@ bool IsQuiescent(const PreviewSim::State& s, const std::vector<ScheduledSpawn>& 
 // Free-flight movement only: no collision, stage clamp, momentum, sine or
 // homing reconstruction. Native 0x45F450 sets AS before EF dispatch; the
 // effect loop 0x453B80 integrates 0x4620B0 after UpdateCharacterObject.
-void AdvanceMovement(PreviewSim::State& s,size_t index)
+void AdvanceMovement(PreviewSim::State& s, size_t index)
 {
- auto& actor=s.actors[index]; if(actor.frame<0 || actor.isPreset) return;
- actor.velocityX+=actor.accelerationX; actor.velocityY+=actor.accelerationY;
- const float dx=float(actor.velocityX/256.0),dy=float(actor.velocityY/256.0);
- actor.x+=dx; actor.y+=dy;
- if(dx==0 && dy==0) return;
- std::vector<int> parents{actor.id};
- for(size_t i=0;i<parents.size();++i) for(auto& child:s.actors)
-  if(child.frame>=0 && child.parentId==parents[i] && (child.linkFlags&4)) {
-   child.x+=dx; child.y+=dy; parents.push_back(child.id);
-  }
+	auto& actor = s.actors[index];
+	if (actor.frame < 0 || actor.isPreset) return;
+	actor.velocityX += actor.accelerationX;
+	actor.velocityY += actor.accelerationY;
+	const float dx = float(actor.velocityX / 256.0), dy = float(actor.velocityY / 256.0);
+	actor.x += dx;
+	actor.y += dy;
+	if (dx == 0 && dy == 0) return;
+	// Carry position-linked children (link flag 4) along, breadth first. Each actor moves at most
+	// once: a parentId cycle (A->B->A, or a child pointing back at the mover) must not loop forever
+	// or move anyone twice.
+	std::vector<char> moved(s.actors.size(), 0);
+	moved[index] = 1;
+	std::vector<int> parents{actor.id};
+	for (size_t i = 0; i < parents.size(); ++i) {
+		for (size_t k = 0; k < s.actors.size(); ++k) {
+			auto& child = s.actors[k];
+			if (moved[k] || child.frame < 0 || child.parentId != parents[i] || !(child.linkFlags & 4)) continue;
+			moved[k] = 1;
+			child.x += dx;
+			child.y += dy;
+			parents.push_back(child.id);
+		}
+	}
 }
 
 void Step(Ctx& c, PreviewSim::State& s)
