@@ -5,6 +5,7 @@
 #include "i18n.h"
 #include "mv_script.h"
 #include "paste_notice.h"
+#include "ini.h"
 #include <algorithm>
 #include <cmath>
 #include <imgui.h>
@@ -586,7 +587,7 @@ void BoxPane::DrawSpawnTimeline()
 	// Labels in a fixed column, bars in a horizontally scrolling child.
 	const int indicatorRows = 7;
 	int spawnRowEstimate = showSpawns ? (int)std::min<size_t>(sim.spawnRecords().size(), 40) : 0;
-	const float childHeight = std::min(520.f, (4 + indicatorRows + spawnRowEstimate) * (rowHeight + 2) + 30.f);
+	const float childHeight = std::min(520.f, ((gSettings.timelineDurationLane ? 4 : 3) + indicatorRows + spawnRowEstimate) * (rowHeight + 2) + 30.f);
 
 	// Ctrl+wheel zooms, so the child must not also scroll with it.
 	im::BeginChild("##tlbars", ImVec2(0, childHeight), ImGuiChildFlags_Borders,
@@ -673,7 +674,9 @@ void BoxPane::DrawSpawnTimeline()
 	}
 	yPos += rowHeight + 4;
 
-	// Duration and Keyframes share the exact authored state boundaries.
+	// Duration and Keyframes share the exact authored state boundaries. Opt-in (Settings > Timeline
+	// duration lane); the default keeps the 0.1.2 timeline (no Duration row, outlined keyframe cells).
+	if(gSettings.timelineDurationLane) {
 	rowLabel(TXT("Duration"));
 	for(int i=0;i<mainFrameCount;++i) {
 		traceCell("duration",i);
@@ -686,6 +689,7 @@ void BoxPane::DrawSpawnTimeline()
 			im::SetTooltip("State %d: %d frames",i,kfStart[i+1]-kfStart[i]);
 	}
 	yPos+=rowHeight+2;
+	}
 
 	// ---- Keyframes (authored order) ----
 	rowLabel(TXT("Keyframes"));
@@ -705,7 +709,8 @@ void BoxPane::DrawSpawnTimeline()
 		const bool cur = i == currState.frame;
 		drawList->AddRectFilled(ImVec2(x0, yPos), ImVec2(x1, yPos + rowHeight),
 			cur ? IM_COL32(230, 160, 40, 230) : (i % 2 ? IM_COL32(90, 110, 150, 220) : IM_COL32(110, 130, 170, 220)));
-		if(cur || x1-x0>=5.f) drawList->AddLine(ImVec2(x0,yPos),ImVec2(x0,yPos+rowHeight),cur?IM_COL32(255,230,100,255):IM_COL32(180,210,255,170),1.f);
+		if(!gSettings.timelineDurationLane) drawList->AddRect(ImVec2(x0, yPos), ImVec2(x1, yPos + rowHeight), IM_COL32(20, 20, 20, 255));
+		else if(cur || x1-x0>=5.f) drawList->AddLine(ImVec2(x0,yPos),ImVec2(x0,yPos+rowHeight),cur?IM_COL32(255,230,100,255):IM_COL32(180,210,255,170),1.f);
   if(i==resizeHover) drawList->AddLine(ImVec2(x1,yPos),ImVec2(x1,yPos+rowHeight),IM_COL32(255,230,100,255),3.f);
 		const std::string num = std::to_string(i);
 		if (x1 - x0 > im::CalcTextSize(num.c_str()).x + 4)

@@ -35,10 +35,10 @@ int main()
 	CHECK(reg.conflicts().empty());
 
 	// J/K/L only in a character view.
-	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickBackward);
+	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::playReverse);
 	CHECK(act(reg.resolve({'K', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::togglePlayback);
-	CHECK(act(reg.resolve({'L', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickForward);
-	CHECK(act(reg.resolve({'L', shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::playForward);
+	CHECK(act(reg.resolve({'L', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::playForward);
+	CHECK(act(reg.resolve({'L', shortcutShift}, ShortcutContext::characterView, false, false)) == ShortcutAction::stepTickForward);
 	// Wave 2 rendering bindings: view-scoped, never while typing.
 	CHECK(act(reg.resolve({'O', 0}, ShortcutContext::characterView, false, false)) == ShortcutAction::toggleOnionSkin);
 	CHECK(act(reg.resolve({'O', shortcutCtrl}, ShortcutContext::characterView, false, false)) == ShortcutAction::openProject);
@@ -66,7 +66,7 @@ int main()
 
 	// Auto-repeat: one-shot actions ignore it, stepping accepts it.
 	CHECK(reg.resolve({'K', 0}, ShortcutContext::characterView, false, true) == nullptr);
-	CHECK(act(reg.resolve({'J', 0}, ShortcutContext::characterView, false, true)) == ShortcutAction::stepTickBackward);
+	CHECK(act(reg.resolve({'J', shortcutShift}, ShortcutContext::characterView, false, true)) == ShortcutAction::stepTickBackward);
 	CHECK(act(reg.resolve({'Z', shortcutCtrl}, ShortcutContext::characterView, false, true)) == ShortcutAction::undo);
 
 	// Rebinding into an overlapping chord is reported.
@@ -174,7 +174,7 @@ int main()
 		// F / L / H: L is play forward in a character tab, the axis toggle in a PAT tab (G in a character tab).
 		CHECK(act(r.resolve({'F', 0}, C::characterView, none)) == ShortcutAction::toggleHideUi);
 		CHECK(act(r.resolve({'F', 0}, C::stageView, none)) == ShortcutAction::toggleHideUi);
-		CHECK(act(r.resolve({'L', 0}, C::characterView, none)) == ShortcutAction::stepTickForward);
+		CHECK(act(r.resolve({'L', 0}, C::characterView, none)) == ShortcutAction::playForward);
 		CHECK(act(r.resolve({'L', 0}, C::patEditor, none)) == ShortcutAction::toggleAxis);
 		CHECK(act(r.resolve({'G', 0}, C::characterView, none)) == ShortcutAction::toggleAxis);
 		CHECK(act(r.resolve({'H', 0}, C::characterView, none)) == ShortcutAction::toggleBoxes);
@@ -230,6 +230,26 @@ int main()
 		CHECK(act(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,none))==ShortcutAction::togglePositionSolo);
 		CHECK(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,text)==nullptr);
 		CHECK(act(r.resolve({'B',shortcutCtrl},ShortcutContext::characterView,none))==ShortcutAction::nextPositionTarget);
+	}
+	{
+		// Opt-in layouts: J/L step + PgUp/PgDn states. Off by default (0.1.2), user overrides survive the switch,
+		// and PgUp/PgDn never fire while a text field owns the keyboard.
+		ShortcutRegistry r; ShortcutInput none,text; text.textInput=true;
+		using C=ShortcutContext;
+		CHECK(r.resolve({0x21,0},C::characterView,none)==nullptr);
+		r.applyOverride("Key=playForward#0=80,3"); // Ctrl+Shift+P
+		r.applyLayoutOptions(true,true);
+		CHECK(act(r.resolve({'J',0},C::characterView,none))==ShortcutAction::stepTickBackward);
+		CHECK(act(r.resolve({'L',0},C::characterView,none))==ShortcutAction::stepTickForward);
+		CHECK(act(r.resolve({'J',shortcutShift},C::characterView,none))==ShortcutAction::playReverse);
+		CHECK(act(r.resolve({'P',(uint8_t)(shortcutCtrl|shortcutShift)},C::characterView,none))==ShortcutAction::playForward);
+		CHECK(act(r.resolve({0x21,0},C::characterView,none))==ShortcutAction::nextKeyframe);
+		CHECK(r.resolve({0x21,0},C::characterView,text)==nullptr);
+		CHECK(act(r.resolve({0x21,0},C::stageView,none))==ShortcutAction::previousStage);
+		CHECK(r.conflicts().empty());
+		r.applyLayoutOptions(false,false);
+		CHECK(act(r.resolve({'J',0},C::characterView,none))==ShortcutAction::playReverse);
+		CHECK(r.resolve({0x21,0},C::characterView,none)==nullptr);
 	}
 	if (g_failures) {
 		std::fprintf(stderr, "shortcut_router_test: %d failure(s)\n", g_failures);

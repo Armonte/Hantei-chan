@@ -16,6 +16,7 @@ public:
 	static inline std::function<void(FrameData*, int pattern)> drawScriptRefs;
 	void Draw();
 	void DrawPatternList();
+	void DrawPatternListBody();
 
 	void RegenerateNames();
 

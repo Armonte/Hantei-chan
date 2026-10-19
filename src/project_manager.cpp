@@ -4,6 +4,7 @@
 #include "hud_theme_exporter.h"
 #include "misc.h"
 #include "app_log.h"
+#include "ini.h"
 #include "../third_party/json/json.hpp"
 #include <fstream>
 #include <filesystem>
@@ -545,7 +546,7 @@ bool ProjectManager::LoadProject(
 				if(viewObj.contains("position_tool_settings") && viewObj["position_tool_settings"].is_object()) {
 					const auto& j=viewObj["position_tool_settings"]; state.positionHandleHover=j.value("handle_hover",false); state.positionHighlight=j.value("highlight",true);
 				}
-				state.absoluteScrub=viewObj.value("absolute_scrub",true);
+				state.absoluteScrub=viewObj.value("absolute_scrub",gSettings.absoluteScrubDefault);
 				state.previewOptions.simulateMovement=viewObj.value("simulate_movement",false);
 				state.authoredInspection=viewObj.value("authored_inspection",false);
 				state.authoredOffset=std::max(0,viewObj.value("authored_offset",0));

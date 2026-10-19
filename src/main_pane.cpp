@@ -691,6 +691,13 @@ void MainPane::Draw()
 				currState.InspectState(frameData,currState.frame);currState.activeSpawns.clear();pastePatternStack=false;
 			}
 
+			// The space the (collapsed) trees leave holds the pattern list, so the pane is not half empty
+			// (docs/ui/LAYOUT_AUDIT_2026-10-16.md #10), unless the list was moved to its own window.
+			if (!gSettings.patternListWindow && im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
+			{
+				im::SeparatorText(TXT("Pattern"));
+				DrawPatternListBody();
+			}
 			if(!leftViewChanged) currState.leftPaneScrollY = im::GetScrollY();
 			im::EndChild();
 		}
@@ -705,10 +712,22 @@ void MainPane::Draw()
 void MainPane::DrawPatternList()
 {
 	namespace im=ImGui;
-	if(gSettings.showPatternList && frameData->m_loaded && decoratedNames) {
+	// Opt-in (Settings > Pattern list in its own window); by default the list stays inline in the pane (0.1.2).
+	if(gSettings.patternListWindow && gSettings.showPatternList && frameData->m_loaded && decoratedNames) {
 		im::SetNextWindowSize(ImVec2(ui::Em(22),ui::Em(30)),ImGuiCond_FirstUseEver);
 		const bool wasOpen=gSettings.showPatternList;
-		if(im::Begin(windowName("Pattern list").c_str(),&gSettings.showPatternList)) {
+		if(im::Begin(windowName("Pattern list").c_str(),&gSettings.showPatternList))
+			DrawPatternListBody();
+		im::End();
+		if(wasOpen!=gSettings.showPatternList) im::MarkIniSettingsDirty();
+	}
+}
+
+void MainPane::DrawPatternListBody()
+{
+	namespace im=ImGui;
+	{
+		{
 				const int count = frameData->get_sequence_count();
 				// The selection follows currState.pattern both ways: a click here sets it, and a change anywhere else (combo,
 				// ID field, search, shortcuts) moves the selection and scrolls the row into view once. The scroll is held
@@ -749,10 +768,7 @@ void MainPane::DrawPatternList()
 				}
 				im::EndChild();
 		}
-		im::End();
-		if(wasOpen!=gSettings.showPatternList) im::MarkIniSettingsDirty();
 	}
-
 }
 
 void MainPane::PopCopies()
