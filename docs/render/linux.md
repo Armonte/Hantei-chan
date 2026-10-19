@@ -1238,3 +1238,75 @@ Two things had to be arranged, both in `cmake/linux.cmake`:
 2. The vendored `.so` is loaded by its absolute path (`HANTEI_DXVK_LIB`) with the
    release directory on the executable's rpath, so the smoke does not depend on
    `LD_LIBRARY_PATH`.
+
+## 11. vkd3d-shader HLSL compile (deliverable 5)
+
+`deps/vkd3d` is the upstream winehq vkd3d repository as a submodule at release
+**vkd3d-2.1** (`fb7f9ff3c1f8d972ee6f1b8c6a92caf6c8ba1e10`, 2026-08-24, more than
+two weeks old when vendored). Only `libvkd3d-shader` is built, out of tree into
+`build-linux/vkd3d/`, with autotools (`./build_linux.sh vkd3d`). It is linked
+**dynamically** (`libvkd3d-shader.so.1.19.0`) as PLAN.md section 9 requires for
+LGPL-2.1; nothing statically links it.
+
+`tools/linux/hlsl_smoke.cpp` compiles a small vs_3_0/ps_3_0 HLSL pair through
+`vkd3d_shader_compile(VKD3D_SHADER_SOURCE_HLSL, VKD3D_SHADER_TARGET_D3D_BYTECODE)`
+and checks the d3dbc version token
+(`0xfffe0300` for vs_3_0, `0xffff0300` for ps_3_0), then walks a shader directory
+and prints per-file `OK`/`FAIL` for each stage. The profile and entry point go in
+a `vkd3d_shader_hlsl_source_info` chained off `compile_info.next`, which is where
+the HLSL front end reads them.
+
+**Gate: the built-in pair and every `res/shaders/*.hlsl` from lane HLSL compile.**
+Measured 2026-10-18 against `origin/render/lane-hlsl` (`3fb4dac`) - fetched
+read-only, nothing merged:
+
+```
+$ ./build_linux.sh vkd3d && ./build-linux/hlsl_smoke
+hlsl_smoke: builtin vs_3_0 OK
+hlsl_smoke: builtin ps_3_0 OK
+hlsl_smoke: ok
+$ tools/linux/check_hlsl_lane.sh
+origin/render/lane-hlsl: 9 .hlsl file(s)
+hlsl_smoke: .../bg_blur.hlsl      vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../bg_heat_a.hlsl    vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../bg_heat_b.hlsl    vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../bg_object.hlsl    vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../parts.hlsl        vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../s3d.hlsl          vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../s3d_grade.hlsl    vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../simple.hlsl       vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: .../textured.hlsl     vs_3_0 OK   ps_3_0 OK
+hlsl_smoke: ok
+```
+
+Per-file result: **9 of 9 OK, 0 FAIL**, both stages each. `check_hlsl_lane.sh`
+extracts the files with `git show` into `build-linux/hlsl_lane/` (build output, not
+committed) so the other lane's branch is never merged or checked out here. If lane
+HLSL has no `.hlsl` files yet the script exits 77 (ctest skip).
+
+### Two upstream prerequisites that are missing here
+
+Neither is a `sudo` install; both are worked around inside this lane with nothing
+changed in the submodule:
+
+1. **The perl `JSON` module.** `configure.ac` requires it
+   (`m4/check-perl-module.m4`), but the only use is `decode_json` in
+   `libs/vkd3d-shader/make_spirv`. `tools/linux/perl-shims/JSON.pm` provides the
+   two functions on top of core `JSON::PP`, and `build_linux.sh` sets
+   `PERL5LIB`. `./autogen.sh` needs `autoconf`/`automake` (installed).
+2. **The SPIR-V headers.** `libs/vkd3d-shader/spirv.c` and
+   `include/private/spirv_grammar.h` need `spirv/unified1/spirv.h` and
+   `GLSL.std.450.h`, which ship only with the Vulkan SDK, and the distribution's
+   `libvulkan-dev` does not include them. The two files from KhronosGroup
+   `SPIRV-Headers` tag `vulkan-sdk-1.4.350.1`
+   (`ad9184e76a66b1001c29db9b0a3e87f646c64de0`, 2026-04-15) are vendored at
+   `tools/linux/spirv-headers/spirv/unified1/`, and `build_linux.sh` sets
+   `CPPFLAGS`. This is the smallest set the build needs; the other ~100 headers in
+   the upstream tree are unused.
+
+`widl` is needed for the generated COM headers and comes from mingw-w64
+(`/usr/bin/x86_64-w64-mingw32-widl`, Wine IDL Compiler 8.5). `build_linux.sh`
+passes it explicitly as `WIDL=...` because the unqualified name is not on `PATH`.
+The generated headers (`vkd3d_d3dx9shader.h`, `vkd3d_d3d12.h`, ...) are not
+dependencies of `libvkd3d-shader.la` in upstream's Makefile, so the script builds
+them first.
