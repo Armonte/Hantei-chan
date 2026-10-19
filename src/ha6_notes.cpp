@@ -100,14 +100,25 @@ bool Ha6Notes::save(const std::string& path) const
 {
 	// Save As backs up the imported bytes beside the destination, never in the
 	// original live data folder. Existing migration backups are immutable.
+	// A backup that already holds other bytes (left by an earlier migration) is
+	// kept as is and this payload goes to the next free numbered name, so a stale
+	// backup can never block saving.
 	if (!legacyPayload.empty()) {
-		const std::string backup = path + ".legacy-backup";
-		std::ifstream f(std::filesystem::u8path(backup), std::ios::binary);
-		if (f) {
-			std::string existing((std::istreambuf_iterator<char>(f)), {});
-			if (existing != legacyPayload) return false;
-		} else if (std::filesystem::exists(std::filesystem::u8path(backup)) ||
-		           !WriteFileAtomic(backup.c_str(), legacyPayload.data(), legacyPayload.size())) return false;
+		bool backedUp = false;
+		for (int n = 0; n < 100 && !backedUp; ++n) {
+			const std::string backup = path + ".legacy-backup" + (n ? "." + std::to_string(n) : std::string());
+			std::error_code ec;
+			if (std::filesystem::exists(std::filesystem::u8path(backup), ec) || ec) {
+				std::ifstream f(std::filesystem::u8path(backup), std::ios::binary);
+				if (!f) continue;   // unreadable: leave it alone, try the next name
+				const std::string existing((std::istreambuf_iterator<char>(f)), {});
+				backedUp = existing == legacyPayload;   // same bytes already backed up
+				continue;
+			}
+			if (!WriteFileAtomic(backup.c_str(), legacyPayload.data(), legacyPayload.size())) return false;
+			backedUp = true;
+		}
+		if (!backedUp) return false;
 	}
 	json root = json::object();
 	root["version"] = 1;

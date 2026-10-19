@@ -501,6 +501,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 
 						if (!active->saveModifiedOnly(modPath)) {
 							requestErrorPopup("Save Error", std::string(TXT("Could not write ")) + modPath);
+						} else {
+							reportSaveWarning(active);
 						}
 					}
 				}
