@@ -1,0 +1,14 @@
+# gonp-like synthetic fixture (mirrors PovertyCaster tests/pcmod_resolve kGonp)
+format = 1
+[[patch]]
+addr = 0x00456789
+orig = "E8 11 22 33 44"
+call = "vanilla:0x00412340"
+[[patch]]
+addr = 0x00470100
+orig = "8B 04 85 00 11 22 33"
+jmp = "vanilla:0x00480000"
+[[patch]]
+addr = 0x004A0010
+orig = "83 F8 05"
+new = "83 F8 06"   # cmp eax,5 -> 6

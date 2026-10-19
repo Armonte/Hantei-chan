@@ -1,5 +1,7 @@
 // pcmod schema 2 data files: see pcmod_schema2.h. Parser/canonical mirror PovertyCaster pc/mods/Schema2.hpp.
 #include "pcmod_schema2.h"
+#include "pcmod_manifest.h"
+#include "pcmod_sha256.h"
 
 #include <algorithm>
 #include <cctype>
@@ -565,6 +567,50 @@ std::vector<Issue> VerifyPatches(const Data& in, const PeImage& exe, const Profi
 			add(IssueCode::Overlap, d.patches[j].addr, "overlaps the patch @0x" + H8(p.addr));
 	}
 	return out;
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+// Package level
+// ---------------------------------------------------------------------------------------------------------------------
+std::string AttachToManifest(Manifest& m, const Data& in, const Profile& pf, Files& out)
+{
+	out = Files{};
+	m.schema = 2;
+	m.exePatches = m.features = m.rules = AuxFile{};
+	Data d = in;
+	Normalise(d);
+	if (!d.patches.empty()) out.patches = WritePatchesToml(d);
+	if (!d.features.empty()) out.features = WriteFeaturesToml(d);
+	if (!d.rules.empty()) out.rules = WriteRulesToml(d);
+	auto ref = [](AuxFile& a, const char* path, const std::string& text) {
+		if (text.empty()) return;
+		a.present = true; a.path = path; a.sha256 = Sha256Hex(text); a.size = text.size();
+	};
+	ref(m.exePatches, "patches.toml", out.patches);
+	ref(m.features, "features.toml", out.features);
+	ref(m.rules, "rules.toml", out.rules);
+	if (m.HasAux()) m.cls = PackageClass::Sim;   // S2.1: any of the three makes the package sim
+	Data back;
+	return LoadFromTexts(m, out, pf, back);
+}
+
+std::string LoadFromTexts(Manifest& m, const Files& t, const Profile& pf, Data& out)
+{
+	out = Data{};
+	m.s2Canon.clear();
+	const AuxFile* a[3] = { &m.exePatches, &m.features, &m.rules };
+	const std::string* x[3] = { &t.patches, &t.features, &t.rules };
+	for (int i = 0; i < 3; ++i) {
+		if (!a[i]->present) continue;
+		if (x[i]->size() != a[i]->size || Sha256Hex(*x[i]) != a[i]->sha256) return m.id + ": " + a[i]->path + " differs from its manifest";
+	}
+	std::string e;
+	if (m.exePatches.present && !(e = ParsePatches(t.patches, pf, out)).empty()) return e;
+	if (m.features.present && !(e = ParseFeatures(t.features, pf, out)).empty()) return e;
+	if (m.rules.present && !(e = ParseRules(t.rules, pf, out)).empty()) return e;
+	Normalise(out);
+	m.s2Canon = Canonical(out);
+	return {};
 }
 
 } // namespace pcmod::s2
