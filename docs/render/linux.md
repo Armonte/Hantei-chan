@@ -21,7 +21,7 @@ SDL-and-Win32 window bridge and `platform/portable/*` holds the two bodies of
 each helper, so an inventory of Win32 use inside it would list the port, not the
 work.
 
-Current size: <!-- auto:counts -->74 `#include <windows.h>`-family sites, 893 Win32 call sites<!-- /auto:counts -->
+Current size: <!-- auto:counts -->72 `#include <windows.h>`-family sites, 854 Win32 call sites<!-- /auto:counts -->
 
 Two things are being separated here. The **portable layer** is what P5 actually
 switches the callers to: `src/platform/portable/{paths,process,pipe,steam}.{h,cpp}`
@@ -67,8 +67,9 @@ for UI and file-dialog results, the ANSI code page (`CP_ACP`, 932 on a Japanese
 machine) for editor file paths and the ini, and UTF-16 `std::wstring` for the
 Win32 `W` calls.
 
-The conversion helpers already live in `png_writer.{h,cpp}` (`Utf8ToWide`,
-`WideToUtf8`, `AnsiToUtf8`) and `misc.cpp` (`sj2utf8`, `utf82sj`). On Linux the
+The conversion helpers now live in `src/platform/portable/paths.{h,cpp}`
+(`Utf8ToWide`, `WideToUtf8`, `AnsiToUtf8`, and the CP932 pair `SjisToUtf8` /
+`Utf8ToSjis` that `misc.cpp` exported as `sj2utf8`/`utf82sj`). On Linux the
 code page goes away: every path is UTF-8, so `AnsiToUtf8`/`Utf8ToAnsi` become
 identity (or, at most, a UTF-8 pass-through for a file whose bytes were cp932 on
 disk), and `Utf8ToWide`/`WideToUtf8` become the MBCS conversion `std::filesystem`
@@ -200,11 +201,17 @@ The four headers are in the tree with a Windows body and a POSIX body each, and
 | `src/platform/portable/pipe.h` | `CreateNamedPipeA`/`CreateFileA` on the pipe namespace, `PeekNamedPipe`, `WaitNamedPipeW`, `CancelIoEx` on stop | `AF_UNIX` socket in `$XDG_RUNTIME_DIR/hantei`, `poll()`, `ioctl(FIONREAD)`, stale-socket probe |
 | `src/platform/portable/steam.h` | the same `libraryfolders.vdf` parse over the Windows roots | the same parse over `~/.steam/steam`, `~/.steam/root`, `~/.local/share/Steam` |
 
-Two things are deliberately not done here, because they are P5 decisions rather
-than lane work: `CpToUtf8` does not decode cp932 on POSIX (the games' Japanese
-names need either a small table or a `libiconv` submodule, and `misc.cpp`'s
-`sj2utf8` still covers that until then), and the helpers are not wired into any
-caller yet - P5 does that with the table above.
+CP932 on POSIX is glibc's own `iconv` converter (no table, no libiconv
+submodule): `SjisToUtf8`/`Utf8ToSjis` run the same strict-then-lenient two-attempt
+sequence the Windows body uses, and `CpToUtf8(s, cp)` maps cp 0 / 65001 to the
+identity and any other code page to `iconv`, so the games' Japanese names decode.
+
+The switch-over has started: `src/misc.cpp` and `src/framedata_load.cpp` no
+longer include `windows.h` (lane LINUX task (a)), and `src/misc.cpp` now forwards
+`ReadInMem`/`sj2utf8`/`utf82sj`/`WriteFileAtomic`/`normalizePath` to
+`portable::ReadFileAlloc`/`SjisToUtf8`/`Utf8ToSjis`/`ReplaceFileAtomic`/
+`NormalizeSeparators`. Every other caller still uses the Win32 calls; the table
+above is the P5 list.
 
 ## 8. Inventory (generated)
 
@@ -215,7 +222,7 @@ caller yet - P5 does that with the table above.
 | file | line | header |
 |---|---|---|
 | `src/archive_browser.cpp` | 23 | `windows.h` |
-| `src/archive_browser_ui.cpp` | 13 | `windows.h` |
+| `src/archive_browser_ui.cpp` | 15 | `windows.h` |
 | `src/bg_dxt32.c` | 15 | `windows.h` |
 | `src/bg_render.cpp` | 16 | `windows.h` |
 | `src/bgm_player.cpp` | 4 | `windows.h` |
@@ -226,7 +233,6 @@ caller yet - P5 does that with the table above.
 | `src/fpanim_install.cpp` | 9 | `windows.h` |
 | `src/fpanim_install.cpp` | 10 | `tlhelp32.h` |
 | `src/fpanim_install_panel.cpp` | 14 | `windows.h` |
-| `src/framedata_load.cpp` | 7 | `windows.h` |
 | `src/framestate.cpp` | 8 | `windows.h` |
 | `src/game_frame_ring.cpp` | 4 | `windows.h` |
 | `src/game_link.cpp` | 4 | `windows.h` |
@@ -243,7 +249,6 @@ caller yet - P5 does that with the table above.
 | `src/mbaacc_pack.cpp` | 3 | `windows.h` |
 | `src/mbaacc_package.cpp` | 7 | `windows.h` |
 | `src/mbaacc_package_cli.cpp` | 15 | `windows.h` |
-| `src/misc.cpp` | 2 | `windows.h` |
 | `src/pattex.cpp` | 7 | `windows.h` |
 | `src/pattool.cpp` | 27 | `windows.h` |
 | `src/png_writer.cpp` | 3 | `windows.h` |
@@ -297,10 +302,10 @@ caller yet - P5 does that with the table above.
 
 | file | line | win32 call | portable replacement |
 |---|---|---|---|
-| `src/archive_browser.cpp` | 190 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
-| `src/archive_browser.cpp` | 1365 | `MoveFileExW` | `portable::ReplaceFileAtomic()` |
-| `src/archive_browser_ui.cpp` | 636 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
-| `src/archive_browser_ui.cpp` | 641 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
+| `src/archive_browser.cpp` | 194 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
+| `src/archive_browser.cpp` | 1371 | `MoveFileExW` | `portable::ReplaceFileAtomic()` |
+| `src/archive_browser_ui.cpp` | 644 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
+| `src/archive_browser_ui.cpp` | 649 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
 | `src/authoring/authoring_window.cpp` | 78 | `GetCurrentDirectoryA` | `std::filesystem::current_path()` |
 | `src/authoring/game_launcher.cpp` | 194 | `GetEnvironmentStringsW` | `environ` |
 | `src/background/bg_gametex.cpp` | 141 | `GetModuleHandleA` | Windows-only branch (`GetModuleHandle` for resource lookup) |
@@ -336,8 +341,6 @@ caller yet - P5 does that with the table above.
 | `src/mbaacc_package.cpp` | 71 | `GetShortPathNameW` | no equivalent; only used for a Windows-only display path |
 | `src/mbaacc_package.cpp` | 115 | `MoveFileExW` | `portable::ReplaceFileAtomic()` |
 | `src/mbaacc_package.cpp` | 116 | `DeleteFileW` | `std::filesystem::remove()` |
-| `src/misc.cpp` | 181 | `MoveFileExA` | `portable::ReplaceFileAtomic()` |
-| `src/misc.cpp` | 194 | `DeleteFileA` | `std::filesystem::remove()` |
 | `src/png_writer.cpp` | 146 | `DeleteFileW` | `std::filesystem::remove()` |
 | `src/png_writer.cpp` | 147 | `DeleteFileW` | `std::filesystem::remove()` |
 | `src/png_writer.cpp` | 147 | `MoveFileExW` | `portable::ReplaceFileAtomic()` |
@@ -368,7 +371,7 @@ caller yet - P5 does that with the table above.
 | `src/PatEditor/pat_texture_pane.cpp` | 154 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/PatEditor/pat_texture_pane.cpp` | 161 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/PatEditor/pat_texture_pane.cpp` | 206 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/archive_browser_ui.cpp` | 623 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/archive_browser_ui.cpp` | 631 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/background/bg_browser.cpp` | 31 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/background/bg_browser.cpp` | 33 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/background/bg_browser.cpp` | 34 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
@@ -411,26 +414,26 @@ caller yet - P5 does that with the table above.
 | `src/cgm/cgm_project.cpp` | 177 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/cgm/cgm_project.cpp` | 192 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/cgm/cgm_project.cpp` | 206 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 109 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 114 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 141 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 142 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 155 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 236 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 329 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 666 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 699 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 756 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/cgm/cgm_window.cpp` | 756 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 761 | `WideToUtf8` | `portable::WideToUtf8` |
+| `src/cgm/cgm_window.cpp` | 110 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 115 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 142 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 143 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/cgm/cgm_window.cpp` | 156 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 237 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 330 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/cgm/cgm_window.cpp` | 667 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 700 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 757 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 757 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/cgm/cgm_window.cpp` | 762 | `WideToUtf8` | `portable::WideToUtf8` |
-| `src/cgm/cgm_window.cpp` | 765 | `WideToUtf8` | `portable::WideToUtf8` |
-| `src/cgm/cgm_window.cpp` | 767 | `WideToUtf8` | `portable::WideToUtf8` |
-| `src/cgm/cgm_window.cpp` | 773 | `WideToUtf8` | `portable::WideToUtf8` |
-| `src/cgm/cgm_window.cpp` | 812 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 1008 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 1117 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
-| `src/cgm/cgm_window.cpp` | 1519 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/cgm/cgm_window.cpp` | 763 | `WideToUtf8` | `portable::WideToUtf8` |
+| `src/cgm/cgm_window.cpp` | 766 | `WideToUtf8` | `portable::WideToUtf8` |
+| `src/cgm/cgm_window.cpp` | 768 | `WideToUtf8` | `portable::WideToUtf8` |
+| `src/cgm/cgm_window.cpp` | 774 | `WideToUtf8` | `portable::WideToUtf8` |
+| `src/cgm/cgm_window.cpp` | 813 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/cgm/cgm_window.cpp` | 1009 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/cgm/cgm_window.cpp` | 1118 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
+| `src/cgm/cgm_window.cpp` | 1520 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/cgm/cgmtool.cpp` | 83 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/cgm/cgmtool_ops.cpp` | 41 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/cgm/cgmtool_ops.cpp` | 59 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
@@ -471,9 +474,9 @@ caller yet - P5 does that with the table above.
 | `src/fpanim_install_panel.cpp` | 76 | `_wfopen` | `std::fopen` on the UTF-8 path |
 | `src/han2_export.cpp` | 188 | `Utf8ToWide` | `portable::Utf8ToWide` (`wstring_convert`/`mbrtoc32`) |
 | `src/han2_export.cpp` | 188 | `_wfopen` | `std::fopen` on the UTF-8 path |
-| `src/han2_inspector.cpp` | 380 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/han2_inspector.cpp` | 381 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/han2_pac_window.cpp` | 375 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
-| `src/main_frame.cpp` | 563 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
+| `src/main_frame.cpp` | 569 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/mbaacc_pack.cpp` | 35 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/mbaacc_pack.cpp` | 37 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/mbaacc_pack.cpp` | 38 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
@@ -495,15 +498,6 @@ caller yet - P5 does that with the table above.
 | `src/mbaacc_package_cli.cpp` | 95 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/mbaacc_package_cli.cpp` | 115 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
 | `src/mbaacc_package_cli.cpp` | 117 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 62 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 68 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 80 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 87 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
-| `src/misc.cpp` | 92 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
-| `src/misc.cpp` | 109 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 117 | `MultiByteToWideChar` | `portable::CpToUtf8` / no-op (UTF-8 everywhere) |
-| `src/misc.cpp` | 123 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
-| `src/misc.cpp` | 128 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
 | `src/modproject/hmod_ui.cpp` | 176 | `AnsiToUtf8` | `portable::CpToUtf8(s, 932|0)` (`iconv` or UTF-8 pass-through) |
 | `src/modproject/hmodtool.cpp` | 24 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
 | `src/modproject/hmodtool.cpp` | 26 | `WideCharToMultiByte` | `portable::WideToUtf8` / no-op |
@@ -597,18 +591,18 @@ caller yet - P5 does that with the table above.
 
 | file | line | win32 call | portable replacement |
 |---|---|---|---|
-| `src/archive_browser.cpp` | 200 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser.cpp` | 201 | `GetPrivateProfileIntA` | `portable::ini::GetInt()` (same parser as `portable::ini`) |
 | `src/archive_browser.cpp` | 204 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser.cpp` | 212 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
-| `src/archive_browser.cpp` | 213 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
+| `src/archive_browser.cpp` | 205 | `GetPrivateProfileIntA` | `portable::ini::GetInt()` (same parser as `portable::ini`) |
+| `src/archive_browser.cpp` | 208 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
 | `src/archive_browser.cpp` | 216 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
-| `src/archive_browser.cpp` | 902 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
+| `src/archive_browser.cpp` | 217 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
+| `src/archive_browser.cpp` | 220 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
 | `src/archive_browser.cpp` | 906 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser.cpp` | 930 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser.cpp` | 972 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser_ui.cpp` | 636 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
-| `src/archive_browser_ui.cpp` | 641 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
+| `src/archive_browser.cpp` | 910 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
+| `src/archive_browser.cpp` | 934 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
+| `src/archive_browser.cpp` | 976 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
+| `src/archive_browser_ui.cpp` | 644 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
+| `src/archive_browser_ui.cpp` | 649 | `WritePrivateProfileStringA` | `portable::ini::SetString()` |
 | `src/character_instance.cpp` | 70 | `GetPrivateProfileIntA` | `portable::ini::GetInt()` (same parser as `portable::ini`) |
 | `src/character_instance.cpp` | 79 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
 | `src/character_instance.cpp` | 88 | `GetPrivateProfileStringA` | `portable::ini::GetString()` |
@@ -650,8 +644,8 @@ caller yet - P5 does that with the table above.
 
 | file | line | win32 call | portable replacement |
 |---|---|---|---|
-| `src/cgm/cgm_window.cpp` | 1372 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
 | `src/cgm/cgm_window.cpp` | 1373 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
+| `src/cgm/cgm_window.cpp` | 1374 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
 | `src/fbarc/fb_modern.cpp` | 222 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
 | `src/fpanim_install_panel.cpp` | 53 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
 | `src/fpanim_install_panel.cpp` | 55 | `steamapps` | `portable::SteamLibraries()` also returns `steamapps` |
@@ -696,8 +690,8 @@ caller yet - P5 does that with the table above.
 
 | file | line | win32 call | portable replacement |
 |---|---|---|---|
-| `src/archive_browser.cpp` | 1428 | `GetCurrentProcessId` | `getpid()` |
-| `src/archive_browser_ui.cpp` | 623 | `ShellExecuteW` | `portable::OpenFileExternally()` (`xdg-open`) |
+| `src/archive_browser.cpp` | 1434 | `GetCurrentProcessId` | `getpid()` |
+| `src/archive_browser_ui.cpp` | 631 | `ShellExecuteW` | `portable::OpenFileExternally()` (`xdg-open`) |
 | `src/authoring/game_launcher.cpp` | 29 | `OpenProcess` | `portable::ProcessAlive(pid)` (`kill(pid, 0)`) |
 | `src/authoring/game_launcher.cpp` | 77 | `CreateToolhelp32Snapshot` | `/proc/<pid>/cmdline` scan (`portable::FindProcess`) |
 | `src/authoring/game_launcher.cpp` | 81 | `Process32FirstW` | `/proc/<pid>/cmdline` scan |
@@ -723,7 +717,6 @@ caller yet - P5 does that with the table above.
 | `src/game_link.cpp` | 109 | `Process32NextW` | `/proc/<pid>/cmdline` scan |
 | `src/game_link_mock.cpp` | 72 | `GetCurrentProcessId` | `getpid()` |
 | `src/game_link_panel.cpp` | 48 | `OpenProcess` | `portable::ProcessAlive(pid)` (`kill(pid, 0)`) |
-| `src/misc.cpp` | 149 | `GetCurrentProcessId` | `getpid()` |
 | `src/modproject/hmod_ui.cpp` | 320 | `ShellExecuteW` | `portable::OpenFileExternally()` (`xdg-open`) |
 | `src/pattex.cpp` | 29 | `GetCurrentProcessId` | `getpid()` |
 | `src/stage3d/s3d_view.cpp` | 537 | `CreateProcessW` | `portable::Spawn()` (`posix_spawnp`) or Windows-only game launcher |
@@ -810,8 +803,6 @@ caller yet - P5 does that with the table above.
 | `src/game_link_mock.cpp` | 297 | `Sleep` | `std::this_thread::sleep_for` |
 | `src/game_link_mock.cpp` | 444 | `Sleep` | `std::this_thread::sleep_for` |
 | `src/han2_pac_window.cpp` | 89 | `GetTickCount64` | `portable::NowMs()` |
-| `src/misc.cpp` | 150 | `GetTickCount64` | `portable::NowMs()` |
-| `src/misc.cpp` | 189 | `Sleep` | `std::this_thread::sleep_for` |
 | `src/tag_panel.cpp` | 82 | `GetTickCount64` | `portable::NowMs()` |
 
 <!-- END auto:timer -->
@@ -865,13 +856,6 @@ caller yet - P5 does that with the table above.
 | `src/game_link_mock.cpp` | 295 | `GetLastError` | `errno` (`portable::LastError()`) |
 | `src/game_link_panel.cpp` | 58 | `CloseHandle` | `close(fd)` / `munmap` |
 | `src/mbaacc_package.cpp` | 114 | `CloseHandle` | `close(fd)` / `munmap` |
-| `src/misc.cpp` | 22 | `CloseHandle` | `close(fd)` / `munmap` |
-| `src/misc.cpp` | 29 | `CloseHandle` | `close(fd)` / `munmap` |
-| `src/misc.cpp` | 34 | `CloseHandle` | `close(fd)` / `munmap` |
-| `src/misc.cpp` | 64 | `GetLastError` | `errno` (`portable::LastError()`) |
-| `src/misc.cpp` | 111 | `GetLastError` | `errno` (`portable::LastError()`) |
-| `src/misc.cpp` | 171 | `CloseHandle` | `close(fd)` / `munmap` |
-| `src/misc.cpp` | 186 | `GetLastError` | `errno` (`portable::LastError()`) |
 | `src/squirrel/fpanim_link.cpp` | 173 | `GetLastError` | `errno` (`portable::LastError()`) |
 | `src/squirrel/fpanim_link.cpp` | 179 | `GetLastError` | `errno` (`portable::LastError()`) |
 | `src/squirrel/fpanim_link.cpp` | 180 | `WaitForSingleObject` | `poll()` on the pipe fd / `waitpid()` on the child |
@@ -936,12 +920,6 @@ caller yet - P5 does that with the table above.
 | `src/mbaacc_package.cpp` | 109 | `CreateFileW` | `std::fstream` / `open(2)` |
 | `src/mbaacc_package.cpp` | 112 | `WriteFile` | `std::fwrite` / `write(2)` |
 | `src/mbaacc_package.cpp` | 113 | `FlushFileBuffers` | `fsync(2)` |
-| `src/misc.cpp` | 14 | `CreateFileA` | `std::fstream` / `open(2)` |
-| `src/misc.cpp` | 20 | `GetFileSizeEx` | `std::filesystem::file_size()` |
-| `src/misc.cpp` | 33 | `ReadFile` | `std::fread` / `read(2)` |
-| `src/misc.cpp` | 152 | `CreateFileA` | `std::fstream` / `open(2)` |
-| `src/misc.cpp` | 164 | `WriteFile` | `std::fwrite` / `write(2)` |
-| `src/misc.cpp` | 169 | `FlushFileBuffers` | `fsync(2)` |
 | `src/shader.cpp` | 10 | `ReadFile` | `std::fread` / `read(2)` |
 | `src/shader.cpp` | 104 | `ReadFile` | `std::fread` / `read(2)` |
 | `src/shader.cpp` | 105 | `ReadFile` | `std::fread` / `read(2)` |
@@ -997,7 +975,7 @@ some are stray.
 | `src/bg_render.cpp` | 84 | `HWND` | `SDL_Window*` (P0 `platform::Window()`) |
 | `src/fbarc/fbchartool.cpp` | 709 | `CoInitializeEx` | not needed on POSIX |
 | `src/han2/han2tool.cpp` | 1216 | `CoInitializeEx` | not needed on POSIX |
-| `src/main_frame.cpp` | 848 | `SetWindowTextW` | `platform::SetTitle()` (P0) |
+| `src/main_frame.cpp` | 854 | `SetWindowTextW` | `platform::SetTitle()` (P0) |
 | `src/png_writer.cpp` | 21 | `CoInitializeEx` | not needed on POSIX |
 | `src/png_writer.cpp` | 21 | `SUCCEEDED` | removed with WIC |
 | `src/png_writer.cpp` | 22 | `CoUninitialize` | not needed on POSIX |
@@ -1094,7 +1072,6 @@ decision; the table exists so an audit can see nothing was dropped.
 | `src/mbaacc_pack.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 | `src/mbaacc_package.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 | `src/mbaacc_package_cli.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/misc.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 | `src/modproject/hmodtool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 | `src/pcmod/pcmodtool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 | `src/png_writer.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
@@ -1152,52 +1129,57 @@ decision; the table exists so an audit can see nothing was dropped.
 `./build_linux.sh` configures `build-linux/` with CMake + Ninja + gcc and builds
 the targets below. `cmake/linux.cmake` is included from `CMakeLists.txt` only when
 `HANTEI_LINUX=ON`, so the Windows build is untouched; it takes the Windows-only
-targets out of the native default set and labels every ctest `native` or
-`windows-only` (never replacing the existing `gpu` label, so `ctest -LE gpu` still
-works).
+targets out of the native default set, labels every ctest `native` or
+`windows-only`, and `DISABLED`s the Windows-only ones so `ctest` on the native tree
+runs exactly what can run (they still show in `ctest -N`). The existing `gpu` label
+is preserved, so `ctest -LE gpu` still works.
 
-**Gate: the native non-GUI ctests pass.** Measured 2026-10-18:
+**Gate: the native non-GUI ctests pass.** Measured 2026-10-19, after lane LINUX
+task (a) moved `src/misc.cpp` and `src/framedata_load.cpp` onto the portable
+layer:
 
 ```
 $ ./build_linux.sh
 ...
-100% tests passed, 0 tests failed out of 10
+100% tests passed, 0 tests failed out of 27
 Label Time Summary:
-native    =   0.16 sec*proc (10 tests)
+native    =   7.79 sec*proc (27 tests)
 ```
 
-The ten tests are `portable`, `shortcut_router`, `workspace_session`,
-`project_entries`, `part_render_math`, `stage3d`, `pcmod`, `tag_tuning`,
-`script_layers`, `fpanim_link`. `d3d9_smoke` (section 10) is `gpu`-labelled and is
-run separately: it needs lavapipe, not just a compiler. `fbarctool` also builds
-and is in the native target list; it has no ctest entry of its own (its checks
-live in `tools/fb/`).
+27 tests, up from 10: the switch-over unblocked `uni_dataloss`, `game_labels`,
+`refs`, `frame_data`, `live_reload`, `hud`, `preview_sim`, `sysconst`,
+`hlsl_ref`, `fx_ctab`, `fx_inventory`, the tool self-checks `ha6_roundtrip_fixture`,
+`glsl_identity`, `render_parity_tools` and `rhi_lint`, and the two smokes
+`d3d9_smoke` (section 10) and `hlsl_smoke` (section 11).
+
+The native target list also gained the CLI tools the brief names: `ha6_dump`,
+`roundtrip`, `uni_edit_test`, and `pal_roundtrip`. `fbarctool` was already there.
+The byte-identity tests that guard the switch-over run natively and pass:
+`ha6_roundtrip_fixture` (load -> save -> reload, byte compare) and `uni_dataloss`.
 
 ### Why the rest does not build yet
 
-Every remaining target fails on a `windows.h` include, or on the Windows file API
-that sits behind it in `src/misc.cpp`, in a file this lane does not own. The names
-below are measured, not guessed: `ninja -C build-linux <target>` and the first
-`fatal error:` line.
+Every remaining target names its own blocker, measured with
+`ninja -C build-linux <target>` and the first `fatal error:` line. After task (a)
+this is what is left:
 
 | blocking file | what it uses | targets that stop here |
 |---|---|---|
-| `src/framedata_load.cpp:7` | `#include <windows.h>` with no Win32 call in the file | every tool that links the HA6 loader: `ha6_dump`, `roundtrip`, `sq*`, `cgmtool`, `han2tool`, `pat*`, `refs_test` |
-| `src/misc.cpp:2` | `windows.h` plus `CreateFileA`/`ReadFile`/`MoveFileExA`/`MultiByteToWideChar` in `WriteFileAtomic` and `sj2utf8` | most tools and the unit tests that link `misc.cpp` |
+| `src/vao.cpp:4`, `src/shader.cpp:7` | GL calls behind `windows.h` (the host tools run glad with no context, fine at run time, but the headers are Win32 only) | `pat_dump`, `pattex`, `pat_roundtrip`, `ha4tool`, `ha4_convert_test`, `fb_part_transform_test`, `han2_parts_edit_test` |
 | `src/png_writer.cpp:3` | WIC (`wincodecs.h`, `shobjidl.h`) for PNG I/O and the folder picker | `pattex`, `cgmtool`, `han2tool`, `bg_render`, `fbchartool`, `pat_dump` |
-| `src/vao.cpp:4`, `src/shader.cpp:7` | GL plus `windows.h` (the host tools run glad with no context) | `pat_dump`, `pattex`, `pat_roundtrip`, `ha4tool`, `ha4_convert_test`, `fb_part_transform_test`, `han2_parts_edit_test` |
-| `src/cmdfile/cmd_io.cpp:3` | cp932/UTF-8 conversion and the backup folder creation | `cmdfile_roundtrip`, `cmdfile_test`, `cmdfile_ui_smoke` |
-| `src/han2/han2tool.cpp`, `src/squirrel/sqtool.cpp`, `src/fbarc/*tool.cpp` | their own `windows.h` include | that tool alone |
-| `src/file_backup.cpp`, `src/parts/pat_renumber.cpp` | `windows.h` | `pattool` |
-| `src/authoring/game_launcher.cpp`, `src/background/bg_gametex.cpp`, `src/stage3d/s3d_view.cpp` | `CreateProcess`/`CreateToolhelp32Snapshot` (Windows-only game and helper launch) | `game_link_*`, `authoring_*`, `hud_layout_test`, `live_reload_test` |
-| `src/bg_test.cpp:81` | `_exit()` (POSIX spells it `_Exit`), plus `misc.cpp` | `bg_test` |
-| `src/cgm/cgm_io.h` | missing `<cstring>` for `memcpy` under GCC 13 | `cgmtool` |
+| `src/cmdfile/cmd_io.cpp:3` | cp932/UTF-8 conversion plus the backup folder | `cmdfile_roundtrip`, `cmdfile_test`, `cmdfile_ui_smoke` |
+| `src/i18n.cpp:4` | `windows.h` + `GetPrivateProfile*` | `pattern_search_test` |
+| `src/game_frame_ring.cpp:4`, `src/tag_tuning/tag_sidecar.cpp:4` | file mappings (`CreateFileMappingW`), `MoveFileExW` | `game_link_test`, `game_view_test`, `tag_sidecar_test`, `hud_layout_test`, `shared_clipboard_test` |
+| `src/authoring/game_launcher.cpp:5` | `CreateProcess`/`CreateToolhelp32Snapshot` | `authoring_model_test`, `game_link_cli`, `mbaaccpackage` |
+| `src/han2/han2tool.cpp`, `src/squirrel/sqtool.cpp`, `src/fbarc/*tool.cpp`, `src/parts/pat_renumber.cpp`, `src/file_backup.cpp`, `src/hlsl/hlslcompile.cpp` | their own `windows.h` (or the `d3dcompiler_47` OS DLL) | `han2tool`, `sqtool`, `fbchartool`, `hmodtool`, `pcmodtool`, `pattool`, `hlslcompile` |
+| `src/bgm_player.cpp:4` | `waveOut` | `bgm_test` |
+| `src/background/bg_gametex.cpp`, `src/stage3d/s3d_view.cpp` | `CreateProcess`/`windows.h` | `bg_render`, `bg_test` |
+| `tests/undo_manager_test.cpp:10`, `tests/tag_sidecar_test.cpp:14` | `windows.h` in the test itself | `undo_manager_test` |
 
-None of these is a design problem: each file needs the same treatment the P0 files
-already had, or a switch to the `src/platform/portable` helpers. They are listed
-here so P5 can take them one at a time without re-measuring. `src/misc.cpp` and
-`src/framedata_load.cpp` are the two worth doing first - between them they unblock
-most of the list.
+Each needs the same treatment the P0 files already had, or a switch to the
+`src/platform/portable` helpers. They are listed here so P5 can take them one at a
+time without re-measuring; `src/png_writer.cpp` and `src/vao.cpp`/`src/shader.cpp`
+are the ones that unblock the most.
 
 ## 10. DXVK-native smoke (deliverable 4)
 
@@ -1311,16 +1293,28 @@ The generated headers (`vkd3d_d3dx9shader.h`, `vkd3d_d3d12.h`, ...) are not
 dependencies of `libvkd3d-shader.la` in upstream's Makefile, so the script builds
 them first.
 
-## 12. Deliverable status
+## 12. Status
+
+### Deliverables (lane LINUX, first task)
 
 | # | deliverable | state | evidence |
 |---|---|---|---|
-| 1 | portability inventory `docs/render/linux.md` | done | sections 1-8; 74 include sites, 893 call sites, each with a replacement; generated by `tools/linux/winapi_inventory.py --write-doc`, `--check` guards the P0 files |
+| 1 | portability inventory `docs/render/linux.md` | done | sections 1-8; 72 include sites, 854 call sites, each with a replacement; generated by `tools/linux/winapi_inventory.py --write-doc`, `--check` guards the P0 files |
 | 2 | portable helpers `src/platform/portable/*` + unit tests | done | `tests/portable_test.cpp`, ctest `portable`, passes on the Windows mingw build and natively |
-| 3 | native non-GUI build `build_linux.sh` + ctests | done | section 9; 11/11 native ctests pass; the excluded targets and their blocking files are listed, not guessed |
+| 3 | native non-GUI build `build_linux.sh` + ctests | done | section 9; 27 native ctests pass; the excluded targets and their blocking files are listed, not guessed |
 | 4 | DXVK-native smoke on lavapipe | done | section 10; ctest `d3d9_smoke` (label `gpu`) passes |
 | 5 | vkd3d-shader HLSL smoke | done | section 11; built-in pair plus 9/9 lane-HLSL `.hlsl` files compile |
 
-Deliberately not done in this lane (P5's job, listed so nothing is lost): switching
-the callers onto the `portable::` helpers (section 7), and porting the files that
-block the excluded targets (section 9).
+### Task (a): misc.cpp / framedata_load.cpp off windows.h
+
+| item | state | evidence |
+|---|---|---|
+| `src/misc.cpp`, `src/framedata_load.cpp` no longer include `windows.h` | done | `git grep -l windows.h` no longer lists either; `misc.cpp` forwards to `portable::*` |
+| Windows behaviour unchanged | done | `./build.sh` green; full Windows ctest 100/100, including `ha6_roundtrip_fixture`, `uni_dataloss`, `cmdfile` |
+| the unblocked tools/tests are in the native build | done | section 9; `ha6_dump`, `roundtrip`, `uni_edit_test`, `pal_roundtrip` plus 15 more ctests |
+| Windows-only tests not registered natively | done | `cmake/linux.cmake` labels them `windows-only` + `DISABLED`; `ctest` runs 27 of 101 |
+| inventory regenerated, `--check` passes | done | 72 includes / 854 calls; `winapi_inventory.py --check` exits 0 |
+
+Left for P5 (outside this lane's file list): every other caller of the portable
+helpers still uses the Win32 calls directly - the table in section 7 is the list -
+and the files in section 9 still block their targets.
