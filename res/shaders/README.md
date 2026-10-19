@@ -32,9 +32,9 @@ starts right after `R"(`. That is intentional: the files are what the C++ passes
 | `s3d` | `s3d.glsl.vert`, `s3d.glsl.frag` | `kVs` src/stage3d/s3d_view.cpp:51, `kFs` :70 | `stage3dview` (src/stage3d/s3d_view.cpp) | 3D stage meshes (fbxshader: Diffuse_VS_Easy / Diffuse_PS_Easy) |
 | `s3d_grade` | `s3d_grade.glsl.vert`, `s3d_grade.glsl.frag` | `kGradeVs` src/stage3d/s3d_view.cpp:91, `kGradeFs` :94 | `stage3dview` | stage composite (TecBgNoSpeculer): lift + gain grade |
 
-`bg_heat.glsl.vert` is shared by `bg_heat_a` and `bg_heat_b`; there is one copy.
-`bg_object`'s vertex shader is `bg_object.glsl.vert`, the only program of that pair
-that is not shared.
+Every program's vertex
+and fragment stages are listed together.  `bg_heat.glsl.vert` is the only file shared by
+two programs (`bg_heat_a` and `bg_heat_b`).
 
 ## `simple` (src/render.cpp)
 
@@ -237,3 +237,45 @@ Grade: `clamp(uLift + c * uGain, 0, 1)`, alpha 1. Blending, depth and culling ar
 disabled for this pass (s3d_view.cpp:452-454). This is the composite of
 `TecBgNoSpeculer`.
 
+
+
+## HLSL ports
+
+One file per program above, `vs_3_0`/`ps_3_0`, entry points `VSMain`/`PSMain`
+(the two heat passes are separate files because they have separate pixel entry
+points, and each carries its own copy of the shared full-screen vertex stage).
+The maths is the GLSL's, line for line, and the uniform names are the same, minus
+the ones the RHI turns into vertex-shader constants:
+
+| GLSL | HLSL | Why |
+|---|---|---|
+| `uniform mat4 ProjMtx` | `float4x4 ProjMtx` | same name |
+| `uniform int indexed` | `int indexed` | same name (the HLSL spelling of "constant" needs no keyword) |
+| `layout(location = 2) in vec4 Color` (textured) | `float4 g_color` | the C++ disables that attribute array and feeds it with `glVertexAttrib4fv(2, colorRgba)`, so it is a constant (PLAN.md 5.1) |
+| the parts vertex colour (also attribute 2) | `float4 g_color` | same, set per part by `glVertexAttrib4fv(2, newColor)` |
+| `textureSize(Texture, 0)` | `float2 g_texSize` | no `textureSize` in D3D9 |
+| `texelFetch(Texture, t, 0)` | `tex2D(Texture, (float2(t) + 0.5) / g_texSize).r` | point sample at the texel centre |
+| `vec2 uv.st` | `uv.xy` | HLSL has no `.st` swizzle |
+| `mix(a, b, t)` | `lerp(a, b, t)` | same meaning |
+| `gl_VertexID` triangle (s3d_grade) | three vertices `(0,0) (2,0) (0,2)` from a vertex buffer | vs_3_0 has no `gl_VertexID`; `Position = p * 2 - 1` is unchanged |
+| `out vec4 FragColor` | `float4 PSMain(...) : COLOR` | |
+| MRT `layout(location = 0/1) out` (bg_heat_a) | `float4 oT0 : COLOR0; float4 oT1 : COLOR1;` | |
+
+`palLookup` keeps `idx * (255.0/256.0) + (0.5/256.0)` exactly, in every copy.
+Samplers keep their GLSL names and take the same registers as the units in the
+tables above (`Texture` = s0, `Palette` = s1, `uT0`/`uT1`/`uMask` = s0/s1/s2).
+No shader applies a D3D9 half-pixel offset; that belongs to the projection
+(PLAN.md 5.3, P2).
+
+The one deliberate departure from a literal transcription is in `bg_heat_a`:
+the GLSL's `for (int i = 0; i < 8; ++i) acc += S(...) * w[i]` is unrolled into
+eight statements, because ps_3_0 forbids dynamically indexing a local array. The
+eight weights are the ones written out in the GLSL, in the same order.
+
+`tools/hlsl/hlslcompile.cpp` (ctest `hlsl_compile`) compiles every entry point
+with `d3dcompiler_47.dll` (`D3DCOMPILE_OPTIMIZATION_LEVEL1`) and prints the
+instruction count and the CTAB constant table (name, register set, register,
+count). Every file must be `OK`; a failure there is an emission bug, not a game
+file. `tests/hlsl_ref_test.cpp` (ctest `hlsl_ref`) then checks `textured` modes
+0-3 and `parts` against scalar C++ copies of both the GLSL and the HLSL maths on
+10,000 random inputs, to 1e-6.
