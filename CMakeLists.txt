@@ -1406,6 +1406,18 @@ add_test(NAME rhi_lint
 add_test(NAME glsl_identity
 	COMMAND python3 "${CMAKE_SOURCE_DIR}/tests/hlsl_glsl_identity_test.py"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL: compile every res/shaders/*.hlsl (vs_3_0 / ps_3_0) with
+# d3dcompiler_47.dll, loaded dynamically, and report the instruction count and the
+# CTAB constants.  It needs the DLL, not a GPU, so it is a normal Windows test.
+add_executable(hlslcompile tools/hlsl/hlslcompile.cpp)
+target_compile_definitions(hlslcompile PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(hlslcompile PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_compile
+	COMMAND hlslcompile "${CMAKE_SOURCE_DIR}/res/shaders"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME render_parity
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
