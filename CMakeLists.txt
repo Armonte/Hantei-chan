@@ -585,6 +585,7 @@ add_test(NAME cmdfile_ui_smoke COMMAND cmdfile_ui_smoke tests/fixtures/cmdfile/e
 # pattern_search_test: pattern-name search (ImSearch) headless, asserts enabled (issue #81).
 add_executable(pattern_search_test
 	tests/pattern_search_test.cpp
+	src/ha6_notes.cpp
 	src/framedata.cpp
 	src/framedata_load.cpp src/app_log.cpp
 	src/framedata_save.cpp
