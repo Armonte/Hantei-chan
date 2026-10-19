@@ -108,7 +108,7 @@ of the affected areas, byte-identical.
 |---|---|---|---|---|
 | H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
-| ctest | **PASS** | `build/ctest -j8` | 99/99 (93 before the HLSL and FX merges), incl. `render_parity` 60/60 (34 s at `-j 8`), `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*` | 2026-10-18 |
+| ctest | **PASS** | `build/ctest -j6` | 100/100 (93 before the HLSL/FX/LINUX merges), incl. `render_parity` 60/60, `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*`, `portable_*` | 2026-10-19 |
 
 ## BLOCKED
 
@@ -151,7 +151,7 @@ of the affected areas, byte-identical.
 |---|---|---|
 | corpus A, B, C, E byte-identical | **PASS** | `runs/p0j` vs the golden, 0 FAIL |
 | corpus D (UI) byte-identical | **PASS** | the whole 2847-case corpus is 2847 PASS / 0 ALLOWED / 0 FAIL (`runs/p0_report.md`) |
-| ctest | **PASS** | 99/99, including `render_parity` (60-case smoke) |
+| ctest | **PASS** | 100/100, including `render_parity` (60-case smoke) |
 | corpus timing | **PASS** | full corpus at `-j 8` in 3m28, `-j 1` vs `-j 8` byte-identical on the smoke subset, `stage3d_dfci` and the cgm palettes |
 | detached windows, drag-drop | pending | steps 5 and 6 |
 
