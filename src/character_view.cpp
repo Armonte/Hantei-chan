@@ -28,6 +28,7 @@ CharacterView::CharacterView(CharacterInstance* character, Render* render)
 	m_state.pattern = 0;
 	m_state.frame = 0;
 	m_state.spriteId = -1;
+	m_state.absoluteScrub = gSettings.absoluteScrubDefault;
 
 	// Create panes for this view
 	refreshPanes(render);

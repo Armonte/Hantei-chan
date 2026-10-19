@@ -4,6 +4,7 @@
 #include "hud_theme_exporter.h"
 #include "misc.h"
 #include "app_log.h"
+#include "ini.h"
 #include "../third_party/json/json.hpp"
 #include <fstream>
 #include <filesystem>
@@ -11,9 +12,6 @@
 #include <iomanip>
 #include <sstream>
 #include <algorithm>
-
-// .hproj default for a view's absolute scrub when the key is missing (matches the series behaviour; item 7 may change it).
-static constexpr bool kDefaultAbsoluteScrub = true;
 
 using json = nlohmann::json;
 
@@ -368,7 +366,7 @@ bool ProjectManager::SaveProject(
 			if (state.routePattern == state.pattern && state.routeStart != 0) viewObj["route_start"] = state.routeStart;
 			if (state.positionHandleHover || !state.positionHighlight)
 				viewObj["position_tool_settings"]={{"handle_hover",state.positionHandleHover},{"highlight",state.positionHighlight}};
-			if (state.absoluteScrub != kDefaultAbsoluteScrub) viewObj["absolute_scrub"] = state.absoluteScrub;
+			if (state.absoluteScrub != gSettings.absoluteScrubDefault) viewObj["absolute_scrub"] = state.absoluteScrub;
 			if (state.previewOptions.simulateMovement) viewObj["simulate_movement"] = true;
 			if (state.authoredInspection) viewObj["authored_inspection"] = true;
 			if (state.authoredOffset != 0) viewObj["authored_offset"] = state.authoredOffset;
@@ -563,7 +561,7 @@ bool ProjectManager::LoadProject(
 				if(viewObj.contains("position_tool_settings") && viewObj["position_tool_settings"].is_object()) {
 					const auto& j=viewObj["position_tool_settings"]; state.positionHandleHover=j.value("handle_hover",false); state.positionHighlight=j.value("highlight",true);
 				}
-				state.absoluteScrub=viewObj.value("absolute_scrub",kDefaultAbsoluteScrub);
+				state.absoluteScrub=viewObj.value("absolute_scrub",gSettings.absoluteScrubDefault);
 				state.previewOptions.simulateMovement=viewObj.value("simulate_movement",false);
 				state.authoredInspection=viewObj.value("authored_inspection",false);
 				state.authoredOffset=std::max(0,viewObj.value("authored_offset",0));

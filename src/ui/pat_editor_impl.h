@@ -531,8 +531,28 @@ void MainFrame::DrawMousePrefsItems()
 	}
 }
 
+// Edit > Preferences > Timeline and keys: opt-in behavior; every default is the 0.1.2 behavior.
+void MainFrame::DrawTimelineKeysPrefsItems()
+{
+	bool changed = false, keys = false;
+	changed |= ImGui::Checkbox(LBL("New views scrub absolute (authored) time"), &gSettings.absoluteScrubDefault);
+	ui::HelpMarker(TXT("Off: the timeline scrubs the simulated flow (jumps, loops). Each view can still switch with its Simulated scrub box."));
+	keys |= ImGui::Checkbox(LBL("J/L step one tick (hold repeats), Shift+J/L play"), &gSettings.jlFrameStep);
+	keys |= ImGui::Checkbox(LBL("PgUp/PgDn step states in a character view"), &gSettings.pageKeysStepStates);
+	changed |= ImGui::Checkbox(LBL("Pattern list in its own window"), &gSettings.patternListWindow);
+	ui::HelpMarker(TXT("Off: the pattern list fills the free space of the pattern pane. On: View > Pattern list toggles a separate window."));
+	changed |= ImGui::Checkbox(LBL("Timeline Duration row"), &gSettings.timelineDurationLane);
+	if (keys) {
+		shortcuts.registry().applyLayoutOptions(gSettings.jlFrameStep, gSettings.pageKeysStepStates);
+		gSettings.keyBindings = shortcuts.registry().serializeOverrides();
+		m_scrubHeldDir = 0;
+	}
+	if (changed || keys) ImGui::MarkIniSettingsDirty();
+}
+
 void MainFrame::DrawPatPreferences()
 {
+	if (ImGui::BeginMenu(LBL("Timeline and keys"))) { DrawTimelineKeysPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("Auto backup"))) { DrawBackupPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("PAT editor"))) { DrawPatColourPrefsItems(); ImGui::EndMenu(); }
 	if (ImGui::BeginMenu(LBL("Mouse buttons"))) { DrawMousePrefsItems(); ImGui::EndMenu(); }
@@ -550,6 +570,8 @@ void MainFrame::DrawPatPreferencesWindow()
 		ImGui::End();
 		return;
 	}
+	ImGui::SeparatorText(TXT("Timeline and keys"));
+	DrawTimelineKeysPrefsItems();
 	ImGui::SeparatorText(TXT("Auto backup"));
 	DrawBackupPrefsItems();
 	ImGui::SeparatorText(TXT("PAT editor"));
@@ -828,7 +850,7 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
   return true;
  }
  if(cmd=="compactui" && gStartup.headless) {
-  if(arg=="list") {gSettings.showPatternList=!gSettings.showPatternList;}
+  if(arg=="list") {gSettings.patternListWindow=true;gSettings.showPatternList=!gSettings.showPatternList;}
   if(arg=="wide") {
    LoadTheme(1);
    SetWindowPos(WindowFromDC(context->dc), nullptr, 0, 0, 1920, 1080, SWP_NOMOVE|SWP_NOZORDER|SWP_NOACTIVATE);

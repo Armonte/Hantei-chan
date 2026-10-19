@@ -11,6 +11,31 @@
 // Shortcuts
 // ---------------------------------------------------------------------------
 
+// Win32 virtual key -> ImGui key for the held-step poll (ImGui's own key state, fed by the WndProc; no raw polls).
+static ImGuiKey StepHoldKey(uint32_t vk)
+{
+	if (vk >= 'A' && vk <= 'Z') return (ImGuiKey)(ImGuiKey_A + (vk - 'A'));
+	if (vk >= '0' && vk <= '9') return (ImGuiKey)(ImGuiKey_0 + (vk - '0'));
+	if (vk >= VK_F1 && vk <= VK_F12) return (ImGuiKey)(ImGuiKey_F1 + (vk - VK_F1));
+	if (vk >= VK_NUMPAD0 && vk <= VK_NUMPAD9) return (ImGuiKey)(ImGuiKey_Keypad0 + (vk - VK_NUMPAD0));
+	switch (vk) {
+	case VK_LEFT: return ImGuiKey_LeftArrow;
+	case VK_RIGHT: return ImGuiKey_RightArrow;
+	case VK_UP: return ImGuiKey_UpArrow;
+	case VK_DOWN: return ImGuiKey_DownArrow;
+	case VK_PRIOR: return ImGuiKey_PageUp;
+	case VK_NEXT: return ImGuiKey_PageDown;
+	case VK_HOME: return ImGuiKey_Home;
+	case VK_END: return ImGuiKey_End;
+	case VK_SPACE: return ImGuiKey_Space;
+	case VK_OEM_COMMA: return ImGuiKey_Comma;
+	case VK_OEM_PERIOD: return ImGuiKey_Period;
+	case VK_OEM_4: return ImGuiKey_LeftBracket;
+	case VK_OEM_6: return ImGuiKey_RightBracket;
+	default: return ImGuiKey_None;
+	}
+}
+
 bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard, bool imguiTextInput)
 {
 	// A non-text ImGui owner (slider being dragged, modal popup) keeps the
@@ -76,9 +101,12 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 			: (vkey >= 'A' && vkey <= 'Z') ? (wchar_t)(vkey - 'A' + L'a') : 0;
 		return true;
 	}
-	const bool tickStep=binding->action==ShortcutAction::stepTickBackward || binding->action==ShortcutAction::stepTickForward;
+	// Opt-in (Settings > J/L step): the editor owns held-step timing instead of OS autorepeat, polled through ImGui's
+	// key state. Keys ImGui cannot name keep the OS autorepeat path (0.1.2 behavior).
+	const bool tickStep=gSettings.jlFrameStep && StepHoldKey(chord.key)!=ImGuiKey_None &&
+		(binding->action==ShortcutAction::stepTickBackward || binding->action==ShortcutAction::stepTickForward);
 	if(!tickStep) m_scrubHeldDir=0;
-	if(tickStep && isRepeat) return true; // Editor owns held timing, not OS autorepeat.
+	if(tickStep && isRepeat) return true;
 	const bool handled=RunShortcut(binding->action);
 	if(tickStep && handled) {
 		m_scrubHeldView=getShortcutView();m_scrubHeldChord=chord;
@@ -440,9 +468,10 @@ void MainFrame::UpdateTransport()
 {
 	if(m_scrubHeldDir) {
 		const auto& io=ImGui::GetIO();
-		unsigned mods=((GetAsyncKeyState(VK_CONTROL)&0x8000)?shortcutCtrl:0)|((GetAsyncKeyState(VK_SHIFT)&0x8000)?shortcutShift:0)|((GetAsyncKeyState(VK_MENU)&0x8000)?shortcutAlt:0);
-		if(m_scrubHeldView!=getShortcutView() || io.AppFocusLost || io.WantTextInput || ImGui::IsAnyItemActive() ||
-			!(GetAsyncKeyState(m_scrubHeldChord.key)&0x8000) || mods!=m_scrubHeldChord.modifiers) m_scrubHeldDir=0;
+		unsigned mods=(io.KeyCtrl?shortcutCtrl:0)|(io.KeyShift?shortcutShift:0)|(io.KeyAlt?shortcutAlt:0);
+		const ImGuiKey key=StepHoldKey(m_scrubHeldChord.key);
+		if(!gSettings.jlFrameStep || m_scrubHeldView!=getShortcutView() || io.AppFocusLost || io.WantTextInput || ImGui::IsAnyItemActive() ||
+			key==ImGuiKey_None || !ImGui::IsKeyDown(key) || mods!=m_scrubHeldChord.modifiers) m_scrubHeldDir=0;
 		else if(ImGui::GetTime()>=m_scrubNextTime) {
 			StepTick(m_scrubHeldView,m_scrubHeldDir);
 			m_scrubNextTime=ImGui::GetTime()+gSettings.scrubRepeatMs/1000.;

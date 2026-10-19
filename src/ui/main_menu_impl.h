@@ -729,7 +729,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 				ImGui::MarkIniSettingsDirty();
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Arrange related properties in responsive grids. Applies to all views; font size is unchanged.");
-			if(ImGui::MenuItem(LBL("Pattern list"),nullptr,&gSettings.showPatternList)) ImGui::MarkIniSettingsDirty();
+			if(ImGui::MenuItem(LBL("Pattern list"),nullptr,&gSettings.showPatternList,gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
 			ImGui::Separator();
 			auto* active = getActiveCharacter();
 			if (ImGui::BeginMenu(LBL("Zoom level")))
