@@ -109,12 +109,43 @@ of the affected areas, byte-identical.
       `cmake/sdl3.cmake` (`SDL_STATIC ON`, `SDL_SHARED OFF`,
       `SDL_TEST_LIBRARY OFF`). Verified with `make SDL3-static`: SDL 3.4.18
       cross-compiles cleanly with x86_64-w64-mingw32 into `libSDL3.a`.
-- [~] 2. `src/platform/platform.{h,cpp}`: `platform.h` is in (window,
-      framebuffer size, native handle, GL context, swap interval, DPI scale, the
-      event-handler hooks and the pump). `platform.cpp` (the SDL3
-      implementation) is next.
-- [ ] 3. `main.cpp` SDL main loop.
-- [ ] 4. ImGui backends.
+- [x] 2. `src/platform/platform.{h,cpp}`: SDL3 window (OPENGL | RESIZABLE |
+      HIGH_PIXEL_DENSITY | HIDDEN/UTILITY when headless), a GL 3.3
+      compatibility context with 24/8 depth+stencil, `SDL_GL_SetSwapInterval`,
+      `gladLoadGLLoader(SDL_GL_GetProcAddress)`, framebuffer/window size
+      helpers, the native HWND/HDC, the scancode<->VK table
+      (`platform_keys.cpp`) and the event pump.
+- [x] 3. `main.cpp` SDL main loop (entry point `int main(int, char**)`; SDL
+      supplies `wWinMain` under UNICODE). `PostQuitMessage` became `gAppQuit`.
+- [x] 4. ImGui: `imgui_impl_sdl3` replaces `imgui_impl_win32`, and
+      `IMGUI_IMPL_OPENGL_ES2` is gone, which enables `glDrawElementsBaseVertex`.
+      One consequence had to be handled: without ES2 the backend binds its own
+      GL sampler (`glBindSampler`), which overrides the GL_NEAREST filter the
+      app sets on its pixel-art textures. `ui::ImageWithOwnSampler`
+      (src/imgui_utils.h) asks the backend to keep each texture's own
+      parameters, and every app-texture draw site uses it.
+- [x] 7. `MessageBox*` routes through `platform::MessageBox`
+      (src/platform/platform_message.h): a real box when visible, a log line
+      under `--headless`. Not cosmetic: the GL error paths called
+      `MessageBoxA`, and under `--headless` a modal box blocked the batch
+      renderer forever.
+- [ ] 5. Detached windows through the SDL3 + GL3 backends; delete
+      `workspace_viewports.{h,cpp}`.
+- [ ] 6. `--post-key` pushes an `SDL_EVENT_KEY_DOWN`.
+- [ ] 8. Remove `context_gl.h`.
+
+**Gate P0: parity and ctest PASS.**
+
+| what | result | evidence |
+|---|---|---|
+| corpus A, B, C, E byte-identical | **PASS** | `runs/p0j` vs the golden, 0 FAIL |
+| corpus D (UI) byte-identical | **PASS** | the whole 2847-case corpus is 2847 PASS / 0 ALLOWED / 0 FAIL (`runs/p0_report.md`) |
+| ctest | **PASS** | 93/93, including `render_parity` (60-case smoke) |
+| detached windows, drag-drop | pending | steps 5 and 6 |
+
+`tools/render_parity/allowlist.tsv` is still header-only: no case needed an
+entry, because the UI differences this phase hit were a real bug (the sampler
+override), not backend rasterisation ties.
 
 **P0 step 3, first: the `WndProc` message list (PLAN.md 6 P0 step 3 asks for it
 before the loop is rewritten). Read from `src/main.cpp` `WndProc`, which is the
