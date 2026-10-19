@@ -343,3 +343,7 @@
 {"Project", "プロジェクト"},
 {"Legacy", "レガシー"},
 {"Open the archive browser on startup", "起動時にアーカイブブラウザを開く"},
+{"Timeline order", "タイムラインの順序"},
+{"File order (absolute time)", "ファイル順 (絶対時間)"},
+{"Playback (simulated, follows Go to)", "再生 (シミュレーション、Go to に従う)"},
+{"File order: the ruler, scrub bar and playhead run through the keyframes as written; a Go to or loop\ndoes not repeat frames. Playback: the simulated flow, where every jump and loop repeats frames.", "ファイル順: 目盛り・スクラブバー・再生ヘッドはキーフレームを記述順に進みます。Go to やループで\nフレームは繰り返されません。再生: シミュレーションの流れで、ジャンプやループごとにフレームが繰り返されます。"},
