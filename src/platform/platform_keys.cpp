@@ -74,6 +74,15 @@ uint32_t VkFromScancode(int sdlScancode)
 
 int ScancodeFromVk(uint32_t vk)
 {
+	// The generic modifier codes (VK_SHIFT/VK_CONTROL/VK_MENU) are what Win32
+	// put in WM_KEYDOWN's wParam, so --post-key 0x10/0x11/0x12 was valid with
+	// the old PostMessage. They have no scancode of their own: use the left key.
+	// One way only; VkFromScancode keeps reporting the sided codes.
+	switch (vk) {
+	case 0x10: return (int)SDL_SCANCODE_LSHIFT;
+	case 0x11: return (int)SDL_SCANCODE_LCTRL;
+	case 0x12: return (int)SDL_SCANCODE_LALT;
+	}
 	for (const KeyPair& k : kKeys)
 		if (k.vk == vk) return (int)k.sc;
 	return 0;
