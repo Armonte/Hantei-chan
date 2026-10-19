@@ -231,6 +231,7 @@ Server::~Server() { Close(); }
 bool Server::Create(const std::string& name, std::string* error)
 {
 	Close();
+	m_stopped = false;   // Close() set it; this is a fresh endpoint
 	m_name = BareName(name);
 	m_path = EndpointPath(name);
 	std::error_code ec;
