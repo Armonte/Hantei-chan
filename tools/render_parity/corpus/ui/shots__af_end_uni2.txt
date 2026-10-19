@@ -1,0 +1,10 @@
+# AF pane on a UNI2 file: chr003 pattern 1 frame 4 ends with AFFL 3, the Animation combo shows "End"
+openany C:/dev/hantei-chan/gamedata/uni2/data/chr003/chr003_0.txt
+wait 200
+opentrees anim
+pattern 1
+wait 20
+viewframe 4
+wait 30
+capture OUT/shots_af_end_uni2_af_end_uni2.png
+quit

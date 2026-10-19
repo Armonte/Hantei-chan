@@ -15,6 +15,7 @@
 
 #include "hitbox.h"
 #include "app_log.h"
+#include "platform/platform_message.h"
 #include "parts/parts.h"
 #include "enums.h"  // For RenderMode enum
 #include "background/bg_renderer.h"
@@ -312,7 +313,7 @@ void Render::DrawGridLines()
 	{
 		std::stringstream ss;
 		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
+		platform::MessageBox("GL Error", ss.str().c_str(), 2);
 	}
 
 	//Lines only
@@ -335,7 +336,7 @@ void Render::Draw()
 	{
 		std::stringstream ss;
 		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
+		platform::MessageBox("GL Error", ss.str().c_str(), 2);
 		//PostQuitMessage(1);
 	}
 
@@ -460,7 +461,7 @@ void Render::DrawSpriteOnly(bool drawHitboxes)
 	{
 		std::stringstream ss;
 		ss << "GL Error: 0x" << std::hex << err << "\n";
-		MessageBoxA(nullptr, ss.str().c_str(), "GL Error", MB_ICONSTOP);
+		platform::MessageBox("GL Error", ss.str().c_str(), 2);
 	}
 
 	// Disable depth write so layers don't occlude each other

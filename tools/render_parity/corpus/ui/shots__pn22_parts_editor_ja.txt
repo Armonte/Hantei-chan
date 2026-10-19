@@ -1,0 +1,16 @@
+# Japanese UI of the RBO / GOF2 PAT editor (pose / part / layer controls, sheet pane), UV view with the selected cut-out
+browse C:\games\rbo_run
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+open
+wait 160
+partseditor
+wait 40
+lang ja
+pose 3
+part 2
+wait 40
+capture OUT/shots_pn22_parts_editor_ja_pn22_parts_editor_ja.png
+lang en
+quit

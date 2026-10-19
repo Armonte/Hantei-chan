@@ -138,8 +138,27 @@ struct Worker {
 Worker &W() { static Worker *w = new Worker(); return *w; }   // leaked on purpose: the detached workers may outlive static destruction
 }
 
+void SetDeterministic(bool on)
+{
+	S().deterministicSync = on;
+	S().deterministicNoCache = on;
+}
+
 void PostJob(std::function<void()> f, bool low)
 {
+	// --deterministic (PLAN.md 4.3): run the job inline on this thread instead of
+	// on the worker, so a fixed frame number always shows the same browser
+	// content. The corpus ui-scripts put preview and thumbnail jobs behind
+	// waitidle; without this, whether a thumbnail had landed by the capture
+	// frame depended on how busy the three workers were.
+	if (S().deterministicSync) {
+		// Same environment the worker gives its jobs: character loads here must
+		// not create GL textures (thumbnails only decode pixels).
+		han2::SetNoGlUpload(true);
+		try { f(); } catch (...) {}
+		han2::SetNoGlUpload(false);
+		return;
+	}
 	Worker &w = W();
 	{ std::lock_guard<std::mutex> lk(w.mx); w.start(); (low ? w.lo : w.hi).push_back(std::move(f)); }
 	w.cv.notify_one();
@@ -1193,7 +1212,9 @@ static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::strin
 	std::vector<uint8_t> px; int w = 0, h = 0;
 	std::string err;
 	const std::string cacheFile = CacheFile(*src, item);
-	if (CacheLoad(cacheFile, px, w, h)) {
+	// --deterministic: skip the disk cache, so the thumbnail is always the one
+	// this build and this data produce (PLAN.md 4.3).
+	if (!S().deterministicNoCache && CacheLoad(cacheFile, px, w, h)) {
 		auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
 		tlog::Log("thumb %s: cache hit %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
 		PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });
@@ -1220,7 +1241,7 @@ static void ThumbJob(SourceP src, Item item, CharJob cj, bool charOk, std::strin
 		}
 		if (!done) { fail(); return; }
 	} else { fail(); return; }
-	CacheStore(cacheFile, px, w, h);
+	if (!S().deterministicNoCache) CacheStore(cacheFile, px, w, h);
 	tlog::Log("thumb %s: decoded %.1f ms", item.name.c_str(), tlog::Ms(t0, tlog::Now()));
 	auto data = std::make_shared<std::vector<uint8_t>>(std::move(px));
 	PostMain([key, data, w, h] { ApplyThumb(key, data, w, h); });

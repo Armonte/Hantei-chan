@@ -1,4 +1,5 @@
 #include "vao.h"
+#include "platform/platform_message.h"
 #include <glad/glad.h>
 #include <windows.h>
 #include <sstream>
@@ -33,7 +34,7 @@ int Vao::Prepare(size_t size, void *ptr)
 	{
 		std::stringstream ss;
 		ss << "Size "<<size<<" is not a multiple of the stride "<<stride;
-		MessageBoxA(nullptr, ss.str().c_str(), __FUNCTION__, MB_ICONWARNING);
+		platform::MessageBox(__FUNCTION__, ss.str().c_str(), 1);
 		size -= alignment;
 	}
 

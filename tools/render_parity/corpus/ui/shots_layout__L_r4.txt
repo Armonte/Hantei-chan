@@ -1,0 +1,54 @@
+# Layout sweep round 4 (docs/ui/LAYOUT_AUDIT_2026-10-16.md): UNI2 / MBTL label-table IF + EF forms, the CG + .pat textures
+# tab (Used by sized to its rows) and the Squirrel panel's UNI2 hot-reload row, EN then JA. Read-only: nothing is saved.
+# UNI2 chr017 p110 f16 and MBTL chr015 p170 f6 each have two conditions and two effects (HA6 IFTP / EFTP scan).
+openany C:/games/UNI2/data/chr017/chr017_0.txt
+wait 120
+framenodes 6
+pattern 110
+viewframe 16
+wait 40
+capture OUT/shots_layout_L_r4_R08_uni2_ifef.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r4_R08_uni2_ifef_ja.png
+lang en
+openany C:/games/MBTL/data/chr015/chr015_0.txt
+wait 120
+framenodes 6
+pattern 170
+viewframe 6
+wait 40
+capture OUT/shots_layout_L_r4_R09_mbtl_ifef.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r4_R09_mbtl_ifef_ja.png
+lang en
+openany C:/games/UNI2/data/chr020/chr020_0.txt
+wait 120
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 20
+cgm texsel 0 0
+wait 30
+capture OUT/shots_layout_L_r4_R03_cgm_textures.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r4_R03_cgm_textures_ja.png
+lang en
+cgm texsel 0 40
+wait 30
+capture OUT/shots_layout_L_r4_R03b_cgm_textures_sel40.png
+cgm open off
+wait 10
+sq open C:/games/UNI2
+sq file data/chr020/chr020_mv_0.txt
+sq hotreload on
+wait 30
+capture OUT/shots_layout_L_r4_R10_sq_hotreload.png
+lang ja
+wait 20
+capture OUT/shots_layout_L_r4_R10_sq_hotreload_ja.png
+lang en
+sq hotreload off
+quit

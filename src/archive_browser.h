@@ -30,6 +30,10 @@ struct GameInfo {
 GameInfo DetectGame(const std::string &dir);
 
 extern bool show;                        // the dockable window
+// --deterministic: run preview / thumbnail jobs inline on the UI thread instead
+// of on the worker, so a capture at a fixed frame number does not depend on how
+// busy the workers are (PLAN.md 4.3). Off by default.
+void SetDeterministic(bool on);
 // Opens a game folder, an archive or a loose file's folder in the browser (and shows the window). Returns an error text or empty.
 std::string OpenPath(const std::string &path);
 // File dialogs + OpenPath.

@@ -1,0 +1,26 @@
+baseline_sha=45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
+exe=gonptechan.exe
+exe_sha256=a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b
+# PLAN.md 4.3: two runs of the plain baseline differed on 39/2757 cases (the
+# stage background animation and the ImGui modal dim fade both step on wall
+# clock). The baseline binary is therefore rebuilt from <baseline_sha> plus the
+# single determinism commit, which is the binary every golden comes from.
+# The baseline binary is <baseline_sha> plus these four commits and nothing else
+# (all they touch is the pinning of wall-clock / worker-timing effects):
+#   81a948a  --deterministic: stage animation tick + ImGui modal dim fade
+#   f2e1cc0  install scan runs inline (the welcome screen's "found via" column)
+#   a4eb48f  browser preview/thumbnail jobs run inline
+#   4f6ba36  keep the no-GL-upload flag around those inline jobs
+#   b791bdb  bypass the on-disk thumbnail cache (LOCALAPPDATA) so the browser
+#            thumbnails are the ones this build renders, not the last run's
+determ_sha=b791bdb155672c2becbe68b051606805afda83d2
+determ_exe_sha256=0497a82c5c90c5d7b530e29ec9164c3c8f6153d7d98e639a36f898aeb7c004ea
+built=2026-10-18
+worktree=/home/teo/dev/hantei-chan-wt/render-baseline
+staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
+golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
+# The golden was re-rendered on 2026-10-18 after the environment drifted:
+# C:/games/rbo_run (a copy of the RBO install the RBO shots browse) had gone
+# missing, so the browser listed a different number of files. prepare_fixtures.py
+# now re-creates that path, and the golden was re-rendered from this same
+# determinism binary. No test was weakened: the change is a pinned fixture.

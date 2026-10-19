@@ -23,6 +23,7 @@ include(GenerateVersionInfo)
 
 include(glad)
 include(imgui)
+include(sdl3)
 add_subdirectory(glm)
 add_subdirectory(tinyalloc)
 
@@ -40,6 +41,8 @@ set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src
 
 add_executable(${EXE}
 	src/main.cpp
+	src/platform/platform.cpp
+	src/platform/platform_keys.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp
 	src/right_pane.cpp
@@ -203,7 +206,7 @@ add_custom_target(update_version ALL
 add_dependencies(${EXE} update_version)
 
 find_package(OpenGL REQUIRED)
-target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
+target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc SDL3-static)
 if(WIN32)
 	# WIC PNG export, folder picker, detached-window subclassing; winmm for BGM preview (waveOut).
 	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm version)
@@ -1384,6 +1387,82 @@ endif()
 
 # Game-data-free HA6 load -> save byte round trip on the committed fixture (runs in CI; the full corpus is tools/uni/uni_regress.sh).
 add_test(NAME ha6_roundtrip_fixture COMMAND roundtrip --bytes tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/ha6_roundtrip_fixture.ha6" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Game effect files (docs/plans/render_d3d9/PLAN.md P3 step 1, lane FX). fx_parse is pure C++ (no D3D, no Windows
+# header), so it builds and is tested everywhere; the synthetic checks always run, the walk of the real Shader/*.txt
+# only when an install is present (exit 77 = ctest skip otherwise). The inventory names only, never shader text.
+add_executable(fx_inventory_test tests/fx_inventory_test.cpp src/rhi/d3d9/fx/fx_parse.cpp)
+target_include_directories(fx_inventory_test PRIVATE "src")
+if(MINGW)
+	target_link_options(fx_inventory_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME fx_inventory COMMAND fx_inventory_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# The CTAB constant-table reader is pure C++ too, so its layout unit test runs everywhere.
+add_executable(fx_ctab_test tests/fx_ctab_test.cpp src/rhi/d3d9/fx/fx_ctab.cpp)
+target_include_directories(fx_ctab_test PRIVATE "src")
+if(MINGW)
+	target_link_options(fx_ctab_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME fx_ctab COMMAND fx_ctab_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# fxcompile compiles every pass with d3dcompiler_47.dll (loaded dynamically) and parses the CTAB it returns. Windows
+# only; labelled gpu (needs the DLL, not a GPU) and skipped when no game install is present (exit 77).
+if(MINGW)
+	add_executable(fxcompile tools/fx/fxcompile.cpp src/rhi/d3d9/fx/fx_parse.cpp src/rhi/d3d9/fx/fx_ctab.cpp)
+	target_include_directories(fxcompile PRIVATE "src")
+	target_link_options(fxcompile PRIVATE -static-libgcc -static-libstdc++ -static)
+	add_test(NAME fx_compile COMMAND fxcompile WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+	set_tests_properties(fx_compile PROPERTIES LABELS gpu TIMEOUT 600)
+endif()
+
+# Render-parity harness (docs/plans/render_d3d9/PLAN.md 4). render_parity_tools is
+# pure Python on synthetic PNGs, so CI runs it. rhi_lint is a grep, no GPU.
+# render_parity renders the smoke subset through the real (hidden) GL window and
+# diffs it against golden_smoke/: GPU and game data, so it is labelled gpu and
+# fails only when those are present (the script exits 77 = skip otherwise).
+add_test(NAME render_parity_tools
+	COMMAND python3 "${CMAKE_SOURCE_DIR}/tools/render_parity/test_diff.py"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+add_test(NAME rhi_lint
+	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/rhi_lint.sh" "${CMAKE_SOURCE_DIR}"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL (docs/plans/render_d3d9/PLAN.md 5.2).  glsl_identity is pure Python over the
+# repo text: res/shaders/*.glsl.* must stay byte-identical to the inline GLSL until P1
+# switches the C++ over to loading them.
+add_test(NAME glsl_identity
+	COMMAND python3 "${CMAKE_SOURCE_DIR}/tests/hlsl_glsl_identity_test.py"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL: compile every res/shaders/*.hlsl (vs_3_0 / ps_3_0) with
+# d3dcompiler_47.dll, loaded dynamically, and report the instruction count and the
+# CTAB constants.  It needs the DLL, not a GPU, so it is a normal Windows test.
+add_executable(hlslcompile tools/hlsl/hlslcompile.cpp)
+target_compile_definitions(hlslcompile PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(hlslcompile PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_compile
+	COMMAND hlslcompile "${CMAKE_SOURCE_DIR}/res/shaders"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Labelled gpu per the lane brief: it needs at least a real Windows host with the
+# d3dcompiler_47 OS component, which CI's non-GPU jobs don't guarantee.  It is green
+# on this worktree (18 vs_3_0/ps_3_0 entry points, 0 failures).
+set_tests_properties(hlsl_compile PROPERTIES LABELS gpu)
+
+# Lane HLSL: scalar CPU check that the HLSL ports of texturedSrcFrag (modes 0-3) and
+# partsSrcFrag are the same maths as the GLSL, on 10,000 random inputs plus every exact
+# texel centre.  No GPU, no game data.
+add_executable(hlsl_ref_test tests/hlsl_ref_test.cpp)
+if(MINGW)
+	target_link_options(hlsl_ref_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_ref COMMAND hlsl_ref_test)
+add_test(NAME render_parity
+	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+set_tests_properties(render_parity PROPERTIES LABELS gpu TIMEOUT 900)
 # Opens a real (hidden) OpenGL 3.3 window: CI runners have no GPU driver, so CI runs `ctest -LE gpu`.
 set_tests_properties(headless_export PROPERTIES LABELS gpu)
 # Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.
