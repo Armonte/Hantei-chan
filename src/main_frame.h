@@ -33,7 +33,7 @@ namespace abrowser { struct OpenRequest; }
 #include "background/stage_card.h"
 #include "shortcut_router.h"
 #include "workspace_session.h"
-#include "workspace_viewports.h"
+#include "platform/viewports.h"
 #include <imgui.h>
 #include <glm/mat4x4.hpp>
 #include <string>
@@ -239,7 +239,6 @@ private:
 	std::vector<int> ExportTicks(CharacterView* view, const ExportSettings& s, bool& liveFrame);
 public:
 	bool RunPngExport(CharacterView* view, const ExportSettings& s, ExportResult& result);
-	static WorkspaceViewports::KeyHook DetachedKeyHook();
 private:
 	std::string DefaultExportFolder(CharacterView* view) const;
 	void PrepareExportSettings(CharacterView* view);

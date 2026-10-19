@@ -34,7 +34,9 @@
 #include "png_writer.h"
 #include "project_manager.h"
 #include <imgui.h>
-#include "workspace_viewports.h"
+#include "platform/viewports.h"
+#include "platform/platform.h"
+#include <SDL3/SDL.h>
 #include "paste_notice.h"
 #include "copy_data.h"
 #include "app_log.h"
@@ -565,10 +567,18 @@ void MainFrame::ProcessStartupArgs()
 		}
 	}
 	if (gStartup.postKey && n == 12) {
-		HWND target = nullptr;
-		for (ImGuiViewport *vp : ImGui::GetPlatformIO().Viewports)
-			if (vp != ImGui::GetMainViewport() && vp->PlatformHandle) { target = (HWND)vp->PlatformHandle; break; }
-		if (target) PostMessage(target, WM_KEYDOWN, (WPARAM)gStartup.postKey, 1);
+		// --post-key <vk>: push a key down with the mapped scancode into the SDL
+		// queue (PLAN.md 6 P0 step 6). The old code posted WM_KEYDOWN to the
+		// first detached window; SDL delivers the pushed event to whichever
+		// window has keyboard focus, which is the same window the user was in.
+		if (int sc = platform::ScancodeFromVk((uint32_t)gStartup.postKey)) {
+			SDL_Event ev{};
+			ev.type = SDL_EVENT_KEY_DOWN;
+			ev.key.scancode = (SDL_Scancode)sc;
+			ev.key.key = (SDL_Keycode)SDL_GetKeyFromScancode((SDL_Scancode)sc, SDL_KMOD_NONE, false);
+			ev.key.windowID = SDL_GetKeyboardFocus() ? SDL_GetWindowID(SDL_GetKeyboardFocus()) : 0;
+			SDL_PushEvent(&ev);
+		}
 	}
 	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
 		gStartup.sceneMs += m_lastSceneMs;
@@ -597,7 +607,7 @@ void MainFrame::ProcessStartupArgs()
 	if (!gStartup.captureWindows.empty() && n == 20) {
 		// Every detached (platform) window's back buffer, read just before
 		// it is presented this frame (after this function returns).
-		WorkspaceViewports::RequestCapture([](int index, int w, int h, const unsigned char *rgba, void *) {
+		viewports::RequestCapture([](int index, int w, int h, const unsigned char *rgba, void *) {
 			std::vector<uint8_t> px(rgba, rgba + (size_t)w * h * 4);
 			for (size_t k = 3; k < px.size(); k += 4) px[k] = 255;
 			std::string err;

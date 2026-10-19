@@ -5,7 +5,7 @@
 #include "test.h"
 #include "ini.h"
 #include "version.h"
-#include "workspace_viewports.h"
+#include "platform/viewports.h"
 
 #include <iostream>
 #include <fstream>
@@ -13,6 +13,7 @@
 #include <cstdlib>
 #include <chrono>
 #include <thread>
+#include <cwctype>
 #include <imgui.h>
 #include "imsearch.h"
 
@@ -41,11 +42,6 @@ ImVec2 clientRect;
 bool gAppQuit = false;
 
 HWND mainWindowHandle;
-ContextGl *context = nullptr;
-static bool dragLeft = false, dragRight = false;   // pan / draw drags in progress
-static int dragButtonLeft = 0, dragButtonRight = 1; // the physical button (0 L, 1 R, 2 M) holding each
-static POINT mousePos;
-static bool justActivated = false;  // Track if window just became active
 bool init = false;
 
 // Static storage for glyph ranges (must persist until font atlas is built)
@@ -196,6 +192,147 @@ void LoadJapaneseFonts(ImGuiIO& io)
 	}
 }
 
+
+// ---- App-side SDL input (the WndProc switch) --------------------------------
+
+// Pan / draw drags in progress, and the physical button (0 L, 1 R, 2 M) that
+// holds each. dragLeft is the pan role, dragRight the draw role; the mouse
+// button preference maps physical buttons onto them (issue #9).
+bool g_dragLeft = false, g_dragRight = false;
+int g_dragButtonLeft = 0, g_dragButtonRight = 1;
+// Last mouse position in main-window client coordinates. SDL reports window
+// coordinates, so the old ScreenToClient step is gone.
+float g_mouseX = 0.0f, g_mouseY = 0.0f;
+bool g_justActivated = false;
+
+// WM_LBUTTONDOWN / RBUTTONDOWN / MBUTTONDOWN.
+void BeginDrag(MainFrame* mf, int button, float x, float y)
+{
+	const bool draw = button == gSettings.mouseDrawButton;
+	const bool pan = button == gSettings.mousePanButton || (button == 2 && !draw);
+	// Do not start a drag when the window just became active: the click that
+	// activates a window would otherwise pan the view.
+	if ((pan || draw) && !ImGui::GetIO().WantCaptureMouse && !g_justActivated &&
+	    !(draw ? g_dragRight : g_dragLeft)) {
+		g_mouseX = x;
+		g_mouseY = y;
+		SDL_CaptureMouse(true);
+		if (draw) {
+			g_dragRight = true;
+			g_dragButtonRight = button;
+			if (mf) mf->RightClick((int)x, (int)y);
+		} else {
+			g_dragLeft = true;
+			g_dragButtonLeft = button;
+			if (mf) mf->HandleMouseDown(false, true);
+			if (mf) mf->LeftClick((int)x, (int)y);
+		}
+		if (mf) mf->SetMouseDragActive(true);
+		return;
+	}
+	g_justActivated = false;  // clear after the first click
+}
+
+// WM_LBUTTONUP / RBUTTONUP / MBUTTONUP.
+void EndDrag(MainFrame* mf, int button)
+{
+	if (g_dragRight && button == g_dragButtonRight) {
+		if (!g_dragLeft) SDL_CaptureMouse(false);
+		g_dragRight = false;
+		if (mf) mf->HandleMouseUp(true, false);
+		if (mf) mf->SetMouseDragActive(g_dragLeft);
+		return;
+	}
+	if (g_dragLeft && button == g_dragButtonLeft) {
+		if (!g_dragRight) SDL_CaptureMouse(false);
+		g_dragLeft = false;
+		if (mf) mf->HandleMouseUp(false, true);
+		if (mf) mf->SetMouseDragActive(g_dragRight);
+	}
+}
+
+// WM_ACTIVATE(WA_INACTIVE) / WM_CANCELMODE: close any gesture in progress.
+void CancelDrags(MainFrame* mf)
+{
+	if (!g_dragLeft && !g_dragRight) return;
+	if (mf) mf->CancelViewportGestures();
+	SDL_CaptureMouse(false);
+	g_dragLeft = g_dragRight = false;
+	if (mf) mf->SetMouseDragActive(false);
+}
+
+void AppSdlEvent(const SDL_Event& e, void* user)
+{
+	MainFrame* mf = (MainFrame*)user;
+	ImGuiIO& io = ImGui::GetIO();
+	switch (e.type) {
+	case SDL_EVENT_KEY_DOWN: {
+		// The shortcut router decides: a focused text field keeps its keys.
+		const uint32_t vk = platform::VkFromScancode((int)e.key.scancode);
+		if (vk && mf && mf->HandleKeys(vk, e.key.repeat, io.WantCaptureKeyboard, io.WantTextInput))
+			return;
+		break;
+	}
+	case SDL_EVENT_TEXT_INPUT:
+		// A key that already ran a shortcut from a focused text field (Num* / Num/
+		// keyframe step) must not also type its character (the WM_CHAR rule).
+		if (MainFrame::s_swallowChar && e.text.text[0] &&
+		    (wchar_t)towlower((wint_t)(unsigned char)e.text.text[0]) == MainFrame::s_swallowChar) {
+			MainFrame::s_swallowChar = 0;
+		}
+		break;
+	case SDL_EVENT_MOUSE_BUTTON_DOWN: {
+		const int button = e.button.button == SDL_BUTTON_LEFT ? 0 :
+		                   e.button.button == SDL_BUTTON_RIGHT ? 1 :
+		                   e.button.button == SDL_BUTTON_MIDDLE ? 2 : -1;
+		if (button >= 0) {
+			g_mouseX = e.button.x;
+			g_mouseY = e.button.y;
+			BeginDrag(mf, button, e.button.x, e.button.y);
+		}
+		break;
+	}
+	case SDL_EVENT_MOUSE_BUTTON_UP: {
+		const int button = e.button.button == SDL_BUTTON_LEFT ? 0 :
+		                   e.button.button == SDL_BUTTON_RIGHT ? 1 :
+		                   e.button.button == SDL_BUTTON_MIDDLE ? 2 : -1;
+		if (button >= 0) EndDrag(mf, button);
+		break;
+	}
+	case SDL_EVENT_MOUSE_MOTION:
+		// Only the active pan/draw drag moves the scene. The main window is the
+		// only window a drag can start in, so an event from another window is
+		// not ours (a detached window never pans the main view).
+		if ((g_dragLeft || g_dragRight) && mf) {
+			mf->HandleMouseDrag((int)(e.motion.x - g_mouseX), (int)(e.motion.y - g_mouseY),
+			                    g_dragRight, g_dragLeft);
+		}
+		g_mouseX = e.motion.x;
+		g_mouseY = e.motion.y;
+		break;
+	case SDL_EVENT_MOUSE_WHEEL:
+		// WM_MOUSEWHEEL: only when ImGui does not capture the mouse and nothing is
+		// being dragged. The zoom point is the cursor, and SDL already gives it in
+		// window coordinates.
+		if (mf && !io.WantCaptureMouse && !(g_dragLeft || g_dragRight)) {
+			float wx = 0, wy = 0;
+			SDL_GetMouseState(&wx, &wy);
+			mf->HandleMouseWheel((e.wheel.y > 0) != gSettings.invertWheelZoom, (int)wx, (int)wy);
+		}
+		break;
+	case SDL_EVENT_WINDOW_FOCUS_GAINED:
+	case SDL_EVENT_WINDOW_MOUSE_ENTER:
+		g_justActivated = true;
+		break;
+	case SDL_EVENT_WINDOW_FOCUS_LOST:
+		// SDL_EVENT_KEY_UP is irrelevant here; a lost focus closes the gesture,
+		// like WM_ACTIVATE(WA_INACTIVE).
+		CancelDrags(mf);
+		break;
+	default:
+		break;
+	}
+}
 
 int main(int argC, char** argV)
 {
@@ -349,8 +486,6 @@ int main(int argC, char** argV)
 	platform::ClientSize(cw, ch);
 	clientRect = ImVec2((float)cw, (float)ch);
 
-	context = nullptr;   // the GL context lives in the platform layer now
-
 	// ImGui platform + GL backend. The window and context are already up, so
 	// this is the WM_CREATE body without the wgl/glad part.
 	{
@@ -363,13 +498,16 @@ int main(int argC, char** argV)
 		if (useIni) InitIni();
 		if (gStartup.headless)
 			io.IniFilename = nullptr;   // settings and layout are read, never written back
-		if (desc.allowViewports)
-			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		io.ConfigWindowsMoveFromTitleBarOnly = true;
 
 		LoadJapaneseFonts(io);
 		ImGui_ImplSDL3_InitForOpenGL((SDL_Window*)platform::Window(), platform::GlContextHandle());
 		ImGui_ImplOpenGL3_Init("#version 330 core");
+		// Detached windows: the SDL3 + GL3 backends create a native window with
+		// a shared GL context per viewport, so ViewportsEnable is only turned on
+		// once both backends have registered their platform/renderer hooks.
+		if (desc.allowViewports && viewports::Initialize(true))
+			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
 		// vsync off, as wglSwapIntervalEXT(0) did.
 		platform::SetSwapInterval(0);
 	}
@@ -398,28 +536,12 @@ int main(int argC, char** argV)
 	handlers.onDropFile = [](const char* path, void* user) {
 		if (user) ((MainFrame*)user)->queueDroppedFile(path);
 	};
+	// ImGui first (the SDL backend's ProcessEvent is called from here), then
+	// the app's own WndProc-style switch. Nothing else pumps ImGui's input.
 	handlers.onEvent = [](const void* ev, void* user) {
 		const SDL_Event& e = *(const SDL_Event*)ev;
-		MainFrame* mf = (MainFrame*)user;
-		switch (e.type) {
-		case SDL_EVENT_KEY_DOWN: {
-			// The shortcut router decides: a focused text field keeps its keys.
-			const uint32_t vk = platform::VkFromScancode((int)e.key.scancode);
-			if (vk && mf && mf->HandleKeys(vk, e.key.repeat,
-			                               ImGui::GetIO().WantCaptureKeyboard, ImGui::GetIO().WantTextInput))
-				return;
-			break;
-		}
-		case SDL_EVENT_MOUSE_WHEEL:
-			if (mf && !ImGui::GetIO().WantCaptureMouse && !mf->IsMouseDragActive()) {
-				float wx = 0, wy = 0;
-				SDL_GetMouseState(&wx, &wy);
-				mf->HandleMouseWheel(e.wheel.y > 0 != gSettings.invertWheelZoom, (int)wx, (int)wy);
-			}
-			break;
-		default:
-			break;
-		}
+		ImGui_ImplSDL3_ProcessEvent(&e);
+		AppSdlEvent(e, user);
 	};
 	platform::SetEventHandlers(handlers);
 

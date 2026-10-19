@@ -774,7 +774,7 @@ void MainFrame::DrawDetachPreference()
 	if (ImGui::IsItemHovered())
 		ImGui::SetTooltip(TXT("Detached tabs open as their own OS windows that can move to other monitors.\n"
 			"Off: they stay inside the main window. Takes effect after a restart.%s"),
-			WorkspaceViewports::IsEnabled() ? "" : TXT("\n(Currently off.)"));
+			viewports::IsEnabled() ? "" : TXT("\n(Currently off.)"));
 }
 
 // ---- Project persistence ---------------------------------------------------
@@ -847,29 +847,6 @@ void MainFrame::RestoreWorkspace(const std::string& text)
 	if (CharacterView* v = getActiveView())
 		if (m_session.owner(v->getId()).value_or(1) == WorkspaceSession::MainHost)
 			m_session.select(WorkspaceSession::MainHost, v->getId());
-}
-
-// Detached-window keyboard hook (workspace_viewports.cpp subclass).
-static bool DetachedWindowKeyHook(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
-{
-	if (msg == WM_CHAR) {
-		// Same rule as the main WndProc: drop the character of a key that
-		// already acted as a shortcut while a text field had focus.
-		if (MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
-			MainFrame::s_swallowChar = 0;
-			return true;
-		}
-		return false;
-	}
-	MainFrame* mf = (MainFrame*)GetWindowLongPtr(mainWindowHandle, GWLP_USERDATA);
-	if (!mf || !ImGui::GetCurrentContext()) return false;
-	const ImGuiIO& io = ImGui::GetIO();
-	return mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0, io.WantCaptureKeyboard, io.WantTextInput);
-}
-
-WorkspaceViewports::KeyHook MainFrame::DetachedKeyHook()
-{
-	return DetachedWindowKeyHook;
 }
 
 #endif /* UI_WORKSPACE_HOSTS_IMPL_H_GUARD */
