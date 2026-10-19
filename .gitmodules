@@ -12,3 +12,6 @@
 	path = deps/SDL
 	url = https://github.com/libsdl-org/SDL.git
 	branch = release-3.4.18
+[submodule "deps/vkd3d"]
+	path = deps/vkd3d
+	url = https://gitlab.winehq.org/wine/vkd3d.git

@@ -891,6 +891,24 @@ if(MINGW)
 	target_link_options(shortcut_router_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME shortcut_router COMMAND shortcut_router_test)
+
+# Native Linux groundwork (lane LINUX, docs/render/linux.md, PLAN.md P5): the
+# portable helpers behind src/platform/portable. Same test on the Windows mingw
+# build and natively, so both implementations are covered by one ctest.
+add_executable(portable_test
+	tests/portable_test.cpp
+	src/platform/portable/paths.cpp
+	src/platform/portable/process.cpp
+	src/platform/portable/pipe.cpp
+	src/platform/portable/steam.cpp
+)
+target_include_directories(portable_test PRIVATE "." "src")
+target_compile_definitions(portable_test PRIVATE WIN32_LEAN_AND_MEAN)
+if(MINGW)
+	target_link_options(portable_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME portable COMMAND portable_test)
+
 add_executable(live_reload_test tests/live_reload_test.cpp src/live_reload.cpp src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(live_reload_test PRIVATE "." "src" "third_party")
 target_compile_definitions(live_reload_test PRIVATE WIN32_LEAN_AND_MEAN)
@@ -1468,3 +1486,7 @@ set_tests_properties(headless_export PROPERTIES LABELS gpu)
 # Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.
 get_property(_hc_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${_hc_all_tests} PROPERTIES SKIP_RETURN_CODE 77)
+
+# Native Linux build support (lane LINUX, PLAN.md P5 step 1). No-op unless
+# build_linux.sh set HANTEI_LINUX=ON, so the Windows build is unchanged.
+include(linux)
