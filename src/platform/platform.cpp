@@ -1,7 +1,7 @@
 // SDL3 implementation of src/platform/platform.h (PLAN.md 6 P0 step 2).
 //
 // P0 keeps the GL backend, so this creates an SDL window with an OpenGL 3.3
-// context (the same attributes ContextGl used: 24-bit depth, 8-bit stencil)
+// context (24-bit depth, 8-bit stencil, what the pre-SDL Win32 context had)
 // and loads glad through SDL_GL_GetProcAddress. The Win32 HWND is still
 // reachable (NativeWindowHandle) for the file dialogs' owner window. Detached
 // windows are ImGui viewports, created by imgui_impl_sdl3 with their own
@@ -60,8 +60,7 @@ bool Init(const InitDesc& desc, std::string& error)
 	if (desc.openGL) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-		// The old ContextGl used wglCreateContext, which is a compatibility
-		// profile; the app's GLSL is #version 330 core, which both profiles
+		// The pre-SDL Win32 context was a legacy (compatibility profile) one; the app's GLSL is #version 330 core, which both profiles
 		// accept, but the default vertex array object and the client-array
 		// entry points only work under compatibility. Keeping it is what makes
 		// P0 output-identical.
@@ -176,9 +175,9 @@ bool IsMaximized()
 	return g.window && (SDL_GetWindowFlags(g.window) & SDL_WINDOW_MAXIMIZED);
 }
 
-void SetTitle(const std::string& utf8Title)
+void SetTitle(AppWindow* window, const std::string& utf8Title)
 {
-	if (g.window) SDL_SetWindowTitle(g.window, utf8Title.c_str());
+	if (window) SDL_SetWindowTitle(reinterpret_cast<SDL_Window*>(window), utf8Title.c_str());
 }
 
 void* NativeWindowHandle()

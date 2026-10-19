@@ -525,7 +525,7 @@ int main(int argC, char** argV)
 	clientRect = ImVec2((float)cw, (float)ch);
 
 	// ImGui platform + GL backend. The window and context are already up, so
-	// this is the rest of the WM_CREATE body without the wgl/glad part.
+	// this is the rest of the WM_CREATE body without the context/glad part.
 	{
 		ImGuiIO& io = ImGui::GetIO();
 		LoadJapaneseFonts(io);
@@ -536,11 +536,11 @@ int main(int argC, char** argV)
 		// once both backends have registered their platform/renderer hooks.
 		if (desc.allowViewports && viewports::Initialize(true))
 			io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;
-		// vsync off, as wglSwapIntervalEXT(0) did.
+		// vsync off, as before SDL.
 		platform::SetSwapInterval(0);
 	}
 
-	MainFrame* frame = new MainFrame();
+	MainFrame* frame = new MainFrame(platform::Window());
 
 	// The SDL event pump owns the input translation; the app's own switch runs
 	// after ImGui has seen each event (the old WndProc order). PostQuitMessage is

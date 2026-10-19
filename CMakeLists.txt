@@ -341,7 +341,7 @@ add_executable(bg_render
 )
 target_include_directories(bg_render PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
 target_compile_definitions(bg_render PRIVATE UNICODE _UNICODE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
-target_link_libraries(bg_render PRIVATE tinyalloc glad glm OpenGL::GL windowscodecs ole32 uuid)
+target_link_libraries(bg_render PRIVATE tinyalloc glad glm OpenGL::GL SDL3-static windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(bg_render PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()

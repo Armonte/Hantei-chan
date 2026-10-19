@@ -4,10 +4,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+// The main window's HWND (platform::NativeWindowHandle()), kept for the Win32
+// file dialogs' owner. MainFrame itself holds the platform::AppWindow.
 extern HWND mainWindowHandle;
-#else
-struct GLFWwindow;
-extern GLFWwindow* mainWindowHandle;
 #endif
 
 extern ImVec2 clientRect;

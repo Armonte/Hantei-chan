@@ -28,7 +28,7 @@ class MainFrame {
 In `main_frame.cpp` constructor:
 
 ```cpp
-MainFrame::MainFrame(ContextGl* context) {
+MainFrame::MainFrame(platform::AppWindow* window) : m_window(window) {
 	// ... existing initialization ...
 	
 	// Set up background renderer

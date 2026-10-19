@@ -5,6 +5,7 @@
 #include "render_target.h"
 
 #include "main.h"
+#include "platform/platform.h"
 #include "filedialog.h"
 #include "ini.h"
 #include "imgui_utils.h"
@@ -63,7 +64,7 @@
 
 wchar_t MainFrame::s_swallowChar = 0;
 
-MainFrame::MainFrame()
+MainFrame::MainFrame(platform::AppWindow* window) : m_window(window)
 {
 	LoadSettings();
 	// User key bindings (issue #9); unknown or stale entries are ignored.
@@ -851,25 +852,9 @@ void MainFrame::updateWindowTitle()
 		}
 	}
 
-#ifdef _WIN32
-	SetWindowTextW(mainWindowHandle, title.c_str());
-#else
-	// For GLFW, convert to UTF-8
-	std::string utf8Title;
-	for (wchar_t wc : title) {
-		if (wc < 0x80) {
-			utf8Title += static_cast<char>(wc);
-		} else if (wc < 0x800) {
-			utf8Title += static_cast<char>(0xC0 | (wc >> 6));
-			utf8Title += static_cast<char>(0x80 | (wc & 0x3F));
-		} else {
-			utf8Title += static_cast<char>(0xE0 | (wc >> 12));
-			utf8Title += static_cast<char>(0x80 | ((wc >> 6) & 0x3F));
-			utf8Title += static_cast<char>(0x80 | (wc & 0x3F));
-		}
-	}
-	glfwSetWindowTitle(mainWindowHandle, utf8Title.c_str());
-#endif
+	// Through the platform layer (SDL_SetWindowTitle, UTF-8). The wide title
+	// round-trips unchanged, so the bar reads what SetWindowTextW showed.
+	platform::SetTitle(m_window, WideToUtf8(title));
 }
 
 bool MainFrame::tryCloseProject()
