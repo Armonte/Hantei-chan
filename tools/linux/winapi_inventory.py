@@ -27,6 +27,10 @@ SRC = os.path.join(ROOT, "src")
 DOC = os.path.join(ROOT, "docs", "render", "linux.md")
 
 # Files the P0 phase rewrites, so they are out of scope for this inventory.
+# src/platform is out of scope for the same reason as the P0 files: it is the
+# layer whose *job* is to know the OS. platform.cpp already holds the SDL/Win32
+# window bridge and portable/* holds the two bodies of each portable helper.
+INCLUDE_DIRS = ("src/platform",)
 P0_FILES = {
     "src/main.cpp",
     "src/main.h",
@@ -434,7 +438,7 @@ GROUP_DEFAULT = {
     "sync": "`poll()` / `std::mutex`",
     "files": "`std::fstream` / `open(2)`",
     "window": "`platform::*` (SDL3, P0)",
-    "types": "`portable::win_types` alias (`uint32_t`, `bool`, opaque handle)",
+    "types": "standard C++ type (`uint32_t`, `bool`, opaque handle, `std::string`)",
     "audio": "SDL3 audio stream",
     "version": "Windows-only branch",
 }
@@ -457,6 +461,13 @@ REPLACEMENT.update({
 
 def rel(path):
     return os.path.relpath(path, ROOT).replace(os.sep, "/")
+
+
+def excluded(relpath):
+    """True for files this inventory deliberately does not list: the P0-owned
+    files (the main line replaces them with SDL3) and src/platform (the layer
+    that is allowed to know the OS; see section 1 of docs/render/linux.md)."""
+    return relpath in P0_FILES or relpath.startswith(INCLUDE_DIRS)
 
 
 # One compiled alternation over every symbol, so a source line is tested once
@@ -484,7 +495,7 @@ def scan():
     calls = []      # (file, line, group, symbol)
     for path in iter_files():
         r = rel(path)
-        if r in P0_FILES:
+        if excluded(r):
             continue
         # Files that declare their own ReadFile()/WriteFile() helpers. Matching
         # the Win32 names there would be a false positive (cgm_acmoon.cpp:23,
@@ -530,7 +541,7 @@ def main():
     if args.write_doc:
         return write_doc(includes, calls)
     if args.check:
-        bad = [c for c in calls if c[0] in P0_FILES]
+        bad = [c for c in calls if excluded(c[0])]
         for b in bad:
             print("P0-owned file in inventory:", b)
         return 1 if bad else 0
@@ -593,7 +604,7 @@ def _table_for(group, includes, calls):
         out.append("|---|---|---|")
         for r in sorted(per_file):
             syms = ", ".join(f"`{s}`" for s in sorted(per_file[r]))
-            out.append(f"| `{r}` | {syms} | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |")
+            out.append(f"| `{r}` | {syms} | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |")
         return "\n".join(out)
     rows = sorted({(r, i, sym) for r, i, g, sym in calls if g == group})
     out.append("| file | line | win32 call | portable replacement |")

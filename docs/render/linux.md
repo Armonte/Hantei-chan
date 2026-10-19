@@ -13,12 +13,15 @@ keep the P0-owned files out of the tables.
 
 ## 1. How to read this
 
-The scope is `src/`, minus the files P0 replaces with SDL3: `main.cpp`,
-`main.h`, `context_gl.h`, `workspace_viewports.{h,cpp}`, `filedialog.{h,cpp}`.
-Those are the main line's, and the inventory tool fails its `--check` mode if
-any of them appears.
+The scope is `src/`, minus two things the tool skips and `--check` refuses: the
+files P0 replaces with SDL3 (`main.cpp`, `main.h`, `context_gl.h`,
+`workspace_viewports.{h,cpp}`, `filedialog.{h,cpp}`), and `src/platform` itself,
+which is the layer whose job is to know the OS. `platform.cpp` already holds the
+SDL-and-Win32 window bridge and `platform/portable/*` holds the two bodies of
+each helper, so an inventory of Win32 use inside it would list the port, not the
+work.
 
-Current size: <!-- auto:counts -->76 `#include <windows.h>`-family sites, 896 Win32 call sites<!-- /auto:counts -->
+Current size: <!-- auto:counts -->74 `#include <windows.h>`-family sites, 893 Win32 call sites<!-- /auto:counts -->
 
 Two things are being separated here. The **portable layer** is what P5 actually
 switches the callers to: `src/platform/portable/{paths,process,pipe,steam}.{h,cpp}`
@@ -185,10 +188,23 @@ written, not where the caller is.
 | `platform::MessageBox()` | raw `MessageBox` | `render.cpp`, `shader.cpp`, `vao.cpp` (the three small-tool callers) |
 | `platform::SetTitle()` | `SetWindowTextW` | `main_frame.cpp` (P0) |
 
-Two of the rows above (`ExecutablePath`, `UserDataDir`) also need a **Windows**
-body; both are written in this lane only if the main line wants them, and the
-lane's `portable` headers are POSIX-plus-shared-signature until then. The point
-of the header is that P5's diff is a rename, not a redesign.
+## 7.1 What already exists (lane LINUX deliverable 2)
+
+The four headers are in the tree with a Windows body and a POSIX body each, and
+`tests/portable_test.cpp` (ctest `portable`) exercises both on both builds:
+
+| header | windows body | POSIX body |
+|---|---|---|
+| `src/platform/portable/paths.h` | `MultiByteToWideChar`, `GetModuleFileNameW`, `LOCALAPPDATA`, `GetCurrentDirectoryA`, `CreateFileA`/`MoveFileExA` with the antivirus retry | `/proc/self/exe`, `$XDG_DATA_HOME`, `std::filesystem`, `rename(2)` |
+| `src/platform/portable/process.h` | `QueryPerformanceCounter`, `GetTickCount64`, `CreateToolhelp32Snapshot`, `OpenProcess`, `CreateProcessW` with the inherited-environment block | `clock_gettime`, `/proc/<pid>/exe`, `kill(pid,0)`, `fork`/`execvp` + `waitpid` |
+| `src/platform/portable/pipe.h` | `CreateNamedPipeA`/`CreateFileA` on the pipe namespace, `PeekNamedPipe`, `WaitNamedPipeW`, `CancelIoEx` on stop | `AF_UNIX` socket in `$XDG_RUNTIME_DIR/hantei`, `poll()`, `ioctl(FIONREAD)`, stale-socket probe |
+| `src/platform/portable/steam.h` | the same `libraryfolders.vdf` parse over the Windows roots | the same parse over `~/.steam/steam`, `~/.steam/root`, `~/.local/share/Steam` |
+
+Two things are deliberately not done here, because they are P5 decisions rather
+than lane work: `CpToUtf8` does not decode cp932 on POSIX (the games' Japanese
+names need either a small table or a `libiconv` submodule, and `misc.cpp`'s
+`sj2utf8` still covers that until then), and the helpers are not wired into any
+caller yet - P5 does that with the table above.
 
 ## 8. Inventory (generated)
 
@@ -265,8 +281,6 @@ of the header is that P5's diff is a rename, not a redesign.
 | `src/parts/pat_renumber.cpp` | 7 | `windows.h` |
 | `src/pcmod/pcmod_export_ui.cpp` | 17 | `windows.h` |
 | `src/pcmod/pcmodtool.cpp` | 22 | `windows.h` |
-| `src/platform/platform.cpp` | 24 | `windows.h` |
-| `src/platform/platform_message.h` | 17 | `windows.h` |
 | `src/squirrel/fpanim_link.cpp` | 9 | `windows.h` |
 | `src/squirrel/ptcn_stack.cpp` | 9 | `windows.h` |
 | `src/squirrel/script_panel.cpp` | 37 | `windows.h` |
@@ -666,9 +680,6 @@ of the header is that P5's diff is a rename, not a redesign.
 |---|---|---|---|
 | `src/game_frame_ring.cpp` | 35 | `LocalFree` | `std::free` (only around SDDL/psid Win32 allocations) |
 | `src/game_frame_ring.cpp` | 53 | `LocalFree` | `std::free` (only around SDDL/psid Win32 allocations) |
-| `src/platform/platform_message.h` | 18 | `MessageBox` | `platform::MessageBox()` |
-| `src/platform/platform_message.h` | 27 | `MessageBox` | `platform::MessageBox()` |
-| `src/platform/platform_message.h` | 37 | `MessageBoxA` | `platform::MessageBox()` (SDL_ShowSimpleMessageBox, logged when headless) |
 | `src/render.cpp` | 316 | `MessageBox` | `platform::MessageBox()` |
 | `src/render.cpp` | 339 | `MessageBox` | `platform::MessageBox()` |
 | `src/render.cpp` | 464 | `MessageBox` | `platform::MessageBox()` |
@@ -1046,55 +1057,55 @@ some are stray.
 
 The scalar aliases (`DWORD`, `BOOL`, `HANDLE`, `wchar_t`, the `STRUCT` types and
 the sentinel constants) are the rest of the Win32 surface, counted per file
-below. One `src/platform/portable/win_types.h` header defines them on both
-platforms, so nothing here needs a per-site decision; the table exists so an
-audit can see nothing was dropped.
+below. They become standard C++ names (`uint32_t`, `bool`, an fd or
+`portable::SharedMemory`, `std::string`), so nothing here needs a per-site
+decision; the table exists so an audit can see nothing was dropped.
 
 <!-- BEGIN auto:types -->
 
 | file | aliases used | portable replacement |
 |---|---|---|
-| `src/archive_browser.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/archive_browser_ui.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/authoring/authoring_model.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/authoring/authoring_model.h` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/authoring/game_launcher.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W`, `PROCESS_INFORMATION`, `SECURITY_ATTRIBUTES`, `STARTUPINFOW`, `WAIT_OBJECT_0`, `WAIT_TIMEOUT`, `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/authoring/se_browser.cpp` | `LPCWSTR` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/background/bg_gametex.cpp` | `DWORD`, `PROCESS_INFORMATION` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/bg_dxt32.c` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/bgm_player.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/cmdfile/cmd_io.cpp` | `BOOL`, `DWORD`, `ERROR_ALREADY_EXISTS`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/copy_data.cpp` | `DWORD`, `ERROR_ALREADY_EXISTS`, `FILE_MAP_ALL_ACCESS`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PAGE_READWRITE`, `SYSTEM_INFO`, `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/copy_data.h` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/fbarc/fbarctool.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/fbarc/fbchartool.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/file_backup.cpp` | `DWORD`, `ERROR_ALREADY_EXISTS`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/fpanim_install.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W`, `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_frame_ring.cpp` | `DWORD`, `FILE_MAP_ALL_ACCESS`, `FILE_MAP_READ`, `HANDLE`, `INVALID_HANDLE_VALUE`, `LPWSTR`, `MEMORY_BASIC_INFORMATION`, `PAGE_READWRITE`, `SECURITY_ATTRIBUTES` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_link.cpp` | `BOOL`, `DWORD`, `ERROR_PIPE_BUSY`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_link_cli.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_link_mock.cpp` | `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_link_panel.cpp` | `DWORD`, `HANDLE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/game_table.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/han2_browser.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/i18n.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/main_frame.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/main_frame.h` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/mbaacc_pack.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/mbaacc_package.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/mbaacc_package_cli.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/misc.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/modproject/hmodtool.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/pcmod/pcmodtool.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/png_writer.cpp` | `DWORD` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/squirrel/fpanim_link.cpp` | `BOOL`, `DWORD`, `ERROR_PIPE_BUSY`, `HANDLE`, `INVALID_HANDLE_VALUE`, `OVERLAPPED`, `WAIT_OBJECT_0`, `WAIT_TIMEOUT` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/squirrel/script_panel.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/stage3d/s3d_view.cpp` | `PROCESS_INFORMATION`, `STARTUPINFOW` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/startup_args.cpp` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/tag_tuning/tag_sidecar.cpp` | `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/ui/editor_tools_impl.h` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/ui/png_export_impl.h` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
-| `src/ui/workspace_hosts_impl.h` | `wchar_t` | `portable::win_types.h`: `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/archive_browser.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/archive_browser_ui.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/authoring/authoring_model.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/authoring/authoring_model.h` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/authoring/game_launcher.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W`, `PROCESS_INFORMATION`, `SECURITY_ATTRIBUTES`, `STARTUPINFOW`, `WAIT_OBJECT_0`, `WAIT_TIMEOUT`, `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/authoring/se_browser.cpp` | `LPCWSTR` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/background/bg_gametex.cpp` | `DWORD`, `PROCESS_INFORMATION` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/bg_dxt32.c` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/bgm_player.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/cmdfile/cmd_io.cpp` | `BOOL`, `DWORD`, `ERROR_ALREADY_EXISTS`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/copy_data.cpp` | `DWORD`, `ERROR_ALREADY_EXISTS`, `FILE_MAP_ALL_ACCESS`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PAGE_READWRITE`, `SYSTEM_INFO`, `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/copy_data.h` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/fbarc/fbarctool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/fbarc/fbchartool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/file_backup.cpp` | `DWORD`, `ERROR_ALREADY_EXISTS`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/fpanim_install.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W`, `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_frame_ring.cpp` | `DWORD`, `FILE_MAP_ALL_ACCESS`, `FILE_MAP_READ`, `HANDLE`, `INVALID_HANDLE_VALUE`, `LPWSTR`, `MEMORY_BASIC_INFORMATION`, `PAGE_READWRITE`, `SECURITY_ATTRIBUTES` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_link.cpp` | `BOOL`, `DWORD`, `ERROR_PIPE_BUSY`, `HANDLE`, `INVALID_HANDLE_VALUE`, `PROCESSENTRY32W` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_link_cli.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_link_mock.cpp` | `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_link_panel.cpp` | `DWORD`, `HANDLE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/game_table.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/han2_browser.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/i18n.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/main_frame.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/main_frame.h` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/mbaacc_pack.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/mbaacc_package.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE`, `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/mbaacc_package_cli.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/misc.cpp` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/modproject/hmodtool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/pcmod/pcmodtool.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/png_writer.cpp` | `DWORD` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/squirrel/fpanim_link.cpp` | `BOOL`, `DWORD`, `ERROR_PIPE_BUSY`, `HANDLE`, `INVALID_HANDLE_VALUE`, `OVERLAPPED`, `WAIT_OBJECT_0`, `WAIT_TIMEOUT` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/squirrel/script_panel.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/stage3d/s3d_view.cpp` | `PROCESS_INFORMATION`, `STARTUPINFOW` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/startup_args.cpp` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/tag_tuning/tag_sidecar.cpp` | `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/ui/editor_tools_impl.h` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/ui/png_export_impl.h` | `BOOL`, `DWORD`, `HANDLE`, `INVALID_HANDLE_VALUE` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
+| `src/ui/workspace_hosts_impl.h` | `wchar_t` | `DWORD`/`BOOL` -> `uint32_t`/`bool`, `HANDLE` -> fd or `portable::SharedMemory`, `wchar_t` -> UTF-8 `std::string` |
 
 <!-- END auto:types -->
 
