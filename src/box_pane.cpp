@@ -463,6 +463,26 @@ void BoxPane::DrawSpawnTimeline()
 	maxTimelineTick = std::max(maxTimelineTick, kfStart[mainFrameCount]);
 	sim.ensureSimulatedTo(maxTimelineTick);
 	const auto& track = sim.rootFrameTrack();
+	// File order: each simulated tick maps to its absolute position in the keyframes as written: the keyframe's start plus
+	// the ticks already spent in this visit of it (capped at its duration). Playback order keeps the simulated tick.
+	const bool fileOrder = timelineFileOrder;
+	std::vector<int> fileTickOf((size_t)maxTimelineTick + 1, 0);
+	for (int t = 0, visitStart = 0; t <= maxTimelineTick; ++t) {
+		const int f = t < (int)track.size() ? track[t] : (track.empty() ? 0 : track.back());
+		if (t > 0 && (t - 1 < (int)track.size() ? track[t - 1] : f) != f) visitStart = t;
+		const int fc = std::clamp(f, 0, mainFrameCount - 1);
+		fileTickOf[t] = kfStart[fc] + std::min(t - visitStart, kfStart[fc + 1] - kfStart[fc] - 1);
+	}
+	auto axisTick = [&](int simTick) {
+		if (!fileOrder) return simTick;
+		return fileTickOf[std::clamp(simTick, 0, maxTimelineTick)];
+	};
+	const int axisEnd = fileOrder ? kfStart[mainFrameCount] : maxTimelineTick;
+	// The playhead on that axis. In file order it stays inside the selected keyframe (a keyframe click, the frame slider
+	// or a frame the flow never reaches still puts it there).
+	const int curKf = std::clamp(currState.frame, 0, mainFrameCount - 1);
+	const int playheadTick = fileOrder ? std::clamp(axisTick(currState.currentTick), kfStart[curKf], kfStart[curKf + 1] - 1)
+	                                   : currState.currentTick;
 
 	if (showSpawns) {
 		int mode = currState.previewOptions.defaultIfAssumption == preview::IfAssume::True ? 1 : 0;
@@ -477,6 +497,15 @@ void BoxPane::DrawSpawnTimeline()
 			               "Per-condition overrides are in 'Runtime conditions' below."));
 	}
 
+	{
+		int order = fileOrder ? 0 : 1;
+		const char* orders[] = {TXT("File order (absolute time)"), TXT("Playback (simulated, follows Go to)")};
+		im::SetNextItemWidth(ui::Px(260.f));
+		if (i18n::Combo(LBL("Timeline order"), &order, orders, 2)) timelineFileOrder = order == 0;
+		if (im::IsItemHovered())
+			im::SetTooltip(TXT("File order: the ruler, scrub bar and playhead run through the keyframes as written; a Go to or loop\n"
+			               "does not repeat frames. Playback: the simulated flow, where every jump and loop repeats frames."));
+	}
 	// Root end: the tick plus how it ended (End holds the last frame, it does not loop).
 	std::string rootEndText = TXT("loops");
 	if (rootEnd >= 0) {
@@ -485,13 +514,24 @@ void BoxPane::DrawSpawnTimeline()
 		rootEndText = rb;
 	}
 	im::Text(TXT("Frame: %d / %d  |  Tick: %d  |  Root ends: %s  |  Settles: %s"), currState.frame, mainFrameCount - 1,
-	         currState.currentTick,
+	         playheadTick,
 	         rootEndText.c_str(),
 	         settled >= 0 ? std::to_string(settled).c_str() : TXT("never (looping actor)"));
 
 	auto seekTick = [&](int tick) {
-		tick = std::clamp(tick, 0, maxTimelineTick);
 		currState.animating = false;
+		if (fileOrder) {
+			// Absolute time: the keyframe that holds this tick as written, and the simulated tick of its first visit
+			// (spawns and effects of that frame) plus the offset into it.
+			tick = std::clamp(tick, 0, std::max(0, axisEnd - 1));
+			int f = mainFrameCount - 1;
+			for (int i = 0; i < mainFrameCount; ++i) if (tick < kfStart[i + 1]) { f = i; break; }
+			currState.frame = f;
+			currState.currentTick = CalculateTickFromFrame(frameData, currState.pattern, f) + (tick - kfStart[f]);
+			sim.ensureSimulatedTo(currState.currentTick);
+			return;
+		}
+		tick = std::clamp(tick, 0, maxTimelineTick);
 		sim.ensureSimulatedTo(tick);
 		currState.currentTick = tick;
 		if (tick < (int)track.size())
@@ -499,9 +539,9 @@ void BoxPane::DrawSpawnTimeline()
 	};
 
 	// Tick scrubber: seeking is O(checkpoint interval) in the simulator.
-	int scrubTick = std::min(currState.currentTick, maxTimelineTick);
+	int scrubTick = std::min(playheadTick, fileOrder ? std::max(0, axisEnd - 1) : maxTimelineTick);
 	im::SetNextItemWidth(-160.f);
-	if (im::SliderInt("##tickscrub", &scrubTick, 0, maxTimelineTick, TXT("Tick %d"))) seekTick(scrubTick);
+	if (im::SliderInt("##tickscrub", &scrubTick, 0, fileOrder ? std::max(0, axisEnd - 1) : maxTimelineTick, TXT("Tick %d"))) seekTick(scrubTick);
 	im::SameLine();
 	im::SetNextItemWidth(ui::Px(100.f));
 	im::SliderFloat(LBL("Zoom##tl"), &timelineZoom, 0.25f, 16.f, "%.2fx", ImGuiSliderFlags_Logarithmic);
@@ -577,7 +617,8 @@ void BoxPane::DrawSpawnTimeline()
 		seekTick(mouseTick());
 	yPos += rowHeight + 2;
 
-	// ---- Main (simulated flow) ----
+	// ---- Main (simulated flow): playback order only (in file order the Keyframes row is the time axis) ----
+	if (!fileOrder) {
 	rowLabel(TXT("Main (sim)"));
 	{
 		int liveEnd = rootEnd >= 0 ? rootEnd : maxTimelineTick;
@@ -594,6 +635,7 @@ void BoxPane::DrawSpawnTimeline()
 		}
 	}
 	yPos += rowHeight + 4;
+	}
 
 	// ---- Keyframes (authored order) ----
 	rowLabel(TXT("Keyframes"));
@@ -686,7 +728,9 @@ void BoxPane::DrawSpawnTimeline()
 	// Keyframes row is), a Go to / loop put the playhead over another frame's data after the first jump (issue #88).
 	struct Visit { int frame, t0, t1; };
 	std::vector<Visit> visits;
-	{
+	if (fileOrder) {
+		for (int i = 0; i < mainFrameCount; ++i) visits.push_back({i, kfStart[i], kfStart[i + 1]});
+	} else {
 		const int liveEnd = std::min(rootEnd >= 0 ? rootEnd : maxTimelineTick, (int)track.size());
 		for (int t = 0; t < liveEnd; ) {
 			int e = t + 1;
@@ -721,7 +765,7 @@ void BoxPane::DrawSpawnTimeline()
 	}
 	yPos += 6;
 	im::SetCursorScreenPos(ImVec2(origin.x, yPos));
-	float currentX = tickX(currState.currentTick);
+	float currentX = tickX(playheadTick);
 	const ImVec2 startPos(origin.x, origin.y);
 	const ImVec2 timelineStart(origin.x + labelWidth, origin.y);
 	(void)kfY;
@@ -823,7 +867,7 @@ void BoxPane::DrawSpawnTimeline()
 		const glm::vec4 tint = row.entry ? row.entry->tintColor : glm::vec4(0.7f, 0.7f, 0.7f, 1.0f);
 		for (size_t k = 0; k < row.recs.size(); k++) {
 			const auto* r = row.recs[k];
-			float sx = timelineStart.x + r->spawnTick * tickWidth;
+			float sx = timelineStart.x + axisTick(r->spawnTick) * tickWidth;   // file order: where the spawning frame sits as written
 			if (row.preset) {
 				ImU32 markerColor = IM_COL32(255, 128, 0, 255);
 				drawList->AddLine(ImVec2(sx, yPos), ImVec2(sx, yPos + rowHeight), markerColor, 3.0f);
@@ -831,7 +875,7 @@ void BoxPane::DrawSpawnTimeline()
 				continue;
 			}
 			int endTick = r->deathTick >= 0 ? std::min(r->deathTick, maxTimelineTick) : maxTimelineTick;
-			float ex = timelineStart.x + std::max(endTick, r->spawnTick + 1) * tickWidth;
+			float ex = sx + (std::max(endTick, r->spawnTick + 1) - r->spawnTick) * tickWidth;   // lifetime length kept
 			ImU32 barColor = IM_COL32(tint.r * 255, tint.g * 255, tint.b * 255, k == 0 ? 180 : 120);
 			drawList->AddRectFilled(ImVec2(sx, yPos), ImVec2(ex, yPos + rowHeight), barColor);
 			drawList->AddRect(ImVec2(sx, yPos), ImVec2(ex, yPos + rowHeight), IM_COL32(255, 255, 255, 200));
