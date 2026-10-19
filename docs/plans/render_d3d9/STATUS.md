@@ -140,20 +140,56 @@ of the affected areas, byte-identical.
       under `--headless`. Not cosmetic: the GL error paths called
       `MessageBoxA`, and under `--headless` a modal box blocked the batch
       renderer forever.
-- [ ] 5. Detached windows through the SDL3 + GL3 backends; delete
-      `workspace_viewports.{h,cpp}`.
-- [ ] 6. `--post-key` pushes an `SDL_EVENT_KEY_DOWN`.
+- [x] 5. Detached windows through the SDL3 + GL3 backends;
+      `workspace_viewports.{h,cpp}` and its per-HWND key subclass deleted
+      (commits `345e264`, `c21d517`, `f041e10` and the step commit).
+      `ImGuiConfigFlags_ViewportsEnable` is set once both backends registered
+      their viewport hooks (`src/platform/viewports.cpp`); imgui_impl_sdl3
+      creates each detached window with `SDL_GL_SHARE_WITH_CURRENT_CONTEXT`
+      from the main context, so the views' FBO textures draw there. Keys from
+      a detached window reach `MainFrame::HandleKeys` from the app's event
+      switch when the event's window (or, for a key pushed without one,
+      `SDL_GetKeyboardFocus()`) is the main window or a viewport's
+      `PlatformHandle`. `--capture-windows` reads each viewport's back buffer
+      in a wrapped `Renderer_RenderWindow` (after its draw, before its swap).
+      Fixed on the way, all user-visible regressions of P0 steps 2-4:
+      ImGui got no SDL input at all (`ImGui_ImplSDL3_ProcessEvent` was never
+      called) and the main view had no pan/draw drags; the ini was read
+      after the window was created, so its size, position, maximised flag and
+      DetachableWindows preference were ignored; the ini kept the client
+      rectangle instead of the outer one (the window would shrink and drift on
+      every restart); a detached window's close button quit the app and its
+      resize/move overwrote the main window's ini values; the WM_CHAR swallow
+      rule ran after ImGui had typed the character; drop points were window-
+      relative instead of desktop + main-client coordinates.
+      **Proof** (visible, in-app only): `tools/render_parity/detach_check.sh`
+      runs `AB_VISIBLE=1` `--ui-script` twice on MBAACC akiha with
+      `--detach --capture-windows --stats`, once with `--post-key 0x4F`
+      ('O', Toggle onion skin) and once without. Result PASS: the view lives
+      in detached host 1 which has focus, `view_onion_enabled` 1 with the key
+      and 0 without, and the detached window's capture is 1130x672 and
+      **byte-identical to the golden binary's** detached window from the same
+      command (`render_parity/detach_check_baseline/`, run of
+      `baseline_bin/<BASELINE>/gonptechan.exe`). The control runs differ by
+      one hovered resize grip (78 px), which is the real desktop cursor's
+      position, not the app.
+- [x] 6. `--post-key` pushes an `SDL_EVENT_KEY_DOWN` (+ the key up, so ImGui
+      does not hold the key) with the scancode mapped from the VK, aimed like
+      the old `PostMessage` at the first detached window (else the main one).
+      Landed with step 5; exercised by `detach_check.sh` above.
 - [ ] 8. Remove `context_gl.h`.
 
 **Gate P0: parity and ctest PASS.**
 
 | what | result | evidence |
 |---|---|---|
-| corpus A, B, C, E byte-identical | **PASS** | `runs/p0j` vs the golden, 0 FAIL |
+| corpus A, B, C, E byte-identical | **PASS** | `runs/p0j` vs the golden, 0 FAIL (steps 1-4, 7; numbers in `runs/p0_report.md`; the run was deleted after step 5 superseded it) |
 | corpus D (UI) byte-identical | **PASS** | the whole 2847-case corpus is 2847 PASS / 0 ALLOWED / 0 FAIL (`runs/p0_report.md`) |
-| ctest | **PASS** | 100/100, including `render_parity` (60-case smoke) |
+| ctest | **PASS** | 100/100, including `render_parity` (60-case smoke). After step 5: 99/100 at `-j8` with `cgm_folder_mbaacc` timing out at 300 s (load average 55-81 from other agents; cgmtool shares no code with this step); it passes alone in 700 s |
 | corpus timing | **PASS** | full corpus at `-j 8` in 3m28, `-j 1` vs `-j 8` byte-identical on the smoke subset, `stage3d_dfci` and the cgm palettes |
-| detached windows, drag-drop | pending | steps 5 and 6 |
+| detached windows | **PASS** | `tools/render_parity/detach_check.sh` (step 5): open, render (byte-identical to the baseline exe), take a shortcut through `--post-key`, capture |
+| drag-drop | pending | not exercised by a scripted run yet (drop points now go through `platform::PollEvents`) |
+| full corpus after step 5 | **2828 PASS / 0 ALLOWED / 19 FAIL**, all 19 environment drift | run `runs/20261019_f041e10_gl`, report `runs/p0_step5_report.md`. The golden binary itself (`baseline_bin/<BASELINE>_det`) re-run today on the same 39 cases renders all 19 differently from the golden and byte-identically to the step-5 build (det vs new 39/39 PASS, `runs/p0_step5_env_check.md`). 16 UI shots: the archive browser's "Files in games (38956)" is now 38939 (C:/games changes under other agents; e.g. PovertyCaster logs in C:/games/mbaacc). 3 `stage_mbaacc_bg01_*`: the mist layer differs, `bg01.dat` unchanged (2026-07-03); the cause is outside the app binary. Golden NOT changed: needs the coordinator's decision (re-render the golden from the determinism binary, as on 2026-10-18, or pin the browsed folder). |
 
 `tools/render_parity/allowlist.tsv` is still header-only: no case needed an
 entry, because the UI differences this phase hit were a real bug (the sampler
