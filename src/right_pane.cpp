@@ -131,6 +131,7 @@ void RightPane::Draw()
 
 					ImGui::SliderFloat(LBL("Opacity"), &vizSettings.spawnedOpacity, 0.0f, 1.0f, "%.2f");
 					ImGui::Checkbox(LBL("Enable color tint"), &vizSettings.enableTint);
+					ImGui::Checkbox(LBL("Show spawned boxes (outline)"), &vizSettings.showSpawnedBoxes);
 
 					ImGui::Separator();
 					ImGui::Text(TXT("Animation:"));
