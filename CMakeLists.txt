@@ -1418,6 +1418,15 @@ endif()
 add_test(NAME hlsl_compile
 	COMMAND hlslcompile "${CMAKE_SOURCE_DIR}/res/shaders"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
+# Lane HLSL: scalar CPU check that the HLSL ports of texturedSrcFrag (modes 0-3) and
+# partsSrcFrag are the same maths as the GLSL, on 10,000 random inputs plus every exact
+# texel centre.  No GPU, no game data.
+add_executable(hlsl_ref_test tests/hlsl_ref_test.cpp)
+if(MINGW)
+	target_link_options(hlsl_ref_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME hlsl_ref COMMAND hlsl_ref_test)
 add_test(NAME render_parity
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/run_smoke.sh" "${CMAKE_SOURCE_DIR}" "$<TARGET_FILE:gonptechan>"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})

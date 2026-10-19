@@ -1,15 +1,16 @@
-// Port of s3d.glsl.vert / s3d.glsl.frag (stage3d/s3d_view.cpp, kVs/kFs).
-// vs_3_0 / ps_3_0. Diffuse_VS_Easy / Diffuse_PS_Easy from Shader\fbxshader.txt:
-// tex * vertex colour, unclamped fog lerp when g_uFogColor.a >= 0.001 (alpha kept),
-// alpha test GREATER 0. The vertex stage passes Fog = Position.w.
+// Port of s3d.glsl.vert / s3d.glsl.frag (src/stage3d/s3d_view.cpp, kVs/kFs).
+// vs_3_0 / ps_3_0. Same maths as the GLSL, same uniform names.
+// Diffuse_VS_Easy / Diffuse_PS_Easy (Shader\fbxshader.txt): tex * vertex colour,
+// unclamped fog lerp when g_FogColor.a >= 0.001 (alpha kept), alpha test GREATER 0.
+// Diffuse_VS_Easy sets Fog = Position.w; the GLSL reads that back as vFog.
 
-float4x4 g_uWorld;
-float4x4 g_uView;
-float4x4 g_uProj;
-float    g_uFlipV;
-float4   g_uFogColor;
-float2   g_uFogCoord;
-float    g_uAlphaRef;
+float4x4 uWorld;
+float4x4 uView;
+float4x4 uProj;
+float    uFlipV;
+float4   uFogColor;
+float2   uFogCoord;
+float    uAlphaRef;
 
 sampler2D uTex : register(s0);
 
@@ -21,29 +22,30 @@ struct VS_INPUT {
 
 struct VS_OUTPUT {
 	float4 Position : POSITION;
-	float2 UV       : TEXCOORD0;
-	float4 Color    : COLOR0;
-	float  Fog      : TEXCOORD1;
+	float2 vUv      : TEXCOORD0;
+	float4 vColor   : COLOR0;
+	float  vFog     : TEXCOORD1;
 };
 
 VS_OUTPUT VSMain(VS_INPUT input)
 {
 	VS_OUTPUT output;
-	float4 p = mul(g_uProj, mul(g_uView, mul(g_uWorld, float4(input.aPos, 1.0))));
+
+	float4 p = mul(uProj, mul(uView, mul(uWorld, float4(input.aPos, 1.0))));
 	output.Position = p;
-	output.UV = float2(input.aUv.x, g_uFlipV > 0.5 ? 1.0 - input.aUv.y : input.aUv.y);
-	output.Color = input.aColor;
-	output.Fog = p.w;   // Diffuse_VS_Easy: output.Fog = output.Position.w
+	output.vUv = float2(input.aUv.x, uFlipV > 0.5 ? 1.0 - input.aUv.y : input.aUv.y);
+	output.vColor = input.aColor;
+	output.vFog = p.w;   // Diffuse_VS_Easy: output.Fog = output.Position.w
 	return output;
 }
 
 float4 PSMain(VS_OUTPUT input) : COLOR
 {
-	float4 c = tex2D(uTex, input.UV) * input.Color;
-	if (g_uFogColor.a >= 0.001) {
-		float f = g_uFogCoord.x + input.Fog * g_uFogCoord.y;
-		c.rgb = lerp(g_uFogColor.rgb, c.rgb, f);
+	float4 c = tex2D(uTex, input.vUv) * input.vColor;
+	if (uFogColor.a >= 0.001) {
+		float f = uFogCoord.x + input.vFog * uFogCoord.y;
+		c.rgb = lerp(uFogColor.rgb, c.rgb, f);
 	}
-	if (c.a <= g_uAlphaRef) discard;   // alpha test GREATER 0
+	if (c.a <= uAlphaRef) discard;   // alpha test GREATER 0
 	return float4(c.rgb, c.a);
 }
