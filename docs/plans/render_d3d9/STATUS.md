@@ -23,9 +23,20 @@ Naming the two shas, as PLAN.md 4.2/4.3 asks.
       `baseline_bin/<BASELINE>/`).
 - [x] 2. `tools/render_parity/{make_corpus.py,run_corpus.sh,diff.py,BASELINE}`
       plus `test_diff.py` (ctest `render_parity_tools`, no GPU).
-- [x] 3. Corpus generated (2635 cases); two plain-baseline runs rendered; the
-      flakiness found (39/2757 cases) and fixed with `--deterministic`.
+- [x] 3. Corpus generated (2847 cases); two plain-baseline runs rendered; the
+      flakiness found (39 of the then-2757 cases) and fixed with
+      `--deterministic`.
 - [x] 4. Golden rendered with the determinism binary, twice.
+- [x] 5. `run_corpus.sh -j N` sharding (default 8): round robin over the batch
+      lines and the ui scripts, one scratch folder and one exe copy per shard,
+      the scripts that write the shared scratch fixtures (the four
+      `shots_cgm__cgm_*`, `shots__s2_pat_editor`, `export_*`) serialised on
+      shard 0. `han2_settings.ini` is reset per file, not per shard, so a case
+      does not depend on what ran before it. The split is a pure function of the
+      sorted corpus list and N, so `-j 8` covers the same cases as `-j 1`.
+      Checked: `-j 1` vs `-j 8` byte-identical on the smoke subset,
+      `stage3d_dfci` and the cgm palettes; the full corpus at `-j 8` is 3m28
+      (was 6-8 min). Golden and new runs both use `-j 8`.
 
 **Gate H1: PASS.** Two runs of the determinism binary are byte-identical on
 2847/2847 cases (0 differing).
@@ -97,7 +108,7 @@ of the affected areas, byte-identical.
 |---|---|---|---|---|
 | H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
-| ctest | **PASS** | `build/ctest -j8` | 93/93, incl. `render_parity` 60/60 (45 s) and `render_parity_tools` | 2026-10-18 |
+| ctest | **PASS** | `build/ctest -j8` | 99/99 (93 before the HLSL and FX merges), incl. `render_parity` 60/60 (34 s at `-j 8`), `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*` | 2026-10-18 |
 
 ## BLOCKED
 
@@ -140,7 +151,8 @@ of the affected areas, byte-identical.
 |---|---|---|
 | corpus A, B, C, E byte-identical | **PASS** | `runs/p0j` vs the golden, 0 FAIL |
 | corpus D (UI) byte-identical | **PASS** | the whole 2847-case corpus is 2847 PASS / 0 ALLOWED / 0 FAIL (`runs/p0_report.md`) |
-| ctest | **PASS** | 93/93, including `render_parity` (60-case smoke) |
+| ctest | **PASS** | 99/99, including `render_parity` (60-case smoke) |
+| corpus timing | **PASS** | full corpus at `-j 8` in 3m28, `-j 1` vs `-j 8` byte-identical on the smoke subset, `stage3d_dfci` and the cgm palettes |
 | detached windows, drag-drop | pending | steps 5 and 6 |
 
 `tools/render_parity/allowlist.tsv` is still header-only: no case needed an
