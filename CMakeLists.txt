@@ -33,7 +33,7 @@ include_directories(SYSTEM "${CMAKE_SOURCE_DIR}/third_party/quill/include")
 # PovertyCaster pcmod packages (docs/modmanager/pcmod-manifest_schema1.md): manifest, digests, zip, pack/verify. Pure C++.
 # 3D stage view (docs/stage3d/SCOPE.md): fbxex model, DDS, BgList. The GL view (s3d_view.cpp) is editor-only.
 set(STAGE3D_SOURCES src/stage3d/s3d_model.cpp src/stage3d/s3d_dds.cpp src/stage3d/s3d_bglist.cpp src/stage3d/s3d_fbxascii.cpp src/stage3d/s3d_blender.cpp src/stage3d/s3d_align.cpp)
-set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp)
+set(PCMOD_SOURCES src/pcmod/pcmod_sha256.cpp src/pcmod/pcmod_manifest.cpp src/pcmod/pcmod_zip.cpp src/pcmod/pcmod_package.cpp src/pcmod/pcmod_schema2.cpp)
 # Mod projects (docs/modmanager/AUTHORING_DESIGN.md): hmod.json, vanilla hash index, change tracking, conflict check, exporters.
 set(HMOD_SOURCES src/modproject/hmod_ha6.cpp src/modproject/hmod_vanilla.cpp src/modproject/hmod_project.cpp src/modproject/hmod_track.cpp
 	src/modproject/hmod_conflict.cpp src/modproject/hmod_export.cpp src/modproject/hmod_import.cpp)
@@ -1179,6 +1179,13 @@ if(MINGW)
 	target_link_options(pcmod_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME pcmod COMMAND pcmod_test tests/fixtures/pcmod WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# pcmod schema 2 (PovertyCaster pcmod-manifest.md S2): digests pinned from PC's own code (tools/pcmod/s2_vectors_from_pc.sh).
+add_executable(pcmod_s2_test tests/pcmod_s2_test.cpp ${PCMOD_SOURCES})
+target_include_directories(pcmod_s2_test PRIVATE "." "src" "third_party")
+if(MINGW)
+	target_link_options(pcmod_s2_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pcmod_s2 COMMAND pcmod_s2_test tests/fixtures/pcmod_s2 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 add_test(NAME pcmod_cli COMMAND bash tools/pcmod/pcmod_cli_ctest.sh $<TARGET_FILE:pcmodtool> tests/fixtures/pcmod "${CMAKE_BINARY_DIR}/pcmod_cli_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # hmodtool is the mod-project CLI, hmod_test the unit test (synthetic folders).
 add_executable(hmodtool src/modproject/hmodtool.cpp ${HMOD_SOURCES} ${PCMOD_SOURCES} src/pcmod/pcmod_vanilla.cpp src/mbaacc_pack.cpp ${FBARC_SOURCES})
