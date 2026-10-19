@@ -186,7 +186,7 @@ void MainFrame::onFileSaved(CharacterInstance* ch, const std::string& u8path)
 		g_hot.saved = std::string(TXT("Saved ")) + (plan.alreadyInMods ? plan.modsDst : u8path);
 	}
 	if (plan.request.empty()) {
-		g_hot.reload = gSettings.sqHotReload ? TXT("Hot reload: not a data/chrNNN or shared file, not reloaded") : "";
+		g_hot.reload = gSettings.sqHotReload ? TXT("Hot reload: not a character file (data/<character>/<character>...) or shared file, not reloaded") : "";
 		return;
 	}
 	if (plan.modsDst.empty()) {   // the game reads its archives: a reload without the mod-folder copy would load the old file

@@ -1,3 +1,4 @@
+#include <cstring>
 #include "fpanim_link.h"
 
 #include "../app_log.h"
@@ -97,6 +98,36 @@ std::string FpanimGameKey(const std::string& path)
 	return best == std::string::npos ? "" : p.substr(best);
 }
 
+std::string FpanimCharaFolder(const std::string& key)
+{
+	std::string low = key;
+	for (char& c : low) c = c == '\\' ? '/' : static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	if (low.rfind("data/", 0) != 0) return "";
+	const size_t slash = low.find('/', 5);
+	if (slash == std::string::npos || slash == 5 || low.find('/', slash + 1) != std::string::npos) return "";
+	const std::string folder = low.substr(5, slash - 5), file = low.substr(slash + 1);
+	if (folder.size() > 32 || file.size() <= folder.size() || file.rfind(folder, 0) != 0) return "";
+	for (char c : folder)
+		if (!((c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '_')) return "";
+	const char next = file[folder.size()];   // chr003.ha6 / chr003_mv_0.txt, not chr0030.ha6 in chr003/
+	if (next != '.' && next != '_') return "";
+	return folder;
+}
+
+bool FpanimInImFolder(const std::string& game, const std::string& savedPath)
+{
+	const char* im = game == "uni2" ? "/uni2-im/" : game == "mbtl" ? "/mbtl-im/" : nullptr;
+	if (!im) return false;
+	std::string low = savedPath;
+	for (char& c : low) c = c == '\\' ? '/' : static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	const size_t at = low.find(im);
+	if (at == std::string::npos) return false;
+	const std::string rest = low.substr(at + strlen(im));
+	if (rest.rfind("mods/", 0) == 0) return true;
+	if (rest.rfind("packs/", 0) == 0) { const size_t s = rest.find('/', 6); return s != std::string::npos && s > 6; }
+	return false;
+}
+
 FpanimSavePlan FpanimPlanSave(const std::string& game, const std::string& gameDir, const std::string& savedPath, bool toMods,
                               bool hotReload, bool live)
 {
@@ -113,16 +144,16 @@ FpanimSavePlan FpanimPlanSave(const std::string& game, const std::string& gameDi
 		p.alreadyInMods = sp.rfind(lr, 0) == 0;
 		if (toMods || p.alreadyInMods) p.modsDst = FpanimModsTarget(root, p.key);
 	}
-	// data/chrNNN/<file> -> that character; a shared battle file -> reloadstd
-	std::string low = p.key;
-	for (char& c : low) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
-	p.shared = FpanimIsSharedFile(p.key);
-	if (!p.shared && low.rfind("data/chr", 0) == 0) {
-		size_t i = 8;
-		while (i < low.size() && isdigit(static_cast<unsigned char>(low[i]))) i++;
-		if (i > 8 && i < low.size() && low[i] == '/' && low.find('/', i + 1) == std::string::npos && i + 1 < low.size())
-			p.chr = low.substr(5, i - 5);
+	// A file saved straight into an IM pack (UNI2-IM/Packs/<pack>/data/...) or Mods folder, even with no game folder
+	// set: fpan-im rescans those before the reload, so the file reloads where it is. Copying it into Mods would shadow the pack.
+	if (!p.alreadyInMods && FpanimInImFolder(game, savedPath)) {
+		p.alreadyInMods = true;
+		p.modsDst = savedPath;
+		for (char& c : p.modsDst) if (c == '\\') c = '/';
 	}
+	// data/<character folder>/<file> -> that character (chrNNN or a custom name); a shared battle file -> reloadstd
+	p.shared = FpanimIsSharedFile(p.key);
+	if (!p.shared) p.chr = FpanimCharaFolder(p.key);
 	if (hotReload) p.request = p.shared ? FpanimStdReloadRequest(live) : !p.chr.empty() ? FpanimReloadRequest(p.chr, live) : "";
 	return p;
 }
