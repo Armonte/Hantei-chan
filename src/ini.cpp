@@ -157,9 +157,13 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("Zoom=%f\n", gSettings.zoomLevel);
 	buf->appendf("Bilinear=%i\n", gSettings.bilinear);
 	buf->appendf("Theme=%i\n", gSettings.theme);
-	buf->appendf("ShowPatternList=%i\n",gSettings.showPatternList ? 1 : 0);
-	buf->appendf("ScrubHoldDelayMs=%i\nScrubRepeatMs=%i\n",gSettings.scrubHoldDelayMs,gSettings.scrubRepeatMs);
-	buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);
+	// Keys added after 0.1.2 are written only when they differ from their defaults, so an untouched
+	// ini keeps the 0.1.2 contents.
+	const Settings defaults{};
+	if (gSettings.showPatternList != defaults.showPatternList) buf->appendf("ShowPatternList=%i\n", gSettings.showPatternList ? 1 : 0);
+	if (gSettings.scrubHoldDelayMs != defaults.scrubHoldDelayMs) buf->appendf("ScrubHoldDelayMs=%i\n", gSettings.scrubHoldDelayMs);
+	if (gSettings.scrubRepeatMs != defaults.scrubRepeatMs) buf->appendf("ScrubRepeatMs=%i\n", gSettings.scrubRepeatMs);
+	if (gSettings.compactUi != defaults.compactUi) buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);
 	buf->appendf("posX=%hi\n", gSettings.posX);
 	buf->appendf("posY=%hi\n", gSettings.posY);
@@ -196,9 +200,9 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	if (!gSettings.sqGameDirMbtl.empty()) buf->appendf("SqGameDirMbtl=%s\n", gSettings.sqGameDirMbtl.c_str());
 	if (!gSettings.fpanimBundleDir.empty()) buf->appendf("FpanimBundleDir=%s\n", gSettings.fpanimBundleDir.c_str());
 	if (!gSettings.blenderPath.empty()) buf->appendf("Stage3dBlenderPath=%s\n", gSettings.blenderPath.c_str());
-	buf->appendf("GrabPoolInitialized=%i\n",gSettings.grabPoolInitialized?1:0);
- for(const auto& path:gSettings.grabCyclePool) buf->appendf("GrabPoolPath=%s\n",path.c_str());
- for (const auto& k : gSettings.keyBindings)
+	if (gSettings.grabPoolInitialized) buf->appendf("GrabPoolInitialized=1\n");
+	for (const auto& path : gSettings.grabCyclePool) buf->appendf("GrabPoolPath=%s\n", path.c_str());
+	for (const auto& k : gSettings.keyBindings)
 		buf->appendf("%s\n", k.c_str());
 
 	// Write recent projects (max 10)

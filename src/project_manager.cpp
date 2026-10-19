@@ -12,6 +12,9 @@
 #include <sstream>
 #include <algorithm>
 
+// .hproj default for a view's absolute scrub when the key is missing (matches the series behaviour; item 7 may change it).
+static constexpr bool kDefaultAbsoluteScrub = true;
+
 using json = nlohmann::json;
 
 std::string ProjectManager::s_currentProjectPath;
@@ -357,24 +360,38 @@ bool ProjectManager::SaveProject(
 			const auto& state = view->getState();
 			viewObj["pattern"] = state.pattern;
 			viewObj["frame"] = state.frame;
-			viewObj["playback_tick"] = state.currentTick;
-			viewObj["playback_loop"]=state.playbackLoop;
-			viewObj["route_start"]=state.routePattern==state.pattern?state.routeStart:0;
-			viewObj["position_tool_settings"]={{"handle_hover",state.positionHandleHover},{"highlight",state.positionHighlight}};
-			viewObj["absolute_scrub"]=state.absoluteScrub;
-			viewObj["simulate_movement"]=state.previewOptions.simulateMovement;
-			viewObj["authored_inspection"]=state.authoredInspection;
-			viewObj["authored_offset"]=state.authoredOffset;
+			// Preview/tool keys are written only when they differ from what loading assumes when they are
+			// missing, so a project saved without touching them stays byte-identical to the 0.1.2 layout.
+			if (state.currentTick != CalculateTickFromFrame(&character->frameData, state.pattern, state.frame))
+				viewObj["playback_tick"] = state.currentTick;
+			if (!state.playbackLoop) viewObj["playback_loop"] = false;
+			if (state.routePattern == state.pattern && state.routeStart != 0) viewObj["route_start"] = state.routeStart;
+			if (state.positionHandleHover || !state.positionHighlight)
+				viewObj["position_tool_settings"]={{"handle_hover",state.positionHandleHover},{"highlight",state.positionHighlight}};
+			if (state.absoluteScrub != kDefaultAbsoluteScrub) viewObj["absolute_scrub"] = state.absoluteScrub;
+			if (state.previewOptions.simulateMovement) viewObj["simulate_movement"] = true;
+			if (state.authoredInspection) viewObj["authored_inspection"] = true;
+			if (state.authoredOffset != 0) viewObj["authored_offset"] = state.authoredOffset;
 			const auto& oo = view->opponentOnion();
-			viewObj["opponent_onion"] = {{"before",oo.before},{"after",oo.after},{"spacing",oo.spacing},
-				{"alpha",oo.alpha},{"falloff",oo.falloff},{"past_tint",{oo.pastTint.x,oo.pastTint.y,oo.pastTint.z}},
-				{"future_tint",{oo.futureTint.x,oo.futureTint.y,oo.futureTint.z}}};
+			const OnionSkinSettings od{};
+			if (oo.before != od.before || oo.after != od.after || oo.spacing != od.spacing || oo.alpha != od.alpha
+			    || oo.falloff != od.falloff || oo.pastTint != od.pastTint || oo.futureTint != od.futureTint)
+				viewObj["opponent_onion"] = {{"before",oo.before},{"after",oo.after},{"spacing",oo.spacing},
+					{"alpha",oo.alpha},{"falloff",oo.falloff},{"past_tint",{oo.pastTint.x,oo.pastTint.y,oo.pastTint.z}},
+					{"future_tint",{oo.futureTint.x,oo.futureTint.y,oo.futureTint.z}}};
 			viewObj["selected_layer"] = state.selectedLayer;
-			viewObj["grab_preview"]={{"enabled",state.opponentEnabled},{"follow",state.opponentFollow},
-				{"opacity",state.opponentOpacity},{"onion",state.opponentOnion},{"target",state.opponentTargetPath},
-				{"separate_pool",state.opponentSeparatePool},{"pool",state.opponentCyclePool},{"pool_initialized",state.opponentPoolInitialized}};
-			viewObj["grab_preview"]["release_vectors"]=state.opponentReleaseVectors;
-			viewObj["grab_preview"]["release_ground"]=state.opponentReleaseGround;
+			json grab = json::object();
+			if (state.opponentEnabled) grab["enabled"] = true;
+			if (state.opponentFollow) grab["follow"] = true;
+			if (state.opponentOpacity != 1.f) grab["opacity"] = state.opponentOpacity;
+			if (state.opponentOnion) grab["onion"] = true;
+			if (!state.opponentTargetPath.empty()) grab["target"] = state.opponentTargetPath;
+			if (state.opponentSeparatePool) grab["separate_pool"] = true;
+			if (!state.opponentCyclePool.empty()) grab["pool"] = state.opponentCyclePool;
+			if (state.opponentPoolInitialized) grab["pool_initialized"] = true;
+			if (state.opponentReleaseVectors) grab["release_vectors"] = true;
+			if (!state.opponentReleaseGround) grab["release_ground"] = false;
+			if (!grab.empty()) viewObj["grab_preview"] = grab;
 			viewObj["sprite_id"] = state.spriteId;
 			
 			// View-specific render settings
@@ -528,7 +545,8 @@ bool ProjectManager::LoadProject(
 				auto& state = view->getState();
 				state.pattern = viewObj.value("pattern", 0);
 				state.frame = viewObj.value("frame", 0);
-				state.currentTick = std::clamp(viewObj.value("playback_tick", CalculateTickFromFrame(&character->frameData,state.pattern,state.frame)),0,3000);
+				// No upper clamp: a long pattern (or a loop) legitimately plays past 3000 ticks (preview horizon goes to 30000).
+				state.currentTick = std::max(0, viewObj.value("playback_tick", CalculateTickFromFrame(&character->frameData,state.pattern,state.frame)));
 				if(viewObj.contains("opponent_onion") && viewObj["opponent_onion"].is_object()) {
 					const auto& j = viewObj["opponent_onion"]; auto& o = view->opponentOnion();
 					o.before=std::clamp(j.value("before",2),0,16); o.after=std::clamp(j.value("after",2),0,16);
@@ -545,7 +563,7 @@ bool ProjectManager::LoadProject(
 				if(viewObj.contains("position_tool_settings") && viewObj["position_tool_settings"].is_object()) {
 					const auto& j=viewObj["position_tool_settings"]; state.positionHandleHover=j.value("handle_hover",false); state.positionHighlight=j.value("highlight",true);
 				}
-				state.absoluteScrub=viewObj.value("absolute_scrub",true);
+				state.absoluteScrub=viewObj.value("absolute_scrub",kDefaultAbsoluteScrub);
 				state.previewOptions.simulateMovement=viewObj.value("simulate_movement",false);
 				state.authoredInspection=viewObj.value("authored_inspection",false);
 				state.authoredOffset=std::max(0,viewObj.value("authored_offset",0));
