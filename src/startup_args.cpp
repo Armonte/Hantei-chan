@@ -23,6 +23,7 @@
 
 #include <glad/glad.h>
 #include <windows.h>
+#include <shlobj.h>   // DROPFILES (--post-drop)
 #include <fstream>
 #include <functional>
 #include <filesystem>
@@ -136,6 +137,7 @@ bool ParseWave2StartupArg(const char* arg, const char* next, int& i)
 	if (!strcmp(arg, "--save-project")) { gStartup.saveProject = value(CP_ACP); return true; }
 	if (!strcmp(arg, "--stats")) { gStartup.stats = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--post-key")) { gStartup.postKey = (int)strtol(value(CP_ACP).c_str(), nullptr, 0); return true; }
+	if (!strcmp(arg, "--post-drop")) { gStartup.postDrop = value(CP_UTF8); return true; }
 	return false;
 }
 
@@ -591,6 +593,35 @@ void MainFrame::ProcessStartupArgs()
 			HC_LOG_WARN("--post-key {}: no SDL scancode for this virtual key", gStartup.postKey);
 		}
 	}
+	if (!gStartup.postDrop.empty() && n == 12) {
+		// --post-drop <file>: the WM_DROPFILES message a shell drag-drop sends,
+		// posted to the app's own main window (no desktop input). SDL's window
+		// procedure turns it into SDL_EVENT_DROP_FILE, which the platform loop
+		// hands to queueDroppedFile, the same path as a file dragged from
+		// Explorer. The drop point is the client area's centre.
+		const std::wstring wpath = Utf8ToWide(gStartup.postDrop);
+		const SIZE_T bytes = sizeof(DROPFILES) + (wpath.size() + 2) * sizeof(wchar_t);
+		HWND hwnd = (HWND)platform::NativeWindowHandle();
+		RECT rc{};
+		if (hwnd) GetClientRect(hwnd, &rc);
+		HGLOBAL mem = hwnd ? GlobalAlloc(GHND, bytes) : nullptr;
+		if (DROPFILES *df = mem ? (DROPFILES *)GlobalLock(mem) : nullptr) {
+			df->pFiles = sizeof(DROPFILES);
+			df->pt.x = (rc.right - rc.left) / 2;
+			df->pt.y = (rc.bottom - rc.top) / 2;
+			df->fNC = FALSE;
+			df->fWide = TRUE;
+			memcpy((char *)df + sizeof(DROPFILES), wpath.c_str(), wpath.size() * sizeof(wchar_t));   // GHND zeroes the double terminator
+			GlobalUnlock(mem);
+			if (!PostMessageW(hwnd, WM_DROPFILES, (WPARAM)mem, 0)) {
+				GlobalFree(mem);
+				HC_LOG_WARN("--post-drop: PostMessage(WM_DROPFILES) failed ({})", (unsigned)GetLastError());
+			}
+		} else {
+			if (mem) GlobalFree(mem);
+			HC_LOG_WARN("--post-drop: no main window to drop on");
+		}
+	}
 	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
 		gStartup.sceneMs += m_lastSceneMs;
 		gStartup.onionSimMs += m_onionStats.simMs;
@@ -604,6 +635,10 @@ void MainFrame::ProcessStartupArgs()
 			fprintf(f, "frames %d\nscene_ms %.4f\nonion_samples %d\nonion_sim_ms %.4f\nonion_total_ms %.4f\n",
 				gStartup.statFrames, gStartup.sceneMs * k, gStartup.onionSamples,
 				gStartup.onionSimMs * k, gStartup.onionTotalMs * k);
+			// The view count and the active view's file, for --post-drop checks.
+			const CharacterView *active = getActiveView();
+			const CharacterInstance *activeChar = active ? active->getCharacter() : nullptr;
+			fprintf(f, "views %zu\nactive_file %s\n", views.size(), activeChar ? activeChar->getTxtPath().c_str() : "");
 			if (CharacterView *v = findViewById(m_startupViewId)) {
 				const auto owner = m_session.owner(v->getId());
 				fprintf(f, "view_host %llu\nview_onion_enabled %d\nshortcut_view %llu\nfocused_host %llu\n",
