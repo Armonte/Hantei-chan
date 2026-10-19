@@ -68,11 +68,12 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::nextOpponentPreview,"Opponent preview: next character",{0xBE,shortcutAlt},R::focusedContext,C::characterView,false,false},
 		{A::openOpponentPreviewSettings,"Opponent preview: settings",{'O',shortcutAlt|shortcutShift},R::focusedContext,C::characterView,false,false},
 
-		{A::playReverse,      "Play reverse",                 {'J', shortcutShift},             R::focusedContext, C::characterView, false, false},
+		// Default J/L layout is 0.1.2's; applyLayoutOptions() swaps play and step (Settings > J/L step frames).
+		{A::playReverse,      "Play reverse",                 {'J', 0},             R::focusedContext, C::characterView, false, false},
 		{A::togglePlayback,   "Stop / play",                  {'K', 0},             R::focusedContext, C::characterView, false, false},
-		{A::playForward,      "Play forward",                 {'L', shortcutShift},             R::focusedContext, C::characterView, false, false},
-		{A::stepTickBackward, "Step one tick back",           {'J', 0}, R::focusedContext, C::characterView, false, true},
-		{A::stepTickForward,  "Step one tick forward",        {'L', 0}, R::focusedContext, C::characterView, false, true},
+		{A::playForward,      "Play forward",                 {'L', 0},             R::focusedContext, C::characterView, false, false},
+		{A::stepTickBackward, "Step one tick back",           {'J', shortcutShift}, R::focusedContext, C::characterView, false, true},
+		{A::stepTickForward,  "Step one tick forward",        {'L', shortcutShift}, R::focusedContext, C::characterView, false, true},
 
 		{A::cancelGesture,    "Cancel drag",                  {vkEscape, 0},        R::focusedContext, C::characterView, false, false, false, true},
 
@@ -113,12 +114,36 @@ ShortcutRegistry::ShortcutRegistry()
 		{A::previousPositionTarget,"Position tool: previous overlap target",{0xDB,shortcutAlt},R::focusedContext,C::characterView,false,false},
 		{A::nextPositionTarget,"Position tool: next overlap target",{0xDD,shortcutAlt},R::focusedContext,C::characterView,false,false},
 		{A::togglePositionSolo,"Position tool: Solo selected target",{'S',shortcutAlt},R::focusedContext,C::characterView,false,false},
-		{A::nextKeyframe, "Next state (keep box)", {vkPrior,0}, R::focusedContext, C::characterView, true,true},
-		{A::previousKeyframe, "Previous state (keep box)", {vkNext,0}, R::focusedContext, C::characterView, true,true},
+		// PgUp/PgDn state stepping is opt-in (applyLayoutOptions); unbound by default as in 0.1.2.
+		// Never fires while a text field owns the keyboard.
+		{A::nextKeyframe, "Next state (keep box)", {0,0}, R::focusedContext, C::characterView, false,true},
+		{A::previousKeyframe, "Previous state (keep box)", {0,0}, R::focusedContext, C::characterView, false,true},
 
 	}
 {
 	for (const auto& b : m_bindings) m_defaults.push_back(b.chord);
+}
+
+void ShortcutRegistry::applyLayoutOptions(bool jlFrameStep, bool pageKeysStepStates)
+{
+	using A = ShortcutAction;
+	for (size_t i = 0; i < m_bindings.size(); ++i) {
+		const auto& b = m_bindings[i];
+		ShortcutChord next = m_defaults[i];
+		const bool keepBox = std::string(b.name).find("(keep box)") != std::string::npos;
+		switch (b.action) {
+		case A::playReverse:      next = {'J', (uint8_t)(jlFrameStep ? shortcutShift : 0)}; break;
+		case A::playForward:      next = {'L', (uint8_t)(jlFrameStep ? shortcutShift : 0)}; break;
+		case A::stepTickBackward: next = {'J', (uint8_t)(jlFrameStep ? 0 : shortcutShift)}; break;
+		case A::stepTickForward:  next = {'L', (uint8_t)(jlFrameStep ? 0 : shortcutShift)}; break;
+		case A::nextKeyframe:     if (keepBox) next = {pageKeysStepStates ? vkPrior : 0u, 0}; break;
+		case A::previousKeyframe: if (keepBox) next = {pageKeysStepStates ? vkNext : 0u, 0}; break;
+		default: continue;
+		}
+		// A user override (chord differs from the old default) is kept.
+		if (m_bindings[i].chord == m_defaults[i]) m_bindings[i].chord = next;
+		m_defaults[i] = next;
+	}
 }
 
 const ShortcutBinding* ShortcutRegistry::binding(ShortcutAction action) const

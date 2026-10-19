@@ -632,6 +632,7 @@ private:
 	void DrawPatSelectionOutline(CharacterView* view, ImDrawList* dl, ImVec2 origin, float zoom);
 	void DrawPatPreferences();
 	void DrawBackupPrefsItems();
+	void DrawTimelineKeysPrefsItems();
 	void DrawPatColourPrefsItems();
 	void DrawMousePrefsItems();
 	void DrawPatPreferencesWindow();
