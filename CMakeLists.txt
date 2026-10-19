@@ -1388,6 +1388,16 @@ endif()
 # Game-data-free HA6 load -> save byte round trip on the committed fixture (runs in CI; the full corpus is tools/uni/uni_regress.sh).
 add_test(NAME ha6_roundtrip_fixture COMMAND roundtrip --bytes tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/ha6_roundtrip_fixture.ha6" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
+# Game effect files (docs/plans/render_d3d9/PLAN.md P3 step 1, lane FX). fx_parse is pure C++ (no D3D, no Windows
+# header), so it builds and is tested everywhere; the synthetic checks always run, the walk of the real Shader/*.txt
+# only when an install is present (exit 77 = ctest skip otherwise). The inventory names only, never shader text.
+add_executable(fx_inventory_test tests/fx_inventory_test.cpp src/rhi/d3d9/fx/fx_parse.cpp)
+target_include_directories(fx_inventory_test PRIVATE "src")
+if(MINGW)
+	target_link_options(fx_inventory_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME fx_inventory COMMAND fx_inventory_test WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+
 # Render-parity harness (docs/plans/render_d3d9/PLAN.md 4). render_parity_tools is
 # pure Python on synthetic PNGs, so CI runs it. rhi_lint is a grep, no GPU.
 # render_parity renders the smoke subset through the real (hidden) GL window and
