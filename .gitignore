@@ -2,6 +2,7 @@
 .cache
 /win64
 /build
+/build-linux
 /rel
 /data
 

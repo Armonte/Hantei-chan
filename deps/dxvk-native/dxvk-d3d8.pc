@@ -1,0 +1,9 @@
+prefix=/__w/dxvk/dxvk/build/dxvk-native-v3.1.1-b1a1c99ab52b687cf950d62c88bc2fa316b41663/usr
+includedir=${prefix}/include
+libdir=${prefix}/lib
+
+Name: dxvk_d3d8
+Description: dxvk: dxvk_d3d8
+Version: 3.1.1
+Libs: -L${libdir} -ldxvk_d3d8
+Cflags: -I${includedir}/dxvk

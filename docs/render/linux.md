@@ -1146,3 +1146,95 @@ decision; the table exists so an audit can see nothing was dropped.
 | `src/fpanim_install.cpp` | 252 | `VerQueryValueW` | Windows-only branch |
 
 <!-- END auto:version -->
+
+## 9. Native non-GUI build (deliverable 3)
+
+`./build_linux.sh` configures `build-linux/` with CMake + Ninja + gcc and builds
+the targets below. `cmake/linux.cmake` is included from `CMakeLists.txt` only when
+`HANTEI_LINUX=ON`, so the Windows build is untouched; it takes the Windows-only
+targets out of the native default set and labels every ctest `native` or
+`windows-only` (never replacing the existing `gpu` label, so `ctest -LE gpu` still
+works).
+
+**Gate: the native non-GUI ctests pass.** Measured 2026-10-18:
+
+```
+$ ./build_linux.sh
+...
+100% tests passed, 0 tests failed out of 10
+Label Time Summary:
+native    =   0.16 sec*proc (10 tests)
+```
+
+The ten tests are `portable`, `shortcut_router`, `workspace_session`,
+`project_entries`, `part_render_math`, `stage3d`, `pcmod`, `tag_tuning`,
+`script_layers`, `fpanim_link`. `d3d9_smoke` (section 10) is `gpu`-labelled and is
+run separately: it needs lavapipe, not just a compiler. `fbarctool` also builds
+and is in the native target list; it has no ctest entry of its own (its checks
+live in `tools/fb/`).
+
+### Why the rest does not build yet
+
+Every remaining target fails on a `windows.h` include, or on the Windows file API
+that sits behind it in `src/misc.cpp`, in a file this lane does not own. The names
+below are measured, not guessed: `ninja -C build-linux <target>` and the first
+`fatal error:` line.
+
+| blocking file | what it uses | targets that stop here |
+|---|---|---|
+| `src/framedata_load.cpp:7` | `#include <windows.h>` with no Win32 call in the file | every tool that links the HA6 loader: `ha6_dump`, `roundtrip`, `sq*`, `cgmtool`, `han2tool`, `pat*`, `refs_test` |
+| `src/misc.cpp:2` | `windows.h` plus `CreateFileA`/`ReadFile`/`MoveFileExA`/`MultiByteToWideChar` in `WriteFileAtomic` and `sj2utf8` | most tools and the unit tests that link `misc.cpp` |
+| `src/png_writer.cpp:3` | WIC (`wincodecs.h`, `shobjidl.h`) for PNG I/O and the folder picker | `pattex`, `cgmtool`, `han2tool`, `bg_render`, `fbchartool`, `pat_dump` |
+| `src/vao.cpp:4`, `src/shader.cpp:7` | GL plus `windows.h` (the host tools run glad with no context) | `pat_dump`, `pattex`, `pat_roundtrip`, `ha4tool`, `ha4_convert_test`, `fb_part_transform_test`, `han2_parts_edit_test` |
+| `src/cmdfile/cmd_io.cpp:3` | cp932/UTF-8 conversion and the backup folder creation | `cmdfile_roundtrip`, `cmdfile_test`, `cmdfile_ui_smoke` |
+| `src/han2/han2tool.cpp`, `src/squirrel/sqtool.cpp`, `src/fbarc/*tool.cpp` | their own `windows.h` include | that tool alone |
+| `src/file_backup.cpp`, `src/parts/pat_renumber.cpp` | `windows.h` | `pattool` |
+| `src/authoring/game_launcher.cpp`, `src/background/bg_gametex.cpp`, `src/stage3d/s3d_view.cpp` | `CreateProcess`/`CreateToolhelp32Snapshot` (Windows-only game and helper launch) | `game_link_*`, `authoring_*`, `hud_layout_test`, `live_reload_test` |
+| `src/bg_test.cpp:81` | `_exit()` (POSIX spells it `_Exit`), plus `misc.cpp` | `bg_test` |
+| `src/cgm/cgm_io.h` | missing `<cstring>` for `memcpy` under GCC 13 | `cgmtool` |
+
+None of these is a design problem: each file needs the same treatment the P0 files
+already had, or a switch to the `src/platform/portable` helpers. They are listed
+here so P5 can take them one at a time without re-measuring. `src/misc.cpp` and
+`src/framedata_load.cpp` are the two worth doing first - between them they unblock
+most of the list.
+
+## 10. DXVK-native smoke (deliverable 4)
+
+`deps/dxvk-native/` is the official **v3.1.1** native release (2026-09-15, more
+than two weeks old) vendored unmodified: the prebuilt `libdxvk_d3d9.so` and
+`libdxvk_dxgi.so`, the headers and the pkg-config files. `deps/dxvk-native/README.md`
+records the exact asset and what was left out. No meson build was needed, so no venv
+is involved.
+
+`tools/linux/d3d9_smoke.cpp` is the bring-up check: an SDL3 hidden window,
+`Direct3DCreate9Ex` through DXVK, a 64x64 `A8R8G8B8` render target cleared to
+`0xff3366cc`, `GetRenderTargetData` into a `SYSTEMMEM` surface, and a BGRA to RGBA
+pixel comparison. It is built as part of the native tree and run by ctest
+`d3d9_smoke` (label `gpu`) with `VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/lvp_icd.json`,
+`SDL_VIDEO_DRIVER=offscreen` and `DXVK_WSI_DRIVER=SDL3`; when the vendored `.so` is
+absent the target is not created and the test does not exist.
+
+**Gate: the smoke passes.** Measured 2026-10-18 on lavapipe:
+
+```
+$ ctest --test-dir build-linux -L gpu -R d3d9_smoke
+1/1 Test #95: d3d9_smoke .......................   Passed
+$ ./build-linux/d3d9_smoke
+info:  Found device: llvmpipe (LLVM 20.1.2, 256 bits) (llvmpipe 25.2.8)
+info:  The D3D9 interface is operating in D3D9Ex mode.
+d3d9_smoke: ok (64x64 cleared to ARGB ff3366cc and read back)
+```
+
+Two things had to be arranged, both in `cmake/linux.cmake`:
+
+1. DXVK's SDL3 WSI `dlopen`s `libSDL3.so.0` by name, but the app builds SDL3 static.
+   The shim target `SDL3_shared` wraps the static archive with `--whole-archive`,
+   names the result `libSDL3.so.0`, and `d3d9_smoke` links *that* rather than the
+   archive: with a static copy in the exe there are two SDL3 instances and DXVK
+   sees an invalid window (measured error: `SDL3 WSI: SDL_GetWindowSizeinPixels:
+   Invalid window`). `CMAKE_POSITION_INDEPENDENT_CODE=ON` is set in `build_linux.sh`
+   because a static archive built without `-fPIC` cannot be wrapped that way.
+2. The vendored `.so` is loaded by its absolute path (`HANTEI_DXVK_LIB`) with the
+   release directory on the executable's rpath, so the smoke does not depend on
+   `LD_LIBRARY_PATH`.

@@ -1426,3 +1426,7 @@ set_tests_properties(headless_export PROPERTIES LABELS gpu)
 # Every test that needs game data or an outside install exits 77 when it is missing: count that as skipped, never failed.
 get_property(_hc_all_tests DIRECTORY PROPERTY TESTS)
 set_tests_properties(${_hc_all_tests} PROPERTIES SKIP_RETURN_CODE 77)
+
+# Native Linux build support (lane LINUX, PLAN.md P5 step 1). No-op unless
+# build_linux.sh set HANTEI_LINUX=ON, so the Windows build is unchanged.
+include(linux)
