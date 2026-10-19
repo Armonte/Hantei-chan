@@ -146,7 +146,7 @@ struct FrameState
 	bool animating = false;
 	bool playbackLoop=true, playbackFinished=false, authoredInspection=false;
 	int authoredOffset=0;
-	bool absoluteScrub=true;
+	bool absoluteScrub=false; // views seed it from gSettings.absoluteScrubDefault (0.1.2: simulated)
 	positionpick::Selection positionSelection;
 	bool positionSettingsRequested=false, positionSettingsOpen=false;
 	bool positionHandleHover=false, positionHighlight=true;

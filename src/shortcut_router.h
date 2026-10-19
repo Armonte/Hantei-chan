@@ -161,6 +161,9 @@ public:
 	// disables the binding.
 	bool setBindingChord(size_t index, ShortcutChord chord);
 	void resetDefaults();
+	// Opt-in layouts (Settings): J/L step one tick (Shift+J/L play) instead of 0.1.2's J/L play, and
+	// PgUp/PgDn step states in a character view. Moves the defaults; user overrides are kept.
+	void applyLayoutOptions(bool jlFrameStep, bool pageKeysStepStates);
 	bool isDefault(size_t index) const;
 	// Stable id of an action for settings files ("undo", "nextPattern", ...).
 	static const char* ActionId(ShortcutAction action);

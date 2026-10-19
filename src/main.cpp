@@ -537,6 +537,10 @@ LRESULT WINAPI WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		return 0;
 	case WM_KEYDOWN:
 	case WM_SYSKEYDOWN: // Alt chords arrive here, not as ordinary WM_KEYDOWN.
+		// Bare Alt and F10 are never routed, so the system menu / menu-bar keyboard behavior is 0.1.2's;
+		// only Alt+<key> chords reach the router.
+		if (msg == WM_SYSKEYDOWN && (wParam == VK_F10 || wParam == VK_MENU || !(lParam & (1 << 29))))
+			break;
 		// The shortcut router decides: a focused ImGui text field keeps its
 		// keys (including its own Ctrl+Z); bit 30 = OS auto-repeat.
 		if(mf && mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0,

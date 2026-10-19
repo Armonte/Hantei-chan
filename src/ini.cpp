@@ -38,6 +38,16 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.bilinear = i; 
 	} else if (sscanf(line, "Theme=%i", &i) == 1){
 		gSettings.theme = i;
+	} else if (sscanf(line, "AbsoluteScrubDefault=%i", &i) == 1){
+		gSettings.absoluteScrubDefault = i != 0;
+	} else if (sscanf(line, "JlFrameStep=%i", &i) == 1){
+		gSettings.jlFrameStep = i != 0;
+	} else if (sscanf(line, "PageKeysStepStates=%i", &i) == 1){
+		gSettings.pageKeysStepStates = i != 0;
+	} else if (sscanf(line, "PatternListWindow=%i", &i) == 1){
+		gSettings.patternListWindow = i != 0;
+	} else if (sscanf(line, "TimelineDurationLane=%i", &i) == 1){
+		gSettings.timelineDurationLane = i != 0;
 	} else if (sscanf(line, "ShowPatternList=%i", &i) == 1){
 		gSettings.showPatternList = i != 0;
 	} else if (sscanf(line, "ScrubHoldDelayMs=%i", &i) == 1){
@@ -158,6 +168,12 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	buf->appendf("Bilinear=%i\n", gSettings.bilinear);
 	buf->appendf("Theme=%i\n", gSettings.theme);
 	buf->appendf("ShowPatternList=%i\n",gSettings.showPatternList ? 1 : 0);
+	// Opt-in behavior keys: written only when switched on.
+	if (gSettings.absoluteScrubDefault) buf->appendf("AbsoluteScrubDefault=1\n");
+	if (gSettings.jlFrameStep) buf->appendf("JlFrameStep=1\n");
+	if (gSettings.pageKeysStepStates) buf->appendf("PageKeysStepStates=1\n");
+	if (gSettings.patternListWindow) buf->appendf("PatternListWindow=1\n");
+	if (gSettings.timelineDurationLane) buf->appendf("TimelineDurationLane=1\n");
 	buf->appendf("ScrubHoldDelayMs=%i\nScrubRepeatMs=%i\n",gSettings.scrubHoldDelayMs,gSettings.scrubRepeatMs);
 	buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);

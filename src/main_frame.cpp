@@ -67,7 +67,9 @@ MainFrame::MainFrame(ContextGl *context_):
 context(context_)
 {
 	LoadSettings();
-	// User key bindings (issue #9); unknown or stale entries are ignored.
+	// Opt-in layouts first (they move defaults), then the user's key bindings (issue #9); unknown or stale
+	// entries are ignored.
+	shortcuts.registry().applyLayoutOptions(gSettings.jlFrameStep, gSettings.pageKeysStepStates);
 	for (const auto& line : gSettings.keyBindings)
 		shortcuts.registry().applyOverride(line);
 	// Hand the background renderer/camera to the GL Render so its Draw()
