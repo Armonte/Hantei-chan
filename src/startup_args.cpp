@@ -303,6 +303,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			continue;
 		}
 		if (cmd == "framenodes") { extern int gUiScriptOpenFrameNodes; gUiScriptOpenFrameNodes = atoi(arg.c_str()); continue; }
+		if (cmd == "boxcontrols") { extern int gUiScriptBoxControls; gUiScriptBoxControls = arg == "close" ? 0 : 1; continue; }
 		if (cmd == "capture") {
 			RECT r; GetClientRect(WindowFromDC(dc), &r);
 			int w = r.right - r.left, h = r.bottom - r.top;
