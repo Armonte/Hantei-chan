@@ -107,6 +107,7 @@ struct VisualizationSettings {
 	bool animateWithMain;         // Sync animation with main pattern
 	bool enableTint;              // Enable color tinting for spawned patterns
 	float spawnedOpacity;         // Global opacity multiplier
+	bool showSpawnedBoxes;        // Draw spawned actors' boxes (outline only); off: only the edited frame's boxes
 
 	// Timeline settings
 	bool showTimeline;            // Show timeline view
@@ -115,7 +116,7 @@ struct VisualizationSettings {
 	VisualizationSettings() :
 		showSpawnedPatterns(true), showPresetEffects(true), presetEffectsAllFrames(false),
 		autoDetect(true), showOffsetLines(true), showLabels(true),
-		animateWithMain(true), enableTint(false), spawnedOpacity(1.0f),
+		animateWithMain(true), enableTint(false), spawnedOpacity(1.0f), showSpawnedBoxes(false),
 		showTimeline(false), timelineZoom(1) {}
 };
 
