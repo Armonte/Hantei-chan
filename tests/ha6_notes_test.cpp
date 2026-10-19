@@ -71,7 +71,10 @@ static void Synthetic(const fs::path& root) {
 	Write(native, "{\"version\":99,\"notes\":{}}"); CHECK(!reloaded.loadForHa6(ha6, doc, &error));
 	const auto saveAs = (root / "other.HA6.notes.json").string();
 	CHECK(n.save(saveAs) && Read(saveAs + ".legacy-backup") == original);
-	Write(saveAs + ".legacy-backup", "another migration"); CHECK(!n.save(saveAs));
+	// A stale backup from another migration is kept and never blocks the save: the payload goes to the next free name.
+	Write(saveAs + ".legacy-backup", "another migration"); CHECK(n.save(saveAs));
+	CHECK(Read(saveAs + ".legacy-backup") == "another migration" && Read(saveAs + ".legacy-backup.1") == original);
+	CHECK(n.save(saveAs) && !std::filesystem::exists(saveAs + ".legacy-backup.2")); // already backed up: no new copy
 	for (int k = 0; k < 100; ++k) n.event("bounded event"); CHECK(n.trace.size() == 64);
 	// Actual pattern-manager model entry points must move notes in the same
 	// undo entry even when reference remapping is disabled.

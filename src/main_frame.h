@@ -324,6 +324,7 @@ private:
 	void requestErrorPopup(const char* popupName, const std::string& detail = std::string());
 	bool saveCharacter(CharacterInstance* character);  // Reports failure to the user
 	bool saveCharacterAs(CharacterInstance* character, const std::string& path);
+	void reportSaveWarning(CharacterInstance* character);
 
 	void newProject();
 	void openProject();
