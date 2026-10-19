@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 		const int profile = pass & 1;
 		if (pass == 2) editor.debugSelectFirst(); // second half: detail panels populated
 		SetExtensionProfile(profile ? ExtensionProfile::Extended : ExtensionProfile::Vanilla);
-		for (int tab = 0; tab < 5; ++tab) {
+		for (int tab = 0; tab < 6; ++tab) {
 			editor.debugRequestTab(tab);
 			for (int frame = 0; frame < 4; ++frame) {
 				io.DeltaTime = 1.0f / 60.0f;
@@ -51,6 +51,6 @@ int main(int argc, char** argv)
 		}
 	}
 	ImGui::DestroyContext();
-	std::printf("%d frame(s) drawn, %d change notification(s), %d ImGui assertion(s)\n", 80, changes, g_asserts);
+	std::printf("%d frame(s) drawn, %d change notification(s), %d ImGui assertion(s)\n", 96, changes, g_asserts);
 	return g_asserts == 0 ? 0 : 1;
 }

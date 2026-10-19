@@ -5,6 +5,8 @@
 #include "../uni_vector_table.h"
 #include "../cg.h"
 #include "../i18n.h"
+#include "../extension_profile.h"
+#include "../mbaacc_typed_hitgrab.h"
 
 // ============================================================================
 // Attack (AT) Display
@@ -20,7 +22,7 @@
 // - Correction (proration/scaling)
 // ============================================================================
 
-inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr)
+inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternIndex = -1, std::function<void()> onModified = nullptr, std::function<void()> toolbar = nullptr)
 {
 	// Helper lambda to mark both frameData and character as modified
 	auto markModified = [&]() {
@@ -37,6 +39,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	//Some attack flags mean different things in UNI/MBTL/UNI2 than in MBAACC (issue #74).
 	const bool uniFormat = frameData && frameData->usesUniFormat();
 	unsigned int flagIndex = -1;
+	if (gSettings.compactUi && toolbar) im::BeginGroup();
 
 	if(BitField("Guard Flags", &at->guard_flags, &flagIndex)) {
 		markModified();
@@ -56,6 +59,7 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		case 15: Tooltip("Can't hit playable character"); break;
 	}
 
+	im::Dummy(ImVec2(0,ui::Em(.2f)));
 	flagIndex = -1;
 	if(BitField("Hit Flags", &at->otherFlags, &flagIndex)) {
 		markModified();
@@ -93,6 +97,9 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		//case 29: Tooltip("Block enemy blast during Stun?"); break;
 	}
 
+	if (gSettings.compactUi && toolbar) {
+		im::EndGroup();im::SameLine(0,ui::Em(1));im::BeginGroup();toolbar();im::EndGroup();
+	}
 	// Label-first form (ui_style.h LabelForm): every section shares one label column sized to the longest label
 	// (capped; a longer one wraps and shows in full on hover), and the values fill the rest of the pane.
 	const float lw = ui::LabelColW({LBL("Hitstop"), LBL("Cust HS"), LBL("Cust BS"), LBL("Untech time"),
@@ -105,8 +112,39 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		uniFormat ? LBL("Hitstun decay (ATC0)") : "", uniFormat ? LBL("Power % (ATVD)") : "",
 		uniFormat ? LBL("Hitstop (ATSn form)") : ""});
 
+	auto grabProfile=[&](bool inlineField) {
+		if(!ExtendedProfileEnabled() || !frameData || frameData->game()!=Ha6Game::MBAACC || at->hitgrab==0) return;
+		int profile=mbaacc::extended::typedHitgrabProfile((unsigned)at->hitgrab);
+		if(inlineField) {im::SameLine();ui::RowLabel("P");im::SameLine(0,3);im::SetNextItemWidth(ui::Em(2));}
+		const char* id=inlineField?"##grab_profile":ui::FormRow(LBL("Tech profile (0 = ordinary)"));
+		if(im::InputInt(id,&profile,0,0) && profile>=0 && profile<=255) {
+			at->hitgrab=(int)mbaacc::extended::makeTypedHitgrab((unsigned)profile);markModified();
+		}
+		im::SameLine(0,3);im::TextDisabled("(?)");
+		if(im::IsItemHovered()) im::SetTooltip("Extended Melty/BOF hitgrab tech profile (0–255).\n0: ordinary hitgrab. Nonzero: typed hitgrab profile.\nRequires the matching executable extension; vanilla MBAACC does not support typed profiles.\nUnknown ATNG values are preserved until you edit this field.");
+		if(at->hitgrab!=1 && !mbaacc::extended::isTypedHitgrab((unsigned)at->hitgrab) && !inlineField)
+			im::TextDisabled("Unknown ATNG 0x%08X preserved; editing profile replaces it.",(unsigned)at->hitgrab);
+	};
 	// --- Hitstop / untech -------------------------------------------------------------------------------------------
 	ui::FormSection(TXT("Hitstop"));
+	if(gSettings.compactUi && !uniFormat) {
+		if(im::BeginTable("##at_hitstop_compact",3,ImGuiTableFlags_SizingStretchProp|ImGuiTableFlags_NoSavedSettings)) {
+			im::TableSetupColumn("##preset",ImGuiTableColumnFlags_WidthStretch,1.1f);
+			im::TableSetupColumn("##custom",ImGuiTableColumnFlags_WidthStretch,1.4f);
+			im::TableSetupColumn("##grab",ImGuiTableColumnFlags_WidthStretch,1.6f);
+			im::TableNextColumn();ui::RowLabel("Hitstop");im::SameLine();im::SetNextItemWidth(ui::Em(6));
+			if(i18n::Combo("##hitstop",&at->hitStop,hitStopList,IM_ARRAYSIZE(hitStopList))) markModified();
+			im::TableNextColumn();if(ui::InlineInt("Cust HS",&at->hitStopTime,ui::Em(2.6f))) markModified();
+			im::SameLine();if(ui::InlineInt("Cust BS",&at->blockStopTime,ui::Em(2.6f))) markModified();
+			im::TableNextColumn();bool hg=at->hitgrab!=0;ui::RowLabel("Hitgrab");im::SameLine();
+			if(im::Checkbox("##hitgrab",&hg)) {at->hitgrab=hg?1:0;markModified();}
+			grabProfile(true);
+			im::TableNextColumn();if(ui::InlineInt("Untech time",&at->untechTime,ui::Em(3))) markModified();
+			im::TableNextColumn();if(ui::InlineInt("Circuit break time",&at->breakTime,ui::Em(3))) markModified();
+			im::TableNextColumn();if(ui::InlineFloat("Extra gravity",&at->extraGravity,ui::Em(3.5f))) markModified();
+			im::EndTable();
+		}
+	} else {
 	if(ui::BeginLabelForm("##at_hitstop", lw)) {
 		if(i18n::Combo(ui::FormRow(LBL("Hitstop")), &at->hitStop, hitStopList, IM_ARRAYSIZE(hitStopList))) {
 			markModified();
@@ -143,9 +181,13 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 				at->hitgrab = hg ? 1 : 0;
 				markModified();
 			}
+
 		}
 		ui::EndLabelForm();
-	}
+	}	}
+
+	if(!gSettings.compactUi && ui::BeginLabelForm("##at_grab_profile",lw)) {grabProfile(false);ui::EndLabelForm();}
+
 	if(uniFormat) {
 		// The low bits as flags (sosfiro's labels); hover a box for its meaning.
 		unsigned hgBits = (unsigned)at->hitgrab;
@@ -168,7 +210,15 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 	// +64); the low words (MBAACC VS damage, guard damage) are never read and
 	// the UNI writer saves ATAT/ATCA. Those two fields are hidden there.
 	ui::FormSection(TXT("Damage"));
-	if(ui::BeginLabelForm("##at_damage", lw)) {
+	if(gSettings.compactUi && !uniFormat) {
+		if(im::BeginTable("##at_damage_compact",4,ImGuiTableFlags_SizingStretchProp|ImGuiTableFlags_NoSavedSettings)) {
+			const char* labels[]={"Damage","VS damage","Guard damage","Meter gain"};
+			int* values[]={&at->damage,&at->red_damage,&at->guard_damage,&at->meter_gain};
+			for(const char* label:labels) im::TableSetupColumn(label,ImGuiTableColumnFlags_WidthStretch,im::CalcTextSize(TXT(label)).x+ui::Em(4));
+			for(int i=0;i<4;++i) {im::TableNextColumn();if(ui::InlineInt(labels[i],values[i],ui::Em(3.5f))) markModified();}
+			im::EndTable();
+		}
+	} else if(ui::BeginLabelForm("##at_damage", lw)) {
 		if(im::InputInt(ui::FormRow(LBL("Damage")), &at->damage, 0, 0)) {
 			markModified();
 		}
@@ -191,7 +241,14 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 
 	// --- Proration --------------------------------------------------------------------------------------------------
 	ui::FormSection(TXT("Proration"));
-	if(ui::BeginLabelForm("##at_proration", lw)) {
+	if(gSettings.compactUi && !uniFormat) {
+		if(ui::BeginInspectorTable("##at_proration_compact",2)) {
+			im::TableNextColumn();if(ui::InlineInt("Correction %",&at->correction,ui::Em(4))) markModified();
+			im::TableNextColumn();ui::RowLabel("Type");im::SameLine();im::SetNextItemWidth(ui::Em(7));
+			if(i18n::Combo("##correction",&at->correction_type,"Normal\0Multiplicative\0Subtractive\0")) markModified();
+			im::EndTable();
+		}
+	} else if(ui::BeginLabelForm("##at_proration", lw)) {
 		if(im::InputInt(ui::FormRow(LBL("Correction %")), &at->correction, 0, 0)) {
 			markModified();
 		}
@@ -259,7 +316,31 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 			im::PopID();
 		}
 	};
-	if(ui::BeginLabelForm("##at_vectors", lw)) {
+	if (gSettings.compactUi && !uniFormat) {
+		auto compactVector = [&](const char* title, bool& manual, int* vec, int* flags) {
+			im::PushID(title);
+			if(im::BeginTable("##vector",4,ImGuiTableFlags_SizingStretchSame|ImGuiTableFlags_NoSavedSettings)) {
+				im::TableSetupColumn("##label",ImGuiTableColumnFlags_WidthFixed,ui::Em(7.5f));
+				for(int i=0;i<3;++i) im::TableSetupColumn(vectorLabels[i],ImGuiTableColumnFlags_WidthStretch);
+				im::TableNextColumn();
+				for(int i=0;i<3;++i) {im::TableNextColumn();im::TextUnformatted(TXT(vectorLabels[i]));}
+				im::TableNextColumn();ui::RowLabel(title);im::SameLine();im::Checkbox("##manual",&manual);
+				if(im::IsItemHovered()) Tooltip("Enable manual vector entry");
+				for(int i=0;i<3;++i) {
+					im::TableNextColumn();im::PushID(i);im::SetNextItemWidth(-FLT_MIN);
+					if(manual) {if(im::InputInt("##value",&vec[i],0,0)) markModified();}
+					else if(ShowComboWithManual("##value",&vec[i],hitVectorList,IM_ARRAYSIZE(hitVectorList),im::GetContentRegionAvail().x,width)) markModified();
+					im::PopID();
+				}
+				im::TableNextColumn();ui::RowLabel("Flags");
+				for(int i=0;i<3;++i) {im::TableNextColumn();im::PushID(i);im::SetNextItemWidth(-FLT_MIN);if(i18n::Combo("##flags",&flags[i],vectorFlags,IM_ARRAYSIZE(vectorFlags))) markModified();im::PopID();}
+				im::EndTable();
+			}
+			im::PopID();
+		};
+		compactVector("Guard Vector:",guardVectorManual,at->guardVector,at->gVFlags);
+		compactVector("Hit Vector:",hitVectorManual,at->hitVector,at->hVFlags);
+	} else if(ui::BeginLabelForm("##at_vectors", lw)) {
 		// Guard Vector
 		vectorRows(LBL("Guard Vector:"), "Manual##gv", guardVectorManual, "##guardVec", at->guardVector, at->gVFlags, 100, "##GFLAG");
 		// Hit Vector
@@ -286,7 +367,17 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 			markModified();
 		}
 	};
-	if(ui::BeginLabelForm("##at_effects", lw)) {
+	if(gSettings.compactUi && !uniFormat) {
+		if(im::BeginTable("##at_effects_compact",3,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings)) {
+			im::TableSetupColumn("##label",ImGuiTableColumnFlags_WidthFixed,ui::Em(7.5f));
+			im::TableSetupColumn("##effect",ImGuiTableColumnFlags_WidthStretch);
+			im::TableSetupColumn("##sound",ImGuiTableColumnFlags_WidthFixed,ui::Em(10));
+			im::TableNextColumn();ui::RowLabel("Hit effect");im::TableNextColumn();comboWithId("##hit",&at->hitEffect,hitEffectList,IM_ARRAYSIZE(hitEffectList),"ID##Hit effect");
+			im::TableNextColumn();if(ui::InlineInt("Sound effect",&at->soundEffect,ui::Em(3))) markModified();
+			im::TableNextColumn();ui::RowLabel("Added effect");im::TableNextColumn();comboWithId("##added",&at->addedEffect,addedEffectList,IM_ARRAYSIZE(addedEffectList),"ID##Added effect");
+			im::EndTable();
+		}
+	} else if(ui::BeginLabelForm("##at_effects", lw)) {
 		comboWithId(ui::FormRow(LBL("Hit effect")), &at->hitEffect, hitEffectList, IM_ARRAYSIZE(hitEffectList), "ID##Hit effect");
 		if(im::InputInt(ui::FormRow(LBL("Sound effect")), &at->soundEffect, 0, 0)) {
 			markModified();

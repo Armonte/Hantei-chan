@@ -29,6 +29,8 @@ static inline const std::vector<const char*>& ConditionTypeLabels()
 		v.push_back("155: Custom variable write on command (BOF)");
 		v.push_back("156: Custom variable write on hit (BOF)");
 		v.push_back("157: Tagged Special Box collision (BOF)");
+		v.push_back("158: Gameplay predicate (BOF)");
+		v.push_back("159: Runtime throw-rule modifier (BOF)");
 		return v;
 	}();
 	return ExtendedProfileEnabled() ? extended : vanilla;
@@ -42,6 +44,11 @@ static inline std::vector<const char*> Effect6TypeLabels(const char* const* base
 		auto at = out.begin();
 		while (at != out.end() && atoi(*at) < 154) ++at;
 		out.insert(at, "154: Custom variable write (BOF ABI v1)");
+		at = out.begin();
+		while (at != out.end() && atoi(*at) < 160) ++at;
+		at = out.insert(at, "160: Scoped interaction (BOF)");
+		at = out.insert(at + 1, "161: Set target pose (BOF)");
+		out.insert(at + 1, "162: Release target + HitVector (BOF)");
 	}
 	return out;
 }

@@ -60,6 +60,6 @@ void DrawExtensionProfileMenu()
 	ImGui::Separator();
 	ImGui::TextDisabled(GetExtensionProfile() == ExtensionProfile::Vanilla
 		? TXT("Stock MBAACC: only engine-verified IDs and rules.")
-		: TXT("Patched BOF executables: adds IF 154-157, EF6 154,\nExComCheck Types 2/3 and the BOF _c rules."));
+		: TXT("Patched BOF executables: adds IF 154-159, EF6 154/160-162,\nExComCheck Types 2/3 and the BOF _c rules."));
 	ImGui::EndMenu();
 }

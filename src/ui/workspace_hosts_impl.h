@@ -113,6 +113,13 @@ void MainFrame::SyncWorkspaceSession()
 		for (uint64_t id : tabs)
 			if (!findViewById(id)) m_session.close(id);
 	}
+	for(auto it=m_viewSurfaces.begin();it!=m_viewSurfaces.end();)
+  if(!findViewById(it->first)) it=m_viewSurfaces.erase(it); else ++it;
+ if(m_posDrag.active) {
+  const auto owner=m_session.owner(m_posDrag.viewId);
+  const auto* host=owner?m_session.host(*owner):nullptr;
+  if(!host || host->active!=m_posDrag.viewId) EndPositionDrag(true);
+ }
 	// New views open in the main window.
 	for (auto& v : views)
 		if (!m_session.contains(v->getId()))
@@ -145,6 +152,7 @@ uint64_t MainFrame::DetachViewToNewHost(uint64_t viewId, ImVec2 screenPos)
 {
 	CharacterView* view = findViewById(viewId);
 	if (!IsDetachableView(view)) return 0;
+	if(m_posDrag.active && m_posDrag.viewId==viewId) EndPositionDrag(true);
 	const uint64_t hostId = m_nextHostId++;
 	if (!m_session.detach(viewId, hostId)) return 0;
 	HostWindow& hw = m_hosts[hostId];
@@ -169,6 +177,7 @@ void MainFrame::MoveViewToHost(uint64_t viewId, uint64_t hostId, std::optional<s
 	if (hostId != WorkspaceSession::MainHost && !IsDetachableView(view)) return;
 	const auto owner = m_session.owner(viewId);
 	if (!owner) return;
+	if(m_posDrag.active && m_posDrag.viewId==viewId) EndPositionDrag(true);
 	if (*owner == hostId && index)
 		m_session.reorder(hostId, viewId, *index);
 	else
@@ -201,6 +210,7 @@ bool MainFrame::DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t pos
 	const bool waitingForClose = pendingCloseViewIndex == index;
 	const bool selected = ImGui::BeginTabItem(tabId.c_str(), waitingForClose ? nullptr : &open, flags);
 	if (selected) ImGui::EndTabItem();
+	m_tabUi[view->getId()]={ImGui::GetItemRectMin(),ImGui::GetItemRectMax(),ImGui::GetItemID()};
 	if (isPoint) ImGui::PopStyleColor(2);
 
 	// Drag source: reorder within the bar, drop on another window's bar, or
@@ -244,6 +254,20 @@ bool MainFrame::DrawViewTabItem(uint64_t hostId, CharacterView* view, size_t pos
 // Draw every tab of a host and reconcile ImGui's selection with the session:
 // a programmatic change (new view, move, Ctrl+Tab) is pushed to ImGui with
 // SetSelected; a click on a tab is pulled into the session.
+bool MainFrame::BeginViewTabBar(uint64_t hostId,const char* name)
+{
+ const auto* host=m_session.host(hostId);
+ const auto order=host?host->tabs:std::vector<uint64_t>{};
+ if(m_tabBarOrder[hostId]!=order) {
+  m_tabBarOrder[hostId]=order; ++m_tabBarRevision[hostId];
+  m_tabShown[hostId]=0; m_tabPushPending[hostId]=false;
+ }
+ // ImGui retains visual order independently of submission order. Only a
+ // topology change rebuilds this host's tab bar; selection alone never does.
+ const auto id=std::string(name)+"_"+std::to_string(m_tabBarRevision[hostId]);
+ return ImGui::BeginTabBar(id.c_str(),ImGuiTabBarFlags_AutoSelectNewTabs|ImGuiTabBarFlags_FittingPolicyScroll);
+}
+
 void MainFrame::DrawHostTabs(uint64_t hostId)
 {
 	const WorkspaceSession::Host* host = m_session.host(hostId);
@@ -272,6 +296,10 @@ void MainFrame::DrawHostTabs(uint64_t hostId)
 			if (index >= 0) setActiveView(index);
 		}
 	}
+ std::vector<uint64_t> visual;
+ if(auto* bar=ImGui::GetCurrentTabBar()) for(const auto& tab:bar->Tabs)
+  for(auto id:tabs) if(m_tabUi[id].item==tab.ID) visual.push_back(id);
+ m_tabOrderMatches[hostId]=visual==tabs;
 	shown = selectedNow;
 }
 
@@ -378,6 +406,7 @@ void MainFrame::DrawViewPanes(CharacterView* view, const std::string& ns)
 	if (m_hideUi && ns.empty()) return;
 	if (!view->isPatEditor()) {
 		if (view->getMainPane() && view->getMainPane()->isVisible) view->getMainPane()->Draw();
+		if (view->getMainPane()) view->getMainPane()->DrawPatternList();
 		if (view->getRightPane() && view->getRightPane()->isVisible) view->getRightPane()->Draw();
 		if (view->getBoxPane() && view->getBoxPane()->isVisible) view->getBoxPane()->Draw();
 		if (ns.empty()) ha4ui::DrawInspector(character, view->getState());   // MBAC .DAT only
@@ -450,6 +479,27 @@ void MainFrame::DrawOnionSkinControls(CharacterView* view)
 
 // The image area of a detached window: draws the view's target and handles
 // pan (left drag), zoom to cursor (wheel) and box drawing (right drag).
+MainFrame::ViewSurface& MainFrame::SurfaceFor(CharacterView* view)
+{
+ auto& surface=m_viewSurfaces[view->getId()];
+ if(m_session.owner(view->getId()).value_or(WorkspaceSession::MainHost)==WorkspaceSession::MainHost) {
+  auto* vp=ImGui::GetMainViewport(); surface.desktopOrigin=vp->Pos; surface.size=clientRect;
+  surface.viewport=vp->ID; surface.canvasMin=vp->WorkPos;
+  surface.canvasMax=ImVec2(vp->WorkPos.x+vp->WorkSize.x,vp->WorkPos.y+vp->WorkSize.y);
+  if(!m_hideUi) if(auto* host=ImGui::FindWindowByName("Dock Window"))
+   if(auto* node=ImGui::DockBuilderGetCentralNode(host->GetID("Dock Space"))) {
+    surface.canvasMin=node->Pos; surface.canvasMax=ImVec2(node->Pos.x+node->Size.x,node->Pos.y+node->Size.y);
+   }
+ }
+ return surface;
+}
+
+const MainFrame::ViewSurface* MainFrame::FindSurface(const CharacterView* view) const
+{
+ if(!view) return nullptr;
+ const auto it=m_viewSurfaces.find(view->getId()); return it==m_viewSurfaces.end()?nullptr:&it->second;
+}
+
 void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, ImVec2 mn, ImVec2 mx)
 {
 	const int w = std::max(1, (int)(mx.x - mn.x));
@@ -460,6 +510,14 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	view->surfaceVisible = true;
 	RenderTarget& target = view->renderTarget();
 	if (!target.ensure(w, h, false)) return;   // texture must exist for the image
+	// A passthrough dock central node punches an input hole in its parent.
+	// Parent-owned items cannot receive hover/clicks there; use a real child
+	// window with its own hit-test rectangle for the image and canvas controls.
+	ImGui::SetCursorScreenPos(mn);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,ImVec2(0,0));
+	ImGui::BeginChild("##detached_canvas",ImVec2(float(w),float(h)),ImGuiChildFlags_None,
+		ImGuiWindowFlags_NoBackground|ImGuiWindowFlags_NoScrollbar|ImGuiWindowFlags_NoScrollWithMouse);
+	ImGui::PopStyleVar();
 
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	dl->AddImage((ImTextureID)(intptr_t)target.texture(), mn, ImVec2(mn.x + w, mn.y + h), ImVec2(0, 1), ImVec2(1, 0));
@@ -469,12 +527,35 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 		ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle);
 	const ImGuiIO& io = ImGui::GetIO();
 	auto& cam = view->camera();
+ auto& surface=SurfaceFor(view);
+ surface.desktopOrigin=mn; surface.size=ImVec2(float(w),float(h));
+ surface.canvasMin=mn; surface.canvasMax=mx; surface.viewport=ImGui::GetWindowViewport()->ID;
+ const bool hovered=ImGui::IsItemHovered();
+ const bool itemActive=ImGui::IsItemActive();
+ const int localX=int(io.MousePos.x-mn.x),localY=int(io.MousePos.y-mn.y);
+ bool claimed=false;
+ if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
+  BeginPositionDrag(view,localX,localY); claimed=m_posDrag.active;
+ }
+ if(hovered && ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
+  BeginPositionRotation(localX,localY,view); claimed=m_positionPressClaimed;
+ }
+ const bool positionOwned=m_posDrag.active && m_posDrag.viewId==view->getId();
+ if(positionOwned) {
+  claimed=true;
+  const int button=m_posDrag.rotating?ImGuiMouseButton_Right:ImGuiMouseButton_Left;
+  if(io.AppFocusLost) EndPositionDrag(true);
+  else if(ImGui::IsMouseReleased(button) || !ImGui::IsMouseDown(button)) EndPositionDrag(false);
+  else if(!ImGui::IsMouseClicked(button)) PositionDragBy(int(io.MouseDelta.x),int(io.MouseDelta.y));
+ }
+ if(positionOwned || claimed) m_detachedDragThisFrame=true;
 	const ImVec2 origin(mn.x + cam.panX + w / 2.f, mn.y + cam.panY + h / 2.f);
 	// A pan / box / UV drag on this surface blocks shortcuts like one in the main view (main.cpp).
 	if (ImGui::IsItemActive() || (m_uvDrag.active && m_uvDrag.viewId == view->getId()) || m_hostBoxDragView == view->getId())
 		m_detachedDragThisFrame = true;
 
-	if (ImGui::IsItemHovered() && io.MouseWheel != 0.f) {
+	if (hovered && io.MouseWheel != 0.f && (io.KeyCtrl || io.KeyAlt) && CyclePositionTarget(io.MouseWheel>0?1:-1,localX,localY,true,view)) {
+	} else if (hovered && io.MouseWheel != 0.f && !positionOwned) {
 		// Zoom around the cursor: keep the world point under it fixed.
 		const float z0 = cam.zoom;
 		const float z1 = std::clamp(z0 + (((io.MouseWheel > 0) != gSettings.invertWheelZoom) ? 0.25f : -0.25f), 0.25f, 20.f);
@@ -485,12 +566,12 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	}
 	// Mouse buttons (issue #9, Preferences > Mouse buttons): ImGui numbers them like the setting (0 L, 1 R, 2 M).
 	const int panButton = gSettings.mousePanButton, drawButton = gSettings.mouseDrawButton;
-	if (ImGui::IsItemActive() && ImGui::IsMouseDragging(panButton, 0.f)) {
+	if (!claimed && itemActive && ImGui::IsMouseDragging(panButton, 0.f)) {
 		cam.panX += io.MouseDelta.x;
 		cam.panY += io.MouseDelta.y;
 	}
 	if (drawButton != ImGuiMouseButton_Middle && panButton != ImGuiMouseButton_Middle &&
-	    ImGui::IsItemActive() && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f)) {
+	    !claimed && itemActive && ImGui::IsMouseDragging(ImGuiMouseButton_Middle, 0.f)) {
 		cam.panX += io.MouseDelta.x;
 		cam.panY += io.MouseDelta.y;
 	}
@@ -499,7 +580,8 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	CharacterInstance* character = view->getCharacter();
 	BoxPane* boxPane = view->getBoxPane();
 	const bool sheetView = character && view->isPatEditor() && character->parts.fbPartModel && view->getState().renderMode != RenderMode::DEFAULT;
-	if (character && sheetView) {   // French-Bread sprite sheet shown: the draw button selects a sheet rectangle (as in the main window)
+	if (claimed) {
+	} else if (character && sheetView) {   // French-Bread sprite sheet shown: the draw button selects a sheet rectangle (as in the main window)
 		auto& st = view->getState();
 		const float wx = (io.MousePos.x - origin.x) / cam.zoom, wy = (io.MousePos.y - origin.y) / cam.zoom;
 		if (ImGui::IsItemClicked(drawButton)) { st.sheetSelecting = true; st.sheetSelAnchor[0] = st.sheetSelCur[0] = wx; st.sheetSelAnchor[1] = st.sheetSelCur[1] = wy; UpdateSheetSelection(view); }
@@ -535,7 +617,9 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	if (character)
 		DrawPresetEffectMarkers(view->getState(), character, dl,
 			ImVec2(mn.x + cam.panX + w / 2.f, mn.y + cam.panY + h / 2.f), cam.zoom);
+	DrawPositionTool(view,dl,hovered);
 	dl->PopClipRect();
+	ImGui::EndChild();
 	(void)hostId;
 }
 
@@ -627,7 +711,7 @@ void MainFrame::DrawDetachedHosts()
 		if (visible) {
 			// Tab bar (no ImGui reordering: order is the session's).
 			const ImVec2 barMin = ImGui::GetCursorScreenPos();
-			if (ImGui::BeginTabBar("##host_tabs", ImGuiTabBarFlags_AutoSelectNewTabs | ImGuiTabBarFlags_FittingPolicyScroll)) {
+			if (BeginViewTabBar(hostId,"##host_tabs")) {
 				DrawHostTabs(hostId);
 				if (ImGui::BeginPopup("ViewContextMenu")) { DrawViewTabContextItems(); ImGui::EndPopup(); }
 				ImGui::EndTabBar();
@@ -852,7 +936,7 @@ void MainFrame::RestoreWorkspace(const std::string& text)
 // Detached-window keyboard hook (workspace_viewports.cpp subclass).
 static bool DetachedWindowKeyHook(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	if (msg == WM_CHAR) {
+	if (msg == WM_CHAR || msg == WM_SYSCHAR) {
 		// Same rule as the main WndProc: drop the character of a key that
 		// already acted as a shortcut while a text field had focus.
 		if (MainFrame::s_swallowChar && (wchar_t)towlower((wint_t)wParam) == MainFrame::s_swallowChar) {
@@ -864,7 +948,9 @@ static bool DetachedWindowKeyHook(HWND, UINT msg, WPARAM wParam, LPARAM lParam)
 	MainFrame* mf = (MainFrame*)GetWindowLongPtr(mainWindowHandle, GWLP_USERDATA);
 	if (!mf || !ImGui::GetCurrentContext()) return false;
 	const ImGuiIO& io = ImGui::GetIO();
-	return mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0, io.WantCaptureKeyboard, io.WantTextInput);
+	const bool handled=mf->HandleKeys(wParam, (lParam & (1 << 30)) != 0, io.WantCaptureKeyboard, io.WantTextInput);
+	if(handled && msg==WM_SYSKEYDOWN) MainFrame::s_swallowChar=(wchar_t)towlower(MapVirtualKey((UINT)wParam,MAPVK_VK_TO_CHAR)&0xFFFF);
+	return handled;
 }
 
 WorkspaceViewports::KeyHook MainFrame::DetachedKeyHook()

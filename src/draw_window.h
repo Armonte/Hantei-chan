@@ -8,6 +8,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <imgui.h>
 
 //ImGui Windows that draw themselves. Just for utility.
 class DrawWindow
@@ -51,6 +52,21 @@ public:
 	void setWindowNamespace(const std::string& ns) { windowNamespace = ns; }
 
 protected:
+ // Scroll ownership belongs to the actual ImGui window, not the last pane
+ // drawn anywhere. A token (not an address) also survives allocator reuse.
+ inline static uint64_t nextScrollOwner=0;
+ const uint64_t scrollOwner=++nextScrollOwner;
+ bool RestorePaneScroll(float saved) {
+  auto* storage=ImGui::GetStateStorage();
+  const auto low=ImGui::GetID("##pane_scroll_owner_low"),high=ImGui::GetID("##pane_scroll_owner_high");
+  const int lo=int(uint32_t(scrollOwner)),hi=int(uint32_t(scrollOwner>>32));
+  const bool changed=storage->GetInt(low,-1)!=lo || storage->GetInt(high,-1)!=hi || ImGui::IsWindowAppearing();
+  if(changed) {
+   ImGui::SetScrollY(saved);
+   storage->SetInt(low,lo); storage->SetInt(high,hi);
+  }
+  return changed;
+ }
 	Render *render;
 	FrameData *frameData;           // For existing panes
 	FrameData *effectFrameData;     // Effect.ha6 frame data (can be null)

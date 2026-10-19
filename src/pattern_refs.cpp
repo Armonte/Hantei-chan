@@ -160,6 +160,7 @@ int PastePatterns(FrameData& fd, const std::vector<Sequence>& patterns,
 		const Ha6ConvertReport r = fd.conformPasted(pasted);
 		if (conv) conv->add(r);
 		*dst = std::move(pasted);
+		fd.notes.archivePattern(slots[i]);
 		dst->empty = false;
 		fd.mark_modified(slots[i]);
 		scope.push_back(slots[i]);
@@ -184,6 +185,7 @@ int MovePatterns(FrameData& fd, const std::vector<int>& from, const std::vector<
 		dst.push_back(to[i]);
 	}
 	const std::set<int> dstSet(dst.begin(), dst.end());
+	fd.notes.movePatterns(src, dst);
 	for (int s : src) {
 		if (dstSet.count(s)) continue;
 		*fd.get_sequence(s) = Sequence{};

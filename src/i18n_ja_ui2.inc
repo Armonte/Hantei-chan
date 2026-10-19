@@ -1,4 +1,6 @@
 // English-key / Japanese-value rows for the PAT editor, authoring, stage/background, command editor and frame-field editors (see i18n.h)
+	{"State note", "ステートのメモ"},
+	{"Notes diagnostics (bounded)", "メモの診断履歴（最大64件）"},
 	{"Part Pane", "パーツ ペイン"},
 	{"Part Delete", "パーツ削除"},
 	{"Are you sure you want to delete this Part?", "このパーツを削除してもよろしいですか?"},

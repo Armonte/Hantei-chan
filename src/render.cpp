@@ -15,10 +15,23 @@
 
 #include "hitbox.h"
 #include "app_log.h"
+#include <cstdarg>
+#include <cstdio>
 #include "parts/parts.h"
 #include "enums.h"  // For RenderMode enum
 #include "background/bg_renderer.h"
 #include "background/bg_types.h"
+
+// Formats one transformtrace record piece; only runs while a transformtrace request is active.
+static void TraceAppend(std::string& out, const char* fmt, ...)
+{
+	char buf[512];
+	va_list ap; va_start(ap, fmt);
+	const int n = std::vsnprintf(buf, sizeof buf, fmt, ap);
+	va_end(ap);
+	if (n > 0) out.append(buf, std::min<size_t>(size_t(n), sizeof buf - 1));
+}
+
 
 constexpr int maxBoxes = 33;
 
@@ -463,25 +476,21 @@ void Render::DrawSpriteOnly(bool drawHitboxes)
 	glDepthMask(GL_FALSE);
 
 	//Sprite (with full transform including offset)
-	constexpr float tau = glm::pi<float>()*2.f;
 	glm::mat4 view = glm::mat4(1.f);
 	view = glm::scale(view, glm::vec3(scale, scale, 1.f));
 	view = glm::translate(view, glm::vec3(x,y,0.f));
-	// Apply scale and rotations based on AFRT flag
-	if (AFRT) {
-		// AFRT=true: Scale → X → Y → Z (PR #39 order - fixes pattern 15)
-		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
-		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-	} else {
-		// AFRT=false: Scale → Z → Y → X (EXACT original pre-PR#39 order)
-		view = glm::scale(view, glm::vec3(scaleX,scaleY,0));
-		view = glm::rotate(view, rotZ*tau, glm::vec3(0.0, 0.f, 1.f));
-		view = glm::rotate(view, rotY*tau, glm::vec3(0.0, 1.f, 0.f));
-		view = glm::rotate(view, rotX*tau, glm::vec3(1.0, 0.f, 0.f));
+	view = cgtransform::Sprite(view,m_cgActorMatrix,scaleX,scaleY,rotX,rotY,rotZ,AFRT,offsetX,offsetY);
+	TraceSpriteMatrix(view);
+	if(capturePosition && spriteTex && m_traceLayer && m_traceLayer->positionKind>=0) {
+		PositionFootprint p; p.kind=m_traceLayer->positionKind; p.index=m_traceLayer->positionIndex;
+		p.mask=curSprite?curSprite->pickMask:nullptr;
+		const int indices[]={0,1,2,4};
+		const glm::vec2 remainder(std::floor(pass.originX)-int(pass.originX/pass.zoom)*pass.zoom,
+			std::floor(pass.originY)-int(pass.originY/pass.zoom)*pass.zoom);
+		for(int j=0;j<4;++j) { auto v=view*glm::vec4(imageVertex[indices[j]*4],imageVertex[indices[j]*4+1],0,1); p.quad[j]=glm::vec2(v)+remainder;
+			p.uv[j]=glm::vec2(imageVertex[indices[j]*4+2],imageVertex[indices[j]*4+3]); }
+		positionFootprints.push_back(p);
 	}
-	view = glm::translate(view, glm::vec3(-128+offsetX,-224+offsetY,0.f));
 	SetModelView(std::move(view));
 	sTextured.Use();
 	ApplySpriteTextureMode();
@@ -640,6 +649,7 @@ void Render::SwitchImage(int id)
 		entry.w = image->width; entry.h = image->height;
 		entry.ox = image->offsetX; entry.oy = image->offsetY;
 		entry.indexed = image->is8bpp;
+		entry.pickMask=spritepick::Mask::Build(image->pixels,image->width,image->height,image->is8bpp);
 		glGenTextures(1, &entry.tex);
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, entry.tex);
@@ -659,6 +669,7 @@ void Render::SwitchImage(int id)
 			entry.bytes = (size_t)entry.w * entry.h * 4;
 		}
 		entry.linear = linear;
+		if(entry.pickMask) entry.bytes+=entry.pickMask->coverage.size();
 		constexpr size_t kBudget = 256u << 20;   // 256 MiB of sprite textures
 		EvictSprites(kBudget > entry.bytes ? kBudget - entry.bytes : 0);
 		spriteCacheBytes += entry.bytes;
@@ -1022,11 +1033,22 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	// PatPart_BuildTransformMatrix and our CG path: pivot at entity+spawn
 	// position, scale, Z/Y/X rotation, then the AFOF offset in rotated space.
 	const bool fbModel = layerParts->fbPartModel;
-	auto setMatrix = [this, &layer, fbModel](glm::mat4 partMatrix) {
+	glm::mat4 submittedMatrix(1.f);
+	auto setMatrix = [this, &layer, fbModel, &submittedMatrix](glm::mat4 partMatrix) {
 		constexpr float tau = glm::pi<float>()*2.f;
 		glm::mat4 rview = projection;
 		rview = glm::scale(rview, glm::vec3(scale, scale, 1.f));
 		rview = glm::translate(rview, glm::vec3(x, y, 0));
+		if(layer.patMbaacc) {
+            // MBAACC 1.07 captured effect173/state1 PAT84: the HA6 matrix
+            // flattens Z and obeys AFRT, then composes the part without the
+            // UNI2 perspective. Keep all other engines on their existing path.
+            rview = cgtransform::MbaaPat(rview,layer.cgActorMatrix,layer.scaleX,
+                layer.scaleY,layer.rotX,layer.rotY,layer.rotZ,layer.AFRT,offsetX,offsetY);
+            submittedMatrix=rview*partMatrix;
+            glUniformMatrix4fv(lProjectionParts,1,GL_FALSE,glm::value_ptr(submittedMatrix));
+            return;
+        }
 		rview = glm::scale(rview, glm::vec3(layer.scaleX, layer.scaleY, 1.f));
 		if (fbModel) {
 			// French-Bread engines (RBO Camera_BuildSpriteWorldMatrix 0x441CD0, GOF2 sub_43F850):
@@ -1045,6 +1067,7 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 		}
 		rview = glm::translate(rview, glm::vec3(0, 0, 1024.f));
 		rview *= invOrtho;
+		submittedMatrix=rview*perspective*partMatrix;
 		SetMatrixPersp(lProjectionParts, partMatrix, rview);
 	};
 
@@ -1073,7 +1096,48 @@ void Render::DrawPatLayerItem(const RenderLayer& layer, Parts* origParts)
 	dp.tintCg = layer.patTintCg;
 	dp.applyPras = layer.patApplyPras;
 	dp.uniDialect = layer.patUniDialect;
-	m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
+	if((m_transformTrace || (capturePosition && layer.positionKind>=0)) && !fbModel) {
+  dp.observeGeometry=[this,&layer,&submittedMatrix](const float* vertices,size_t count,const glm::mat4&,const Texture& tex,bool solid) {
+   // Capture the exact submitted geometry and shader matrix, not a reconstructed
+   // picker quad. Bounded, opt-in evidence for per-game PAT transform comparisons.
+   if(m_transformTrace && m_transformTraceCount++<64 && scale!=0) {
+    std::string t;
+    TraceAppend(t,"{\"kind\":\"pat\",\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"viewport\":[%d,%d],\"rotation\":[%.9g,%.9g,%.9g],\"vertex_count\":%zu,\"vertices\":[",m_traceRootPattern,m_traceRootFrame,m_traceTick,layer.tracePattern,layer.traceFrame,layer.spriteId,x,y,scale,pass.width,pass.height,layer.rotX,layer.rotY,layer.rotZ,count);
+    auto base=glm::scale(glm::mat4(1),glm::vec3(scale,scale,1));
+    base=glm::translate(base,glm::vec3(x,y,0));
+    const auto normalized=glm::inverse(base)*glm::inverse(projection)*submittedMatrix;
+    for(size_t i=0;i<std::min(count,size_t(96));++i) {
+     const auto* v=vertices+i*7; const auto clip=submittedMatrix*glm::vec4(v[0],v[1],v[2],1);
+     TraceAppend(t,"%s{\"local\":[%.9g,%.9g,%.9g],\"clip\":[%.9g,%.9g,%.9g,%.9g]",i?",":"",v[0],v[1],v[2],clip.x,clip.y,clip.z,clip.w);
+     const auto n=normalized*glm::vec4(v[0],v[1],v[2],1);
+     if(std::isfinite(n.w) && std::abs(n.w)>1e-6f)
+      TraceAppend(t,",\"normalized\":[%.9g,%.9g]",n.x/n.w,n.y/n.w);
+     TraceAppend(t,"}");
+    }
+    TraceAppend(t,"],\"submitted_matrix\":[");
+    for(int row=0;row<4;++row) for(int col=0;col<4;++col) TraceAppend(t,"%s%.9g",row||col?",":"",submittedMatrix[col][row]);
+    TraceAppend(t,"]}");
+    HC_LOG_DEBUG("transform-trace {} {}",m_transformTraceTag,t);
+   }
+   if(!capturePosition || layer.positionKind<0) return;
+   auto mask=tex.coverage(); if(!mask) return;
+   const size_t before=positionFootprints.size();
+   for(size_t i=0;i+2<count;i+=3) {
+    if(positionFootprints.size()>=262144) break; // bounded live snapshot
+    PositionFootprint p; p.kind=layer.positionKind; p.index=layer.positionIndex; p.triangle=true; p.solid=solid; p.mask=mask;
+    bool valid=true;
+    for(int j=0;j<3;++j) {
+     const auto* v=vertices+(i+j)*7; const auto clip=submittedMatrix*glm::vec4(v[0],v[1],v[2],1);
+     if(!std::isfinite(clip.x) || !std::isfinite(clip.y) || !std::isfinite(clip.z) || !std::isfinite(clip.w) || clip.w<=1e-6f || clip.z < -clip.w || clip.z > clip.w) { valid=false; break; }
+     p.invW[j]=1.f/clip.w;
+     p.quad[j]=glm::vec2((clip.x/clip.w+1)*pass.width*.5f,(1-clip.y/clip.w)*pass.height*.5f);
+     p.uv[j]=glm::vec2(v[3],v[4]);
+    }
+    if(valid) { p.quad[3]=p.quad[2]; p.uv[3]=p.uv[2]; positionFootprints.push_back(std::move(p)); }
+   }
+  };
+ }
+ m_parts->Draw(dp, setMatrix, setAddColor, layerColor);
 
 	// Leave a clean slate: unbind buffers/textures/shader, swallow PAT GL errors.
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -1132,13 +1196,40 @@ void Render::DrawCgLayerItem(const RenderLayer& layer, const float* baseColorRgb
 		curImageId = -1;
 
 	SwitchImage(layer.spriteId);
+	m_cgActorMatrix = layer.cgActorMatrix;
 	DrawSpriteOnly(false);
+	m_cgActorMatrix = glm::mat4(1.f);
+}
+
+void Render::TraceSpriteMatrix(const glm::mat4& matrix)
+{
+	if (!m_transformTrace || !m_traceLayer || m_transformTraceCount++ >= 64 || scale == 0) return;
+	glm::mat4 base = glm::scale(glm::mat4(1.f), glm::vec3(scale,scale,1.f));
+	base = glm::translate(base, glm::vec3(x,y,0.f));
+	const glm::mat4 normalized = glm::inverse(base) * matrix;
+	const auto& l = *m_traceLayer;
+	std::string t;
+	TraceAppend(t, "{\"texture_available\":%s,", spriteTex ? "true" : "false");
+	TraceAppend(t, "\"root_pattern\":%d,\"root_state\":%d,\"tick\":%d,\"pattern\":%d,\"state\":%d,\"sprite\":%d,\"origin\":[%d,%d],\"zoom\":%.9g,\"offset\":[%d,%d],\"scale\":[%.9g,%.9g],\"rotation\":[%.9g,%.9g,%.9g],\"afrt\":%d,\"normalized_matrix\":[",
+		m_traceRootPattern,m_traceRootFrame,m_traceTick,l.tracePattern,l.traceFrame,l.spriteId,x,y,scale,offsetX,offsetY,scaleX,scaleY,rotX,rotY,rotZ,AFRT);
+	for (int row=0; row<4; ++row) for (int col=0; col<4; ++col) TraceAppend(t,"%s%.9g", row||col ? ",":"",normalized[col][row]);
+	TraceAppend(t,"],\"local_vertices\":[");
+	const int indices[] = {0,1,2,4};
+	for(int j=0;j<4;++j) TraceAppend(t,"%s[%.9g,%.9g]",j?",":"",imageVertex[indices[j]*4],imageVertex[indices[j]*4+1]);
+	TraceAppend(t,"],\"normalized_vertices\":[");
+	for(int j=0;j<4;++j) { const auto v=normalized*glm::vec4(imageVertex[indices[j]*4],imageVertex[indices[j]*4+1],0.f,1.f); TraceAppend(t,"%s[%.9g,%.9g]",j?",":"",v.x,v.y); }
+	TraceAppend(t,"]}");
+	HC_LOG_DEBUG("transform-trace {} {}", m_transformTraceTag, t);
 }
 
 void Render::DrawLayers()
 {
 	if (renderLayers.empty()) {
 		return;
+	}
+	if (m_transformTraceRequested) {
+		applog::EnableDebug();
+		m_transformTrace = true; m_transformTraceRequested = false; m_transformTraceTag = m_transformTraceRequestTag; m_transformTraceCount = 0;
 	}
 
 	// Save every piece of shared state the per-item draws mutate.
@@ -1166,6 +1257,7 @@ void Render::DrawLayers()
 	// by the preview sim (preview::PlaceChild); the layer offsets here are already final world positions.
 	for (const auto& layer : renderLayers)
 	{
+		m_traceLayer = &layer;
 		// Fully transparent layers draw no sprite (their hitboxes still draw
 		// in the box pass below — see issue #78).
 		if (layer.alpha == 0.0f) continue;
@@ -1241,6 +1333,7 @@ void Render::DrawLayers()
 		}
 	}
 
+	m_traceLayer = nullptr;
 	// Restore original CG and Parts
 	if (cg != origCG) {
 		SetCg(origCG);
@@ -1265,6 +1358,14 @@ void Render::DrawLayers()
 	colorRgba[1] = origColorRgba[1];
 	colorRgba[2] = origColorRgba[2];
 	colorRgba[3] = origColorRgba[3];
+}
+
+bool Render::IsolatePositionTarget(int kind,int index)
+{
+	auto matches=[&](const RenderLayer& layer) { return layer.positionKind==kind && layer.positionIndex==index; };
+	if(!std::any_of(renderLayers.begin(),renderLayers.end(),matches)) return false;
+	renderLayers.erase(std::remove_if(renderLayers.begin(),renderLayers.end(),[&](const RenderLayer& layer) { return !matches(layer); }),renderLayers.end());
+	return true;
 }
 // ---------------------------------------------------------------------------
 // Background (stage) rendering — ported from the bgmk branch.

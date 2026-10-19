@@ -94,6 +94,8 @@ public:
 	void setZoom(float zoom) { m_camera.zoom = zoom; }
 	ViewCamera& camera() { return m_camera; }
 	const ViewCamera& camera() const { return m_camera; }
+	OnionSkinSettings& opponentOnion() { return m_opponentOnion; }
+	const OnionSkinSettings& opponentOnion() const { return m_opponentOnion; }
 	OnionSkinSettings& onion() { return m_onion; }
 	const OnionSkinSettings& onion() const { return m_onion; }
 
@@ -114,7 +116,7 @@ private:
 	int m_viewNumber = 0;            // 0 = primary, 1+ = additional views
 	bool m_isPatEditor = false;      // True if this view is for PAT editing
 	ViewCamera m_camera;             // Per-view pan + zoom
-	OnionSkinSettings m_onion;
+	OnionSkinSettings m_onion, m_opponentOnion;
 	uint64_t m_id = 0;
 	RenderTarget m_target;
 

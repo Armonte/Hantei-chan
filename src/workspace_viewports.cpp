@@ -53,7 +53,7 @@ namespace
 		}
 		// A WM_CHAR the key hook swallows (the key already ran a shortcut from
 		// inside a text field, e.g. Num* / Num/ keyframe step) never reaches ImGui.
-		if (msg == WM_CHAR && g_keyHook && g_keyHook(hwnd, msg, wParam, lParam))
+		if ((msg == WM_CHAR || msg == WM_SYSCHAR) && g_keyHook && g_keyHook(hwnd, msg, wParam, lParam))
 			return 0;
 		const LRESULT result = DefSubclassProc(hwnd, msg, wParam, lParam);
 		if ((msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN) && g_keyHook && g_keyHook(hwnd, msg, wParam, lParam))

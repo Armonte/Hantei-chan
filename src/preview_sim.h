@@ -69,6 +69,9 @@ struct ScheduledSpawn {
 struct Options;
 void ApplyRoundStartStandIn(Options& o);
 struct Options {
+	bool simulateMovement=false; // opt-in free-flight AS approximation, never a static-editing default
+	bool authoredRoot=false; // linear root timeline; child actors retain normal flow
+	int rootStartState=0; // fresh preview entry, never mutates authored data
 	// Context. World units are "CG pixels" (EF offset unit on a CG-sprite
 	// owner frame; the engine uses 256 fixed-point units per CG pixel).
 	bool rootFacingLeft = false;
@@ -130,7 +133,10 @@ struct SimActor {
 	int frameEnterTick = 0;
 	int spawnTick = 0;
 
-	float x = 0.f, y = 0.f;   // world position (root starts at 0,0)
+	// Free-flight MBAACC ASV0 state; raw velocity/acceleration use 1/256 units.
+ std::int64_t velocityX=0,velocityY=0,accelerationX=0,accelerationY=0;
+ bool movementPatternEntry=true;
+ float x = 0.f, y = 0.f;   // world position (root starts at 0,0)
 	bool facingLeft = false;
 	int angle = 0;            // 10000 = 360 degrees
 	int zPriority = 0;        // sticky: AF priority 0 keeps the previous value
@@ -161,6 +167,17 @@ struct TickState {
 	std::vector<SimActor> actors; // alive actors, spawn order (root first)
 	const SimActor* find(int id) const;
 	const SimActor* root() const;
+};
+
+// Compact authoritative root history for consumers that need entry events,
+// not just state numbers. Self-jumps can re-enter the same state.
+struct RootVisitSample {
+	int pattern = -1, frame = -1, entryTick = -1;
+	uint32_t serial = 0;
+	bool facingLeft = false;
+	RootVisitSample() = default;
+	explicit RootVisitSample(const SimActor& a) : pattern(a.pattern), frame(a.frame),
+		entryTick(a.frameEnterTick), serial(a.visitSerial), facingLeft(a.facingLeft) {}
 };
 
 enum class EventKind : uint8_t {
@@ -242,6 +259,7 @@ public:
 	int firstTickOfRootFrame(int frame);
 	// Root frame per tick for [0, frontier].
 	const std::vector<int>& rootFrameTrack();
+	const std::vector<RootVisitSample>& rootVisitTrack(); // ordered entry events, including multiple entries in one tick
 
 	const std::vector<SpawnRecord>& spawnRecords() const { return m_records; }
 	const std::vector<SimEvent>& events() const { return m_events; }
@@ -302,6 +320,8 @@ struct SpawnPlacement {
 SpawnPlacement ResolveSpawnPlacement(const Options& o, const SimActor& spawner,
                                      bool spawnerFrameUsesPat, int flagset1, int flagset2);
 
+struct DiscoveredRoute { int start=0,lastTick=0,states=0; bool bounded=false; };
+std::vector<DiscoveredRoute> DiscoverRoutes(FrameData* mainData,FrameData* effects,int pattern,Options options);
 } // namespace preview
 
 #endif /* PREVIEW_SIM_H_GUARD */

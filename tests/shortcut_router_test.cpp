@@ -208,6 +208,49 @@ int main()
 		CHECK(ShortcutRegistry::ActionId(ShortcutAction::togglePartHighlight) == std::string("togglePartHighlight"));
 	}
 
+	{
+		ShortcutRegistry grab;
+		using C=ShortcutContext;
+		ShortcutInput none;
+		CHECK(act(grab.resolve({0xBC,shortcutAlt},C::characterView,none))==ShortcutAction::previousOpponentPreview);
+		CHECK(act(grab.resolve({0xBE,shortcutAlt},C::characterView,none))==ShortcutAction::nextOpponentPreview);
+		CHECK(grab.resolve({0xBE,shortcutAlt},C::commands,none)==nullptr);
+		ShortcutInput text; text.textInput=true;
+		CHECK(grab.resolve({0xBE,shortcutAlt},C::characterView,text)==nullptr);
+		grab.applyOverride("Key=nextOpponentPreview#0=66,1");
+		CHECK(act(grab.resolve({'B',shortcutCtrl},C::characterView,none))==ShortcutAction::nextOpponentPreview);
+	}
+	{
+		ShortcutRegistry r; ShortcutInput none,text,drag; text.textInput=true; drag.mouseDrag=true;
+		CHECK(act(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,none))==ShortcutAction::nextPositionTarget);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::commands,none)==nullptr);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,text)==nullptr);
+		CHECK(r.resolve({0xDD,shortcutAlt},ShortcutContext::characterView,drag)==nullptr);
+		r.applyOverride("Key=nextPositionTarget#0=66,1");
+		CHECK(act(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,none))==ShortcutAction::togglePositionSolo);
+		CHECK(r.resolve({'S',shortcutAlt},ShortcutContext::characterView,text)==nullptr);
+		CHECK(act(r.resolve({'B',shortcutCtrl},ShortcutContext::characterView,none))==ShortcutAction::nextPositionTarget);
+	}
+	{
+		// Opt-in layouts: J/L step + PgUp/PgDn states. Off by default (0.1.2), user overrides survive the switch,
+		// and PgUp/PgDn never fire while a text field owns the keyboard.
+		ShortcutRegistry r; ShortcutInput none,text; text.textInput=true;
+		using C=ShortcutContext;
+		CHECK(r.resolve({0x21,0},C::characterView,none)==nullptr);
+		r.applyOverride("Key=playForward#0=80,3"); // Ctrl+Shift+P
+		r.applyLayoutOptions(true,true);
+		CHECK(act(r.resolve({'J',0},C::characterView,none))==ShortcutAction::stepTickBackward);
+		CHECK(act(r.resolve({'L',0},C::characterView,none))==ShortcutAction::stepTickForward);
+		CHECK(act(r.resolve({'J',shortcutShift},C::characterView,none))==ShortcutAction::playReverse);
+		CHECK(act(r.resolve({'P',(uint8_t)(shortcutCtrl|shortcutShift)},C::characterView,none))==ShortcutAction::playForward);
+		CHECK(act(r.resolve({0x21,0},C::characterView,none))==ShortcutAction::nextKeyframe);
+		CHECK(r.resolve({0x21,0},C::characterView,text)==nullptr);
+		CHECK(act(r.resolve({0x21,0},C::stageView,none))==ShortcutAction::previousStage);
+		CHECK(r.conflicts().empty());
+		r.applyLayoutOptions(false,false);
+		CHECK(act(r.resolve({'J',0},C::characterView,none))==ShortcutAction::playReverse);
+		CHECK(r.resolve({0x21,0},C::characterView,none)==nullptr);
+	}
 	if (g_failures) {
 		std::fprintf(stderr, "shortcut_router_test: %d failure(s)\n", g_failures);
 		return 1;

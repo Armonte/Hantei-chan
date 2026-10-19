@@ -78,6 +78,8 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 // Returns a file the user picked to open ('' = none).
 std::string DrawWelcome(const std::vector<std::string> &recentFiles);
 bool Busy();          // loads / previews / thumbnails still running
+// UI-thread terminal barrier: drain accepted jobs and join before UI/GL/static teardown.
+void ShutdownWorkers();
 
 } // namespace abrowser
 

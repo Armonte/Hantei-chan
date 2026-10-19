@@ -462,7 +462,7 @@ void MainFrame::drawPatternManagerWindow()
 	if (ImGui::BeginPopupModal(LBL("Clear patterns?"), nullptr, ImGuiWindowFlags_AlwaysAutoResize)) {
 		ImGui::Text(TXT("Empty %zu pattern slot(s)? (Undo restores them.)"), w.selection.size());
 		if (ImGui::Button(LBL("Clear"))) {
-			for (int p : w.selection) { *fd.get_sequence(p) = Sequence{}; fd.mark_modified(p); }
+			for (int p : w.selection) { fd.notes.archivePattern(p); *fd.get_sequence(p) = Sequence{}; fd.mark_modified(p); }
 			markToolEdit(character);
 			w.refsFor = -1;
 			w.status = TwFmt(TXT("Cleared %zu pattern(s)."), w.selection.size());
@@ -512,7 +512,7 @@ void MainFrame::drawNotesWindow()
 	if (!ImGui::Begin(LBL("Notes"), &m_showNotes)) { ImGui::End(); return; }
 	if (!character) { ImGui::TextDisabled("%s", TXT("Open a character first.")); ImGui::End(); return; }
 	FrameData& fd = character->frameData;
-	ImGui::TextWrapped(TXT("Notes on patterns (Pattern data > Pattern note) and on effects/conditions "
+	ImGui::TextWrapped(TXT("Notes on patterns, states (Right Pane > State note), and effects/conditions "
 	                   "(right-click a record header). Saved with the character to %s."),
 	                   character->getTopHA6Path().empty() ? "<ha6>.notes.json"
 	                   : Ha6Notes::PathFor(character->getTopHA6Path()).c_str());
@@ -523,19 +523,24 @@ void MainFrame::drawNotesWindow()
 	if (ImGui::BeginChild("##notes", ImVec2(0, 0), ImGuiChildFlags_Borders)) {
 		for (const auto& kv : fd.notes.notes) {
 			int p, f, idx, type; bool isEf;
-			if (!Ha6Notes::ParseKey(kv.first, &p, &f, &isEf, &idx, &type)) continue;
+			if (!Ha6Notes::ParseKey(kv.first, &p, &f, &isEf, &idx, &type)) {
+				ImGui::TextDisabled("%s  [unmatched]", kv.first.c_str());
+				ImGui::TextWrapped("%s", kv.second.c_str());
+				continue;
+			}
 			std::string where = TwFmt(TXT("Pattern %d"), p);
 			bool matched = fd.get_sequence(p) != nullptr;
 			if (f >= 0) {
-				where += TwFmt(TXT(" frame %d"), f) + (isEf ? " EF#" : " IF#") + std::to_string(idx) + TwFmt(TXT(" (type %d)"), type);
+				where += TwFmt(TXT(" state %d"), f);
+				if (idx >= 0) where += (isEf ? " EF#" : " IF#") + std::to_string(idx) + TwFmt(TXT(" (type %d)"), type);
 				Sequence* seq = fd.get_sequence(p);
 				matched = seq && f < (int)seq->frames.size() &&
-					(isEf ? idx < (int)seq->frames[f].EF.size() && seq->frames[f].EF[idx].type == type
-					      : idx < (int)seq->frames[f].IF.size() && seq->frames[f].IF[idx].type == type);
+					(idx < 0 || (isEf ? idx < (int)seq->frames[f].EF.size() && seq->frames[f].EF[idx].type == type
+					      : idx < (int)seq->frames[f].IF.size() && seq->frames[f].IF[idx].type == type));
 			}
 			if (!matched) where += TXT("  [unmatched: record moved, deleted or retyped]");
 			ImGui::PushID(kv.first.c_str());
-			if (ImGui::Selectable(where.c_str())) navigateActiveView(p, f < 0 ? 0 : f);
+			if (ImGui::Selectable(where.c_str()) && matched) navigateActiveView(p, f < 0 ? 0 : f);
 			ImGui::Indent();
 			ImGui::PushTextWrapPos(0.0f);
 			ImGui::TextDisabled("%s", kv.second.c_str());
@@ -545,6 +550,10 @@ void MainFrame::drawNotesWindow()
 		}
 	}
 	ImGui::EndChild();
+	if (ImGui::TreeNode(LBL("Notes diagnostics (bounded)"))) {
+		for (const auto& event : fd.notes.trace) ImGui::TextUnformatted(event.c_str());
+		ImGui::TreePop();
+	}
 	ImGui::End();
 }
 
@@ -556,6 +565,7 @@ void MainFrame::drawKeyBindingsWindow()
 {
 	if (!m_showKeyBindings) { m_keyCapture = -1; return; }
 	ui::FitNextWindow(560, 560);
+	if(m_raiseKeyBindings) { ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always); ImGui::SetNextWindowFocus(); m_raiseKeyBindings=false; }
 	if (!ImGui::Begin(LBL("Keyboard shortcuts"), &m_showKeyBindings)) { ImGui::End(); return; }
 	auto& reg = shortcuts.registry();
 	ImGui::TextWrapped("%s", TXT("Click a shortcut, then press the new key (with Ctrl/Shift/Alt). Esc cancels. "
@@ -567,6 +577,11 @@ void MainFrame::drawKeyBindingsWindow()
 	}
 	ImGui::SameLine();
 	if (ImGui::Checkbox(LBL("Invert mouse wheel zoom"), &gSettings.invertWheelZoom)) ImGui::MarkIniSettingsDirty();
+	ImGui::SetNextItemWidth(ui::Em(5));
+	if(ImGui::InputInt("Step hold delay (ms)",&gSettings.scrubHoldDelayMs,0,0)) {gSettings.scrubHoldDelayMs=std::clamp(gSettings.scrubHoldDelayMs,0,2000);ImGui::MarkIniSettingsDirty();}
+	ImGui::SameLine();ImGui::SetNextItemWidth(ui::Em(5));
+	if(ImGui::InputInt("Repeat (ms)",&gSettings.scrubRepeatMs,0,0)) {gSettings.scrubRepeatMs=std::clamp(gSettings.scrubRepeatMs,1,1000);ImGui::MarkIniSettingsDirty();}
+	m_shortcutFilter.Draw("Search shortcuts");
 
 	if (ImGui::BeginTable("##keys", 3, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerV | ImGuiTableFlags_ScrollY)) {
 		ImGui::TableSetupColumn(LBL("Action"));
@@ -576,6 +591,7 @@ void MainFrame::drawKeyBindingsWindow()
 		const auto& bindings = reg.bindings();
 		for (size_t i = 0; i < bindings.size(); ++i) {
 			const auto& b = bindings[i];
+			if(!m_shortcutFilter.PassFilter(b.name)) continue;
 			ImGui::PushID((int)i);
 			ImGui::TableNextRow();
 			ImGui::TableNextColumn();
@@ -773,6 +789,167 @@ void MainFrame::drawCompareWindow()
 		ImGui::Checkbox(LBL("Show boxes (outlines)"), &c.boxes);
 	}
 	ImGui::End();
+}
+
+// The checked cycle list is application-wide unless this view explicitly opts out.
+// Retain legacy project-local lists untouched so opting out recovers them.
+static std::vector<std::string>& OpponentCyclePool(FrameState& st)
+{
+ if(st.opponentSeparatePool) return st.opponentCyclePool;
+ if(!gSettings.grabPoolInitialized && st.opponentPoolInitialized) {
+  gSettings.grabCyclePool=st.opponentCyclePool; gSettings.grabPoolInitialized=true;
+  ImGui::MarkIniSettingsDirty();
+ }
+ return gSettings.grabCyclePool;
+}
+
+void MainFrame::RefreshOpponentRoster(CharacterView* view)
+{
+	if(!view || view->getCharacter()->frameData.game()!=Ha6Game::MBAACC) return;
+	auto& st=view->getState();
+	namespace fs=std::filesystem;
+	const auto source=fs::u8path(view->getCharacter()->getTopHA6Path());
+	const auto folder=source.parent_path();
+	const auto stem=fs::u8path(view->getCharacter()->getTxtPath()).stem().string();
+	std::string moon="_0";
+	for(const auto suffix:{"_0","_1","_2"}) if(stem.size()>=2 && stem.compare(stem.size()-2,2,suffix)==0) moon=suffix;
+	const auto key=folder.u8string()+moon;
+	if(st.opponentCatalogRoot==key) return;
+	st.opponentCatalogRoot=key; st.opponentRoster.clear();
+	std::error_code ec;
+	for(const auto& file:fs::directory_iterator(folder,ec)) {
+		if(ec || !file.is_regular_file(ec) || file.path().extension()!=".txt") continue;
+		const auto name=file.path().stem().string();
+		auto folded=name; std::transform(folded.begin(),folded.end(),folded.begin(),[](unsigned char c){return char(std::tolower(c));});
+		if(folded.find("backup")!=std::string::npos) continue;
+		if(name.size()<2 || name.compare(name.size()-2,2,moon)!=0) continue;
+		const auto path=file.path().string();
+		if(GetPrivateProfileIntA("DataFile","FileNum",0,path.c_str())<=0 || GetPrivateProfileIntA("BmpcutFile","FileNum",0,path.c_str())<=0) continue;
+		st.opponentRoster.push_back(path);
+	}
+	std::sort(st.opponentRoster.begin(),st.opponentRoster.end());
+	if(!st.opponentPoolInitialized) { st.opponentCyclePool=st.opponentRoster; st.opponentPoolInitialized=true; }
+}
+
+bool MainFrame::SelectOpponent(CharacterView* view,const std::string& path)
+{
+	if(!view || path.empty()) return false;
+	if(view->getState().opponentFailedPath==path) return false;
+	bool live=false;
+	for(auto& ch:characters) if(viewrender::SameOpponentPath(ch->getTopHA6Path(),path) || viewrender::SameOpponentPath(ch->getTxtPath(),path)) live=true;
+	if(!live && !m_opponentCache.count(path)) {
+		auto ch=std::make_unique<CharacterInstance>();
+		ch->frameData.setGameOverride(Ha6Game::MBAACC);
+		if(!ch->loadFromTxt(path)) { view->getState().opponentFailedPath=path; view->getState().opponentStatus="Could not load opponent descriptor (Rescan to retry)"; return false; }
+		m_opponentCache[path]=std::move(ch);
+	}
+	const bool changed=view->getState().opponentTargetPath!=path || !view->getState().opponentEnabled;
+	view->getState().opponentTargetPath=path;
+	view->getState().opponentEnabled=true;
+	if(changed) markProjectModified();
+	return true;
+}
+
+bool MainFrame::CycleOpponent(CharacterView* view,int direction)
+{
+	RefreshOpponentRoster(view);
+	auto& st=view->getState(); std::vector<std::string> pool;
+	const auto& checkedPool=OpponentCyclePool(st);
+	for(const auto& path:st.opponentRoster) if(std::find(checkedPool.begin(),checkedPool.end(),path)!=checkedPool.end()) pool.push_back(path);
+	if(pool.empty()) { st.opponentStatus="No characters checked for cycling"; return false; }
+	auto it=std::find(pool.begin(),pool.end(),st.opponentTargetPath);
+	int index=it==pool.end()?(direction>0?-1:0):int(it-pool.begin());
+	index=(index+direction+int(pool.size()))%int(pool.size());
+	return SelectOpponent(view,pool[index]);
+}
+
+void MainFrame::drawOpponentWindow()
+{
+	// Preview enablement must work independently of whether settings are open,
+	// including another tab or detached view. Loading stays outside render passes.
+	for(auto& v:views) if(v->getState().opponentEnabled) {
+		RefreshOpponentRoster(v.get()); auto& s=v->getState();
+		if(s.opponentReleaseVectors && !vectors.loaded && !s.opponentVectorLoadTried) {
+			s.opponentVectorLoadTried=true;
+			const auto file=(std::filesystem::u8path(v->getCharacter()->getTopHA6Path()).parent_path()/"vector.txt").string();
+			vectors.load(file.c_str());
+		}
+		if(s.opponentTargetPath.empty() && !s.opponentRoster.empty()) SelectOpponent(v.get(),s.opponentRoster.front());
+		else if(!s.opponentTargetPath.empty()) SelectOpponent(v.get(),s.opponentTargetPath);
+	}
+	for(auto& v:views) if(v->getState().opponentSettingsRequested) {
+		v->getState().opponentSettingsRequested=false; m_opponentSettingsView=v->getId(); m_showOpponent=true; m_raiseOpponentSettings=true;
+	}
+	auto* view=m_opponentSettingsView?findViewById(m_opponentSettingsView):getToolView();
+	if(!view) { m_showOpponent=false; return; }
+	RefreshOpponentRoster(view);
+	auto& st=view->getState();
+	if(st.opponentEnabled && st.opponentTargetPath.empty() && !st.opponentRoster.empty()) SelectOpponent(view,st.opponentRoster.front());
+	else if(st.opponentEnabled && !st.opponentTargetPath.empty()) SelectOpponent(view,st.opponentTargetPath);
+	if(!m_showOpponent) return;
+	ui::FitNextWindow(520,560);
+	if(m_raiseOpponentSettings) { ImGui::SetNextWindowCollapsed(false,ImGuiCond_Always); ImGui::SetNextWindowFocus(); }
+	if(ImGui::Begin("Grab preview settings",&m_showOpponent)) {
+		if(m_raiseOpponentSettings) {
+			// Also restore/raise a separate native platform window, without
+			// making it permanently topmost or changing its docking placement.
+			if(!gStartup.headless) if(auto hwnd=static_cast<HWND>(ImGui::GetWindowViewport()->PlatformHandle)) {
+				if(IsIconic(hwnd)) ShowWindow(hwnd,SW_RESTORE);
+				SetWindowPos(hwnd,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
+				SetForegroundWindow(hwnd);
+			}
+			HC_LOG_DEBUG("opponent window raise view={} window={} collapsed={} focused={} dock={}",(unsigned long long)view->getId(),ImGui::GetCurrentWindow()->ID,int(ImGui::GetCurrentWindow()->Collapsed),int(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)),ImGui::GetCurrentWindow()->DockId);
+		}
+		if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) shortcuts.claimFocus(ShortcutContext::characterView,view->getId());
+		ImGui::TextUnformatted(view->getCharacter()->getName().c_str());
+		if(ImGui::Checkbox("Grab preview",&st.opponentEnabled)) markProjectModified();
+		if(ImGui::Checkbox("Follow playback history (otherwise inspect selected state)",&st.opponentFollow)) markProjectModified();
+		if(ImGui::SliderFloat("Opponent opacity",&st.opponentOpacity,0.f,1.f)) markProjectModified();
+		if(ImGui::Checkbox("Include opponent in onion skin",&st.opponentOnion)) markProjectModified();
+		if(st.opponentOnion && ImGui::TreeNode("Opponent onion settings")) {
+			auto& o=view->opponentOnion(); bool changed=false;
+			changed |= ImGui::SliderInt("Before##opp",&o.before,0,16);
+			changed |= ImGui::SliderInt("After##opp",&o.after,0,16);
+			changed |= ImGui::SliderInt("Spacing (frames)##opp",&o.spacing,1,60);
+			changed |= ImGui::SliderFloat("Onion opacity##opp",&o.alpha,0.f,1.f);
+			changed |= ImGui::SliderFloat("Falloff##opp",&o.falloff,0.f,1.f);
+			changed |= ImGui::ColorEdit3("Past tint##opp",&o.pastTint.x,ImGuiColorEditFlags_NoInputs);
+			changed |= ImGui::ColorEdit3("Future tint##opp",&o.futureTint.x,ImGuiColorEditFlags_NoInputs);
+			if(changed) markProjectModified();
+			ImGui::TreePop();
+		}
+		ImGui::TextWrapped("Selected opponent: %s",std::filesystem::u8path(st.opponentTargetPath).stem().string().c_str());
+		ImGui::TextWrapped("%s",st.opponentStatus.c_str());
+		if(ImGui::Checkbox("Play release vectors (approximate)",&st.opponentReleaseVectors)) { if(st.opponentReleaseVectors) {st.opponentFollow=true; st.opponentVectorLoadTried=false;} markProjectModified(); }
+		if(st.opponentReleaseVectors) {
+			if(ImGui::Checkbox("Flat viewport ground / landing",&st.opponentReleaseGround)) markProjectModified();
+			ImGui::TextDisabled("Primary vector phase + AF reaction flow; no walls, bounces or collision.");
+			if(!vectors.loaded) ImGui::TextDisabled("vector.txt unavailable; use File > Load vector.txt.");
+			else ImGui::TextWrapped("Vectors: %s",vectors.loadedPath.c_str());
+		}
+		ImGui::Text("Cycle: %s / %s",shortcuts.registry().label(ShortcutAction::previousOpponentPreview).c_str(),shortcuts.registry().label(ShortcutAction::nextOpponentPreview).c_str());
+		if(ImGui::SmallButton("Edit opponent shortcuts")) { m_showKeyBindings=true; m_raiseKeyBindings=true; m_shortcutFilter.Clear(); snprintf(m_shortcutFilter.InputBuf,sizeof(m_shortcutFilter.InputBuf),"Opponent"); m_shortcutFilter.Build(); }
+		if(ImGui::Checkbox("Separate list for this tab",&st.opponentSeparatePool)) markProjectModified();
+  auto& checkedPool=OpponentCyclePool(st);
+  ImGui::TextDisabled(st.opponentSeparatePool?"Tab-specific cycle list (saved in project)":"Shared cycle list (all tabs; saved in preferences)");
+		if(ImGui::Button("Check all")) { for(const auto& path:st.opponentRoster) if(std::find(checkedPool.begin(),checkedPool.end(),path)==checkedPool.end()) checkedPool.push_back(path); markProjectModified(); ImGui::MarkIniSettingsDirty(); }
+		ImGui::SameLine(); if(ImGui::Button("Check none")) { for(const auto& path:st.opponentRoster) checkedPool.erase(std::remove(checkedPool.begin(),checkedPool.end(),path),checkedPool.end()); markProjectModified(); ImGui::MarkIniSettingsDirty(); }
+		ImGui::SameLine(); if(ImGui::Button("Rescan folder")) { st.opponentCatalogRoot.clear(); st.opponentFailedPath.clear(); RefreshOpponentRoster(view); }
+		ImGui::Text("%d descriptors in this character's data folder / moon",int(st.opponentRoster.size()));
+		for(const auto& path:st.opponentRoster) {
+			ImGui::PushID(path.c_str());
+			bool checked=std::find(checkedPool.begin(),checkedPool.end(),path)!=checkedPool.end();
+			if(ImGui::Checkbox(std::filesystem::u8path(path).stem().string().c_str(),&checked)) {
+				if(checked) checkedPool.push_back(path);
+				else checkedPool.erase(std::remove(checkedPool.begin(),checkedPool.end(),path),checkedPool.end());
+				markProjectModified(); ImGui::MarkIniSettingsDirty();
+			}
+			ImGui::SameLine(); if(ImGui::SmallButton(viewrender::SameOpponentPath(st.opponentTargetPath,path)?"Active":"Use")) SelectOpponent(view,path);
+			ImGui::PopID();
+		}
+	}
+	ImGui::End();
+	m_raiseOpponentSettings=false;
 }
 
 // ---------------------------------------------------------------------------
