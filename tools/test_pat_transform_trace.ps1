@@ -5,6 +5,7 @@ $out=Join-Path $env:TEMP ('pat-transform-'+[guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory $out | Out-Null
 $inputs=@('C:/Games/MBAACC_Edit/data/effect.txt','C:/Games/MBAACC_Edit/data/effect.HA6','C:/Games/MBAACC_Edit/data/effect.PAT') | ForEach-Object { @{path=$_;sha256=(Get-FileHash -LiteralPath $_).Hash} }
 foreach($mode in @('main','detached')) {
+ $run=Join-Path $out $mode; New-Item -ItemType Directory $run | Out-Null
  $trace=Join-Path $out ($mode+'.jsonl'); $script=Join-Path $out ($mode+'.txt')
  $steps=@("diagnosticpattern $Pattern")
  if($Pattern -eq 173) { $steps+= "pattransformfixture $Facing" }
@@ -12,11 +13,11 @@ foreach($mode in @('main','detached')) {
  if($mode -eq 'detached') { $steps=@('waitidle','detachedsurfacefixture','wait 6')+@($steps | ForEach-Object { if($_ -notlike 'wait *') {'detached:'+$_} else {$_} }) } else { $steps=@('waitidle')+$steps }
  if($Pattern -eq 173) { $prefix=if($mode -eq 'detached') {'detached:'} else {''}; $steps+= ($prefix+'positiongesturetest effect'); $steps+='wait 3' }
  $steps+='quit'; $steps | Set-Content $script
- $p=Start-Process $exe -WindowStyle Hidden -WorkingDirectory $out -ArgumentList ('--headless --game mbaacc --open "C:/Games/MBAACC_Edit/data/effect.txt" --ui-script "'+$script+'"') -PassThru
+ $p=Start-Process $exe -WindowStyle Hidden -WorkingDirectory $run -ArgumentList ('--headless --game mbaacc --open "C:/Games/MBAACC_Edit/data/effect.txt" --ui-script "'+$script+'"') -PassThru
  if(-not $p.WaitForExit(30000)) { $p.Kill(); throw 'PAT transform trace timeout' }
  if($Pattern -eq 173 -and (Get-Content ($script+'.log') -Raw) -notmatch 'positiongesturetest: footprint=1 move=1 rotation=1') {throw 'PAT spawn position interaction failed'}
  if($p.ExitCode -ne 0) { throw "Editor exited $($p.ExitCode)" }
- $rows=@(Get-Content $trace | ForEach-Object {$_ | ConvertFrom-Json} | Where-Object {$_.kind -eq 'pat' -and $_.pattern -eq $Pattern -and $_.sprite -eq 84})
+ $rows=@(& "$PSScriptRoot/read_transform_trace.ps1" -Log (Join-Path $run 'hanteichan.log') -Tag $trace | Where-Object {$_.kind -eq 'pat' -and $_.pattern -eq $Pattern -and $_.sprite -eq 84})
  if(!$rows.Count) { throw "No actual PAT84 geometry captured: $out" }
  if($RuntimeTrace) {
   $runtime=Get-Content $RuntimeTrace -Raw | ConvertFrom-Json

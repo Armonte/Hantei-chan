@@ -40,10 +40,6 @@ inline void InspectorItem(const char* name) {
     const auto a=ImGui::GetItemRectMin(),b=ImGui::GetItemRectMax();
     auto* storage=ImGui::GetStateStorage();const auto key=ImHashStr(name);
     storage->SetFloat(key,a.x);storage->SetFloat(key+1,a.y);storage->SetFloat(key+2,b.x);storage->SetFloat(key+3,b.y);
-    static unsigned serial=0;
-    if(auto* f=std::fopen("compact_layout_items.log",serial++%4096==0?"w":"a")) {
-        std::fprintf(f,"frame=%d window=%s item=%s x=%.2f y=%.2f right=%.2f bottom=%.2f\n",ImGui::GetFrameCount(),ImGui::GetCurrentWindow()->Name,name,a.x,a.y,b.x,b.y);std::fclose(f);
-    }
 }
 inline bool AxisFloats(const char* id,float* values,int count,float speed) {
     ImGui::PushID(id);bool edited=false;

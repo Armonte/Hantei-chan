@@ -13,6 +13,7 @@ $script=Join-Path $out 'smoke.txt'
  'opponenttick 2','wait 8','opponentinspect','opponenttick 13','wait 8','opponentinspect',
  'opponenttick 26','wait 8','opponentinspect','opponenttick 90','wait 8','opponentinspect',
  'opponenttick 2','wait 8','opponentinspect','quit') | Set-Content -LiteralPath $script
+$env:HC_LOG_DEBUG='1'  # opponent window raise records go to hanteichan.log at debug level
 $process=Start-Process -FilePath $exe -WorkingDirectory $out -ArgumentList ('--headless --game mbaacc --open "'+$root+'/iori_0.txt" --ui-script "'+$script+'"') -WindowStyle Hidden -PassThru
 if(-not $process.WaitForExit(30000)) { $process.Kill(); throw 'Hidden test timed out' }
 if($process.ExitCode -ne 0) { throw 'Hidden test failed' }
@@ -21,7 +22,7 @@ foreach($expected in @('opponentsystemkeytest: cycled','opponentkeys: visible re
     if(-not $log.Contains($expected)) { throw "Missing $expected; $log" }
 }
 if(([regex]::Matches($log,'elapsed=1 y=-6 landing=-1')).Count -ne 2) { throw 'Rewind/replay did not reproduce release position' }
-$window=Get-Content -LiteralPath (Join-Path $out 'opponent_window_trace.log') -Raw
-if($window -notmatch 'collapsed=0 focused=1') { throw 'Collapsed settings did not restore/focus' }
+$window=Get-Content -LiteralPath (Join-Path $out 'hanteichan.log') -Raw
+if($window -notmatch 'opponent window raise .*collapsed=0 focused=1') { throw 'Collapsed settings did not restore/focus' }
 if((Get-FileHash -LiteralPath $source).Hash -ne $before) { throw 'In-memory fixture changed source file' }
 Write-Host "GRAB RELEASE/SYSTEM-KEY LIVE PASS: $out; source unchanged $before"

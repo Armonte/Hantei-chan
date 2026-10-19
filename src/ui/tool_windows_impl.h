@@ -898,8 +898,7 @@ void MainFrame::drawOpponentWindow()
 				SetWindowPos(hwnd,HWND_TOP,0,0,0,0,SWP_NOMOVE|SWP_NOSIZE|SWP_NOACTIVATE);
 				SetForegroundWindow(hwnd);
 			}
-			static int traceCount=0;
-			if(traceCount++<64) if(auto* f=fopen("opponent_window_trace.log","a")) { fprintf(f,"raise view=%llu window=%u collapsed=%d focused=%d dock=%u\n",(unsigned long long)view->getId(),ImGui::GetCurrentWindow()->ID,ImGui::GetCurrentWindow()->Collapsed,ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows),ImGui::GetCurrentWindow()->DockId); fclose(f); }
+			HC_LOG_DEBUG("opponent window raise view={} window={} collapsed={} focused={} dock={}",(unsigned long long)view->getId(),ImGui::GetCurrentWindow()->ID,int(ImGui::GetCurrentWindow()->Collapsed),int(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)),ImGui::GetCurrentWindow()->DockId);
 		}
 		if(ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows)) shortcuts.claimFocus(ShortcutContext::characterView,view->getId());
 		ImGui::TextUnformatted(view->getCharacter()->getName().c_str());

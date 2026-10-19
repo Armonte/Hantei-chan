@@ -10,8 +10,11 @@
 
 namespace applog {
 quill::Logger *Get();
+// Debug records are dropped unless HC_LOG_DEBUG=1 is set in the environment or a diagnostic enables them.
+void EnableDebug();
 }
 
+#define HC_LOG_DEBUG(fmt, ...) QUILL_LOG_DEBUG(::applog::Get(), fmt, ##__VA_ARGS__)
 #define HC_LOG_INFO(fmt, ...) QUILL_LOG_INFO(::applog::Get(), fmt, ##__VA_ARGS__)
 #define HC_LOG_WARN(fmt, ...) QUILL_LOG_WARNING(::applog::Get(), fmt, ##__VA_ARGS__)
 #define HC_LOG_ERROR(fmt, ...) QUILL_LOG_ERROR(::applog::Get(), fmt, ##__VA_ARGS__)

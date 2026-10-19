@@ -2,6 +2,7 @@
 #include "archive_browser_state.h"
 #include "game_table.h"
 #include "tlog.h"
+#include "app_log.h"
 #include "ini.h"
 #include "framedata_pb2k1.h"
 #include "han2/qoh_dat.h"
@@ -147,11 +148,7 @@ void ShutdownWorkers()
 		std::lock_guard<std::mutex> lk(w.mx);
 		if (w.stop) return; // UI thread only; shutdown is terminal and idempotent.
 		w.stop = true;
-		// Bounded lifecycle trace: overwrite each shutdown, no paths/annotation data.
-		if (FILE *f = fopen("browser_worker_shutdown_trace.log", "w")) {
-			fprintf(f, "stopping threads=%zu active=%d queued=%zu results=%zu\n", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), w.results.size());
-			fclose(f);
-		}
+		HC_LOG_DEBUG("browser worker stopping threads={} active={} queued={} results={}", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), w.results.size());
 	}
 	w.cv.notify_all();
 	for (auto &thread : w.threads) if (thread.joinable()) thread.join();
@@ -161,10 +158,7 @@ void ShutdownWorkers()
 	{
 		std::lock_guard<std::mutex> lk(w.mx);
 		discarded.swap(w.results);
-		if (FILE *f = fopen("browser_worker_shutdown_trace.log", "a")) {
-			fprintf(f, "joined threads=%zu active=%d queued=%zu discarded=%zu\n", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), discarded.size());
-			fclose(f);
-		}
+		HC_LOG_DEBUG("browser worker joined threads={} active={} queued={} discarded={}", w.threads.size(), w.active.load(), w.hi.size() + w.lo.size(), discarded.size());
 	}
 }
 

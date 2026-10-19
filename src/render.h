@@ -104,8 +104,11 @@ struct RenderLayer {
 class Render
 {
 private:
-	std::string m_transformTracePath;
-	FILE* m_transformTrace = nullptr;
+	// transformtrace diagnostic: armed by RequestTransformTrace, active for one DrawLayers pass, emitted as
+	// "transform-trace <tag> {json}" debug records through the async log (hanteichan.log).
+	bool m_transformTraceRequested = false;
+	bool m_transformTrace = false;
+	std::string m_transformTraceTag, m_transformTraceRequestTag;
 	int m_transformTraceCount = 0, m_traceRootPattern = -1, m_traceRootFrame = -1, m_traceTick = -1;
 	const RenderLayer* m_traceLayer = nullptr;
 	glm::mat4 m_cgActorMatrix{1.f};
@@ -207,9 +210,9 @@ public:
  };
 	bool capturePosition=false;
 	std::vector<PositionFootprint> positionFootprints;
-	void FinishTransformTrace() { if(m_transformTrace) { fclose(m_transformTrace); m_transformTrace=nullptr; } }
-	void RequestTransformTrace(const std::string& path, int pattern, int frame, int tick) {
-		m_transformTracePath = path; m_traceRootPattern = pattern; m_traceRootFrame = frame; m_traceTick = tick;
+	void FinishTransformTrace() { m_transformTrace = false; }
+	void RequestTransformTrace(const std::string& tag, int pattern, int frame, int tick) {
+		m_transformTraceRequested = true; m_transformTraceRequestTag = tag; m_traceRootPattern = pattern; m_traceRootFrame = frame; m_traceTick = tick;
 	}
 	// Switch to <cg>_pN.pal for layers of patterns with PUPS N (issue #76).
 	bool followPups = true;
