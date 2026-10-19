@@ -4,6 +4,7 @@
 // <out>\<id>\ + <out>\<id>-<version>.zip, verify a package folder or archive, read the local mod.ini. All paths are UTF-8.
 // No GL / ImGui: pcmodtool, the GUI exporter and pcmod_test share it.
 #include "pcmod_manifest.h"
+#include "pcmod_schema2.h"
 
 #include <string>
 #include <vector>
@@ -34,7 +35,10 @@ struct PackResult {
 };
 // `meta` supplies every field except `files`, which is built from `sources` (hashing each). A previous export of the same
 // id in `outDir` (a folder holding a pcmod.json) is replaced; any other non-empty folder there is refused.
-PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, const std::string& outDir, bool writeZip);
+// Schema 2 (PC S2.1): when meta.HasAux() (pcmod_schema2.h AttachToManifest set schema 2 + the refs), `aux` holds the TOML
+// texts; they are written next to pcmod.json (and into the zip under <id>/), never into files[].
+PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, const std::string& outDir, bool writeZip,
+                const s2::Files* aux = nullptr);
 
 struct VerifyResult {
 	bool ok = false;
@@ -43,6 +47,7 @@ struct VerifyResult {
 	Manifest manifest;
 	std::string digestHex;      // package digest
 	std::string simDigestHex;   // package sim digest
+	s2::Data s2;                // schema 2: the parsed patches/features/rules (MbaaccProfile)
 };
 // A package folder: pcmod.json parses, the folder name equals the id (unless !requireFolderName), every listed file exists
 // with the listed size and hash, and unlisted files are reported.

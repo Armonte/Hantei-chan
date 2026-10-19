@@ -91,11 +91,14 @@ bool ScanSourceDir(const std::string& dir, std::vector<SourceFile>& out, std::st
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
-PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, const std::string& outDir, bool writeZip)
+PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, const std::string& outDir, bool writeZip, const s2::Files* aux)
 {
 	PackResult r;
 	Manifest m = meta;
-	m.schema = 1;
+	if (!m.HasAux()) m.schema = 1;
+	else if (!aux) { r.error = "schema 2 package without its patches/features/rules texts"; return r; }
+	struct AuxOut { const AuxFile* ref; const std::string* text; };
+	const AuxOut auxOut[3] = { { &m.exePatches, aux ? &aux->patches : nullptr }, { &m.features, aux ? &aux->features : nullptr }, { &m.rules, aux ? &aux->rules : nullptr } };
 	m.files.clear();
 	std::vector<std::vector<uint8_t>> bytes;
 	for (const SourceFile& s : sources) {
@@ -122,6 +125,8 @@ PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, co
 	fs::create_directories(pkg, ec);
 	for (size_t i = 0; i < m.files.size(); ++i)
 		if (!WriteAll(pkg / RelToNative(m.files[i].path), bytes[i].data(), bytes[i].size(), r.error)) return r;
+	for (const AuxOut& a : auxOut)
+		if (a.ref->present && !WriteAll(pkg / U8(a.ref->path), a.text->data(), a.text->size(), r.error)) return r;
 	const std::string json = WriteManifest(m);
 	if (!WriteAll(pkg / "pcmod.json", json.data(), json.size(), r.error)) return r;
 	r.packageDir = Str(pkg);
@@ -133,6 +138,8 @@ PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, co
 		std::vector<ZipEntry> z;
 		z.push_back({m.id + "/", {}});
 		z.push_back({m.id + "/pcmod.json", std::vector<uint8_t>(json.begin(), json.end())});
+		for (const AuxOut& a : auxOut)
+			if (a.ref->present) z.push_back({m.id + "/" + a.ref->path, std::vector<uint8_t>(a.text->begin(), a.text->end())});
 		std::vector<size_t> order(m.files.size());
 		for (size_t i = 0; i < order.size(); ++i) order[i] = i;
 		std::sort(order.begin(), order.end(), [&](size_t a, size_t b) { return m.files[a].key() < m.files[b].key(); });
@@ -152,6 +159,7 @@ PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, co
 	const VerifyResult vd = VerifyDirectory(r.packageDir);
 	if (!vd.ok) { r.error = "written package does not verify: " + (vd.errors.empty() ? std::string("?") : vd.errors[0]); return r; }
 	if (vd.digestHex != r.digestHex) { r.error = "written package digest differs on read-back"; return r; }
+	r.simDigestHex = vd.simDigestHex;   // schema 2: the sim digest needs the PARSED TOML (set by VerifyDirectory)
 	if (writeZip) {
 		const VerifyResult vz = VerifyZip(r.zipPath);
 		if (!vz.ok) { r.error = "written archive does not verify: " + (vz.errors.empty() ? std::string("?") : vz.errors[0]); return r; }
@@ -163,6 +171,19 @@ PackResult Pack(const std::vector<SourceFile>& sources, const Manifest& meta, co
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
+// Schema 2: check the aux TOML texts against the manifest and parse them (MBAACC profile); sets the sim digest.
+static void LoadAux(VerifyResult& v, const s2::Files& t)
+{
+	if (!v.manifest.HasAux()) return;
+	const std::string e = s2::LoadFromTexts(v.manifest, t, s2::MbaaccProfile(), v.s2);
+	if (!e.empty()) v.errors.push_back(e);
+	v.simDigestHex = PackageSimDigestHex(v.manifest);
+}
+static bool IsAuxPath(const Manifest& m, const std::string& lowRel)
+{
+	return (m.exePatches.present && lowRel == m.exePatches.path) || (m.features.present && lowRel == m.features.path) || (m.rules.present && lowRel == m.rules.path);
+}
+
 static bool ParseInto(const std::string& text, VerifyResult& v)
 {
 	std::string err;
@@ -194,7 +215,7 @@ VerifyResult VerifyDirectory(const std::string& dir, bool requireFolderName)
 		std::string rel = Str(it->path().lexically_relative(root));
 		std::replace(rel.begin(), rel.end(), '/', '\\');
 		const std::string low = Lower(rel);
-		if (low == "pcmod.json" || low == "mod.ini") continue;
+		if (low == "pcmod.json" || low == "mod.ini" || IsAuxPath(m, low)) continue;
 		std::string norm, why;
 		if (NormalisePath(rel, norm, why)) onDisk.emplace(norm, it->path());
 		else v.warnings.push_back(rel + ": not listed in pcmod.json (never served)");
@@ -211,6 +232,16 @@ VerifyResult VerifyDirectory(const std::string& dir, bool requireFolderName)
 	}
 	for (const auto& [norm, path] : onDisk)
 		if (!listed.count(norm)) v.warnings.push_back(Str(path.lexically_relative(root)) + ": not listed in pcmod.json (never served)");
+	if (m.HasAux()) {
+		s2::Files t;
+		auto rd = [&](const AuxFile& a, std::string& out) {
+			std::vector<uint8_t> b;
+			if (a.present && !ReadAll(Str(root / U8(a.path)), b)) v.errors.push_back(m.id + ": " + a.path + " is missing");
+			out.assign(b.begin(), b.end());
+		};
+		rd(m.exePatches, t.patches); rd(m.features, t.features); rd(m.rules, t.rules);
+		if (v.errors.empty()) LoadAux(v, t);
+	}
 	v.ok = v.errors.empty();
 	return v;
 }
@@ -247,8 +278,14 @@ VerifyResult VerifyZipBytes(const std::vector<uint8_t>& bytes)
 	std::map<std::string, const FileEntry*> listed;
 	for (const FileEntry& f : m.files) listed[f.key()] = &f;
 	std::set<std::string> found;
+	s2::Files auxText;
 	for (const auto& [rel, e] : files) {
 		if (rel == "pcmod.json" || Lower(rel) == "mod.ini") continue;
+		if (IsAuxPath(m, rel)) {
+			const std::string t(e->data.begin(), e->data.end());
+			(rel == m.exePatches.path ? auxText.patches : rel == m.features.path ? auxText.features : auxText.rules) = t;
+			continue;
+		}
 		std::string norm, bad;
 		if (!NormalisePath(rel, norm, bad)) { v.errors.push_back("zip: '" + rel + "' refused: " + bad); continue; }
 		auto it = listed.find(norm);
@@ -259,6 +296,7 @@ VerifyResult VerifyZipBytes(const std::vector<uint8_t>& bytes)
 		else if (Sha256Hex(e->data.data(), e->data.size()) != f.sha256) v.errors.push_back("zip: '" + rel + "': sha256 differs from the manifest");
 	}
 	for (const auto& [key, f] : listed) if (!found.count(key)) v.errors.push_back("zip: listed file '" + f->path + "' is missing");
+	if (v.errors.empty()) LoadAux(v, auxText);
 	v.ok = v.errors.empty();
 	return v;
 }
@@ -374,10 +412,10 @@ SessionResult ResolveSession(const std::string& exeSha256Hex, const std::vector<
 			s.notes.push_back(p->m.id + " " + p->m.version + ": not in the '" + mode + "' set (modes " + JoinModes(p->m.modes) + ")");
 			continue;
 		}
-		s.simOrder.push_back({p->m.id, p->m.version, p->priority, p->simDigest});
+		s.simOrder.push_back({p->m.id, p->m.version, p->priority, p->simDigest, p->m.schema});
 	}
 	if (!s.errors.empty()) return s;
-	s.digestHex = SessionDigestHex(exeSha256Hex, s.simOrder);
+	s.digestHex = SessionDigestHex(exeSha256Hex, s.simOrder, s2::MbaaccProfile().abiId);
 	s.ok = true;
 	return s;
 }

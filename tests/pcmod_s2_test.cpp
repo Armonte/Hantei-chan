@@ -3,6 +3,9 @@
 // against a SYNTHETIC PE32 image (no real MBAA.exe needed), the named refusals, and digest stability.
 #include "pcmod/pcmod_manifest.h"
 #include "pcmod/pcmod_schema2.h"
+#include "pcmod/pcmod_package.h"
+
+#include <filesystem>
 
 #include <cstdio>
 #include <cstring>
@@ -305,6 +308,37 @@ int main(int argc, char** argv)
 		CHECK_EQ(S::ParseFeatures(S::WriteFeaturesToml(fr), pf, fr2), "");
 		CHECK_EQ(S::ParseRules(S::WriteRulesToml(fr), pf, fr2), "");
 		CHECK_EQ(S::Canonical(fr2), S::Canonical(fr));
+	}
+
+	// ---- 5. Pack -> folder + zip -> VerifyDirectory / VerifyZip (MBAACC profile) ----
+	{
+		namespace fs = std::filesystem;
+		std::error_code ec;
+		const fs::path tmp = fs::temp_directory_path(ec) / "pcmod_s2_test_pack";
+		fs::remove_all(tmp, ec);
+		fs::create_directories(tmp / "src" / "data", ec);
+		{ std::ofstream f(tmp / "src" / "data" / "a.txt", std::ios::binary); f << "foo"; }
+		Manifest m = BaseManifest();
+		m.files.clear();
+		S::Files aux;
+		CHECK_EQ(S::AttachToManifest(m, GonpLike(), S::MbaaccProfile(), aux), "");
+		const PackResult r = Pack({ { "data\\a.txt", (tmp / "src" / "data" / "a.txt").u8string() } }, m, (tmp / "out").u8string(), true, &aux);
+		CHECK_EQ(r.error, "");
+		CHECK(r.ok && r.manifest.schema == 2);
+		const VerifyResult vd = VerifyDirectory(r.packageDir);
+		for (const auto& w : vd.warnings) std::printf("  warning: %s\n", w.c_str());
+		CHECK(vd.ok && vd.warnings.empty() && vd.s2.patches.size() == 3);
+		const VerifyResult vz = VerifyZip(r.zipPath);
+		for (const auto& e : vz.errors) std::printf("  zip error: %s\n", e.c_str());
+		CHECK(vz.ok && vz.simDigestHex == vd.simDigestHex && vz.digestHex == vd.digestHex);
+		Manifest packed = r.manifest;
+		packed.s2Canon = m.s2Canon;
+		CHECK(vd.simDigestHex == r.simDigestHex && vd.simDigestHex == PackageSimDigestHex(packed));
+		// tamper with patches.toml on disk: named refusal
+		{ std::ofstream f(fs::u8path(r.packageDir) / "patches.toml", std::ios::app | std::ios::binary); f << "\n"; }
+		const VerifyResult bad = VerifyDirectory(r.packageDir);
+		CHECK(!bad.ok && !bad.errors.empty() && bad.errors[0] == "gonpy: patches.toml differs from its manifest");
+		fs::remove_all(tmp, ec);
 	}
 
 	if (g_failures) { std::printf("pcmod_s2_test: %d failure(s)\n", g_failures); return 1; }
