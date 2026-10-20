@@ -18,9 +18,28 @@ determ_exe_sha256=0497a82c5c90c5d7b530e29ec9164c3c8f6153d7d98e639a36f898aeb7c004
 built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
 staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
-golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a
+golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_20261019
+golden_manifest_sha256=fca193965766db514007a3176eaa9125a0c4c923760d3462dd2d112fb393ebd2
+golden_rendered=2026-10-19 (determinism exe above, -j 8, twice; 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical but for the masked wall-clock durations)
 # The golden was re-rendered on 2026-10-18 after the environment drifted:
 # C:/games/rbo_run (a copy of the RBO install the RBO shots browse) had gone
 # missing, so the browser listed a different number of files. prepare_fixtures.py
 # now re-creates that path, and the golden was re-rendered from this same
 # determinism binary. No test was weakened: the change is a pinned fixture.
+# 2026-10-19 (P0 fix 1, coordinator ruling after the failed P0 gate audit): the
+# golden was re-rendered again, from this same determinism binary only, after
+# three environment fixes. Nothing about the renderer changed.
+#  1. C:/games/rbo_run was a WSL symlink, which the Windows exe cannot open, so
+#     every RBO shot browsed the C:/games root and drew its live "Files in games
+#     (N)" count (the 16 P0 gate FAILs). It is now a directory junction to
+#     C:/games/rbo (prepare_fixtures.py proves it through cmd.exe).
+#  2. The GOF1 shots browsed C:/games/gof1/run, a live run copy ("Files in run
+#     (N)"); they now browse work/render_parity/fixtures/gof1_run (hard links to
+#     the 5 game files).
+#  3. stage_mbaacc_bg01_{c,l,r}: MBAACC DXT stages are encoded at load by
+#     d3dx9_36 + a D3D9 HAL device and fall back to the builtin BC3 encoder when
+#     the device cannot be created, which depends on the machine's GPU state.
+#     run_corpus.sh puts a placeholder d3dx9_36.dll in every shard so every
+#     binary always takes the builtin encoder (the old golden had the d3dx9
+#     path; the step-5 drift, max 78 / 418319 px, is exactly the builtin one).
+# The previous golden (golden/<baseline_sha>, 2847 cases) is deleted.
