@@ -151,6 +151,24 @@ uint32_t WinVscToVk(uint32_t raw)
 {
 	return (uint32_t)MapVirtualKeyW(raw, MAPVK_VSC_TO_VK_EX);
 }
+
+// True when the active keyboard layout has AltGr: some character on it needs
+// Ctrl+Alt (VkKeyScanEx shift state 6). Cached per layout handle.
+bool LayoutHasAltGr()
+{
+	static HKL cached = nullptr;
+	static bool has = false;
+	const HKL hkl = GetKeyboardLayout(0);
+	if (hkl != cached) {
+		cached = hkl;
+		has = false;
+		for (WCHAR ch = 0x20; ch < 0x250 && !has; ch++) {
+			const SHORT r = VkKeyScanExW(ch, hkl);
+			if (r != -1 && (HIBYTE(r) & 6) == 6) has = true;
+		}
+	}
+	return has;
+}
 #endif
 
 }  // namespace
@@ -192,16 +210,29 @@ uint32_t VkFromKeyEvent(int sdlScancode, uint32_t keycode, uint16_t mod, uint16_
 #endif
 }
 
-uint32_t ChordModsFromKey(int sdlScancode, uint16_t mod)
+uint32_t ChordModsFromKeyLayout(int sdlScancode, uint16_t mod, bool altGrLayout)
 {
 	uint32_t m = 0;
 	if (mod & SDL_KMOD_CTRL) m |= kModCtrl;
 	if (mod & SDL_KMOD_SHIFT) m |= kModShift;
 	if (mod & SDL_KMOD_ALT) m |= kModAlt;
+	// AltGr on a layout that has it: Windows sends a fake left Ctrl with the
+	// right Alt (SDL drops that key, so the event's mod has RALT only), and
+	// GetKeyState(VK_CONTROL) saw it, so the chord was Ctrl+Alt.
+	if (altGrLayout && (mod & SDL_KMOD_RALT)) m |= kModCtrl;
 	// Shift + a keypad digit with NumLock on: the driver lifts Shift around the
 	// key (a fake Shift up / down), so WM_KEYDOWN saw VK_UP etc. with Shift up.
 	if (IsNumpadDigit(sdlScancode) && (mod & SDL_KMOD_NUM) && (mod & SDL_KMOD_SHIFT)) m &= ~kModShift;
 	return m;
+}
+
+uint32_t ChordModsFromKey(int sdlScancode, uint16_t mod)
+{
+#ifdef _WIN32
+	return ChordModsFromKeyLayout(sdlScancode, mod, LayoutHasAltGr());
+#else
+	return ChordModsFromKeyLayout(sdlScancode, mod, false);
+#endif
 }
 
 bool IsModifierOnlyVk(uint32_t vk)

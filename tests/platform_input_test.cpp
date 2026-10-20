@@ -136,6 +136,11 @@ int main()
 	CHECK_EQ(platform::ChordModsFromKey(SDL_SCANCODE_KP_8, SDL_KMOD_NUM | SDL_KMOD_LSHIFT), 0);
 	CHECK_EQ(platform::ChordModsFromKey(SDL_SCANCODE_KP_8, SDL_KMOD_LSHIFT), kModShift);   // NumLock off: Shift stays
 	CHECK_EQ(platform::ChordModsFromKey(SDL_SCANCODE_KP_MULTIPLY, SDL_KMOD_NUM | SDL_KMOD_LSHIFT), kModShift);
+	// AltGr: Ctrl+Alt on a layout with AltGr (the fake left Ctrl), plain Alt on one without; left Alt is always Alt
+	CHECK_EQ(platform::ChordModsFromKeyLayout(SDL_SCANCODE_Q, SDL_KMOD_RALT, true), kModCtrl | kModAlt);
+	CHECK_EQ(platform::ChordModsFromKeyLayout(SDL_SCANCODE_Q, SDL_KMOD_RALT, false), kModAlt);
+	CHECK_EQ(platform::ChordModsFromKeyLayout(SDL_SCANCODE_Q, SDL_KMOD_LALT, true), kModAlt);
+	CHECK_EQ(platform::ChordModsFromKeyLayout(SDL_SCANCODE_Q, SDL_KMOD_RALT | SDL_KMOD_LSHIFT, true), kModCtrl | kModAlt | kModShift);
 
 	// --- (4) the shortcut recorder skips bare modifiers, Alt and AltGr included ---
 	for (uint32_t vk : { 0x10u, 0x11u, 0x12u, 0xA0u, 0xA1u, 0xA2u, 0xA3u, 0xA4u, 0xA5u, 0x5Bu, 0x5Cu })
