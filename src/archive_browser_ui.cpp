@@ -53,6 +53,7 @@ bool g_focusFilter = false;
 bool g_listFocused = false;
 std::vector<int> g_injKeys;     // scripted key presses (ImGuiKey values), consumed by the list handler
 std::string g_injType;          // scripted type-to-search text
+static bool g_injFocus = false; // scripted: give the browser window ImGui focus at its next draw (ui-script `focus`)
 OpenRequest g_pending; bool g_havePending = false;
 const char *kTypeNames[] = { "Characters", "Character data", "Images", "Sprite banks", "Parts", "Scripts / data", "Audio", "Text", "Palettes", "3D models", "Archives", "Other", "Shared / effect data" };
 }
@@ -715,6 +716,7 @@ bool Draw(OpenRequest &req)
 	if (!show) return false;
 	if (st.sources.empty() && !st.lastBrowsed.empty()) { std::string e = OpenPath(st.lastBrowsed); (void)e; show = true; }   // restore the last browsed folder / archive
 	{ const ImGuiViewport *vp = ImGui::GetMainViewport(); ImGui::SetNextWindowPos(ImVec2(vp->WorkPos.x + 24, vp->WorkPos.y + 30), ImGuiCond_FirstUseEver); ImGui::SetNextWindowSize(ImVec2(std::min(1240.f, vp->WorkSize.x - 48.f), std::min(760.f, vp->WorkSize.y - 60.f)), ImGuiCond_FirstUseEver); }
+	if (g_injFocus) { ImGui::SetNextWindowFocus(); g_injFocus = false; }
 	if (!ImGui::Begin((std::string(T("Archive Browser", "\xe3\x82\xa2\xe3\x83\xbc\xe3\x82\xab\xe3\x82\xa4\xe3\x83\x96\xe3\x83\x96\xe3\x83\xa9\xe3\x82\xa6\xe3\x82\xb6")) + "###abrowser").c_str(), &show)) { ImGui::End(); return false; }
 	Toolbar(st);
 	if (ImGui::IsWindowFocused(ImGuiFocusedFlags_RootAndChildWindows) && ImGui::GetIO().KeyCtrl && ImGui::IsKeyPressed(ImGuiKey_F, false)) g_focusFilter = true;
@@ -802,6 +804,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 	}
 	if (cmd == "info") { char b[256]; snprintf(b, sizeof b, "sources=%zu sel=%d view=%zu cursor=%d selected=%zu type=%d status=%s", st.sources.size(), st.selSource, st.view.size(), st.cursor, st.sel.size(), st.typeFilter, st.status.c_str()); say(b); return false; }
 	if (cmd == "typeahead") { g_injType += arg; return true; }
+	if (cmd == "focus") { show = true; g_injFocus = true; return true; }   // ImGui focus on the browser window, as a click on it gives
 	if (cmd == "frame") { st.bankFrame = atoi(arg.c_str()); return true; }
 	if (cmd == "palette") { st.bankPalette = std::clamp(atoi(arg.c_str()), 0, 7); return true; }
 	if (cmd == "zoom") { if (arg == "fit") st.view2.fit = true; else { st.view2.fit = false; st.view2.zoom = (float)atof(arg.c_str()); st.view2.panX = st.view2.panY = 0; } return true; }

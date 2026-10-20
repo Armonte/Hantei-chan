@@ -36,6 +36,7 @@
 #include "png_writer.h"
 #include "project_manager.h"
 #include <imgui.h>
+#include <imgui_internal.h>   // GImGui->NavWindow (the textinput script line)
 #include "platform/viewports.h"
 #include "platform/platform.h"
 #include <SDL3/SDL.h>
@@ -360,7 +361,8 @@ static void RunUiScript(MainFrame &mf, const std::function<void(const std::strin
 			SDL_Window *focus = SDL_GetKeyboardFocus();
 			const std::string m = std::string("textinput main=") + (w && SDL_TextInputActive(w) ? "1" : "0") +
 			                      " want_text=" + (ImGui::GetIO().WantTextInput ? "1" : "0") +
-			                      " keyboard_focus=" + (!focus ? "none" : focus == w ? "main" : "other");
+			                      " keyboard_focus=" + (!focus ? "none" : focus == w ? "main" : "other") +
+			                      " imgui_focus=" + (GImGui && GImGui->NavWindow ? GImGui->NavWindow->Name : "none");
 			LogLine(m.c_str());
 			continue;
 		}
@@ -392,7 +394,7 @@ static void RunUiScript(MainFrame &mf, const std::function<void(const std::strin
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
 			if (lf) { fprintf(lf, "script line %zu '%s' failed: %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); }
 		}
-		if (cmd == "browse" || cmd == "source" || cmd == "select" || cmd == "type" || cmd == "filter" || cmd == "open" || cmd == "key") { waitFrames = 3; return; }   // let the UI process it
+		if (cmd == "browse" || cmd == "source" || cmd == "select" || cmd == "type" || cmd == "filter" || cmd == "open" || cmd == "key" || cmd == "focus") { waitFrames = 3; return; }   // let the UI process it
 	}
 	done = true; gAppQuit = true;
 }
