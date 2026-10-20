@@ -1225,7 +1225,15 @@ endfunction()
 fb_data_exists(_has "C:/games/mbaacc/data/akiha.cg")
 if(_has)
 	add_test(NAME cgm_project_refs_mbaacc COMMAND cgmtool project-refs-check C:/games/mbaacc/data/akiha.cg --tmp cgm_t1)
-	add_test(NAME cgm_folder_mbaacc COMMAND cgmtool folder-check C:/games/mbaacc/data/neco.cg --tmp cgm_t2)
+	# folder-check exports, imports and rebuilds whole banks in its --tmp tree. Run from a folder on C: so that
+	# tree is not written through \\wsl.localhost (the build folder is on ext4): the 9P round trips made the
+	# test take 250-1500 s. The folder is created by the setup test below.
+	set(HC_CTEST_WORKDIR "/mnt/c/dev/hantei-chan/work/ctest" CACHE PATH "Windows-side working folder for the ctest entries that write large scratch trees")
+	add_test(NAME cgm_ctest_workdir COMMAND ${CMAKE_COMMAND} -E make_directory "${HC_CTEST_WORKDIR}")
+	set_tests_properties(cgm_ctest_workdir PROPERTIES FIXTURES_SETUP cgm_ctest_workdir)
+	add_test(NAME cgm_folder_mbaacc COMMAND cgmtool folder-check C:/games/mbaacc/data/neco.cg --tmp cgm_t2
+		WORKING_DIRECTORY "${HC_CTEST_WORKDIR}")
+	set_tests_properties(cgm_folder_mbaacc PROPERTIES FIXTURES_REQUIRED cgm_ctest_workdir)
 	add_test(NAME cgm_cc_palettes COMMAND cgmtool cc-check C:/games/mbaacc/data/arc.pal C:/games/mbaacc/data/akiha.pal)
 endif()
 fb_data_exists(_has "C:/dev/hantei-chan/gamedata/mbtl/data/chr000/chr000.cg")

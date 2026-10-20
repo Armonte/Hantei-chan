@@ -438,10 +438,20 @@ def build_stages(out_dir, log):
     return n
 
 
+# Browsed folders that change under other tools are swapped for a fixed copy
+# that prepare_fixtures.py builds: the archive browser draws the browsed
+# folder's file count, so a live folder would make the shot drift.
+# C:\games\gof1\run is the GOF1 run copy, where PovertyCaster writes its logs.
+FIXED_FOLDERS = {
+    "browse C:\\games\\gof1\\run": "browse C:\\dev\\hantei-chan\\work\\render_parity\\fixtures\\gof1_run",
+}
+
+
 def build_ui(out_dir, log):
     """Area D: copy every committed shots script into corpus/ui, with every
     capture re-pointed at OUT/<sub>_<script>_<name>.png so a case name is unique
-    across scripts (run_corpus.sh rewrites OUT/ to the run folder)."""
+    across scripts (run_corpus.sh rewrites OUT/ to the run folder), and every
+    FIXED_FOLDERS browse re-pointed at its fixture."""
     src_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "ui")
     n = 0
     for sub in ("shots", "shots_cgm", "shots_layout", "s8"):
@@ -461,6 +471,8 @@ def build_ui(out_dir, log):
                     base = re.sub(r'\.png$', '', base)
                     base = re.sub(r'[^0-9A-Za-z_.-]', '_', base)
                     line = "%sOUT/%s_%s_%s.png" % (m.group(1), sub, stem, base)
+                if line.strip() in FIXED_FOLDERS:
+                    line = line.replace(line.strip(), FIXED_FOLDERS[line.strip()])
                 out_lines.append(line)
             raw = "\n".join(out_lines) + "\n"
             out = os.path.join(out_dir, "ui", "%s__%s" % (sub, name))

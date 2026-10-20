@@ -10,14 +10,22 @@ one captured PNG, so a single --batch file that holds several shots is treated
 as that many cases (the manifest row is per shot, not per file).
 
 Classification:
-  PASS     byte-identical PNG in both runs.
+  PASS     byte-identical PNG in both runs (PLAN.md 4.5: byte-identical, nothing
+           else), and both processes that wrote it exited 0.
   ALLOWED  differs, but matches an allowlist.tsv row whose bounds hold.
-  FAIL     everything else, including a case that is missing on either side.
+  FAIL     everything else: a case missing on either side, a case whose
+           process exited non-zero or timed out (manifest `exit`, 124 =
+           timeout) on either side, a PNG that re-encodes the same pixels with
+           different bytes (reported as such, never a PASS), a size change.
 
-The comparison is always byte equality first (sha256). Only a differing case is
-decoded, and then compared as canonical RGBA8 plus canonical encoded bytes, so
-that a PNG that re-encodes the same pixels is still a PASS. A case is a FAIL
-when the decoded sizes disagree (a size change is never allowed).
+Only a differing PNG is decoded, to measure the difference (max |d|, pixels,
+bounding box) for the report, the heatmap and the allowlist bounds.
+
+Non-PNG outputs (area E: the export's <name>.json manifest and
+export_result.txt) are manifest rows too, with w = h = 0. They are compared by
+sha256 of the file bytes after masking the wall-clock durations the exporter
+writes, and nothing else: the "timing_ms" object of the JSON and the
+"in N ms." of export_result.txt (WALLCLOCK below). Every other byte must match.
 
 Exit code 1 on any FAIL.
 """
@@ -25,6 +33,7 @@ import argparse
 import fnmatch
 import hashlib
 import os
+import re
 import sys
 from functools import lru_cache
 
@@ -88,6 +97,26 @@ def decode_rgba(path):
     im = Image.open(path)
     im.load()
     return np.asarray(im.convert("RGBA"), dtype=np.int16)
+
+
+# The only bytes of a non-PNG output that may differ between two runs: measured
+# wall-clock durations, which no renderer controls. Each pattern is replaced by
+# a fixed token before hashing.
+WALLCLOCK = (
+    (re.compile(rb'"timing_ms": \{[^{}]*\}'), b'"timing_ms": {}'),   # <name>.json
+    (re.compile(rb' in [0-9]+ ms\.'), b' in N ms.'),                   # export_result.txt
+)
+
+
+def masked_sha(path):
+    data = open(path, "rb").read()
+    for pat, rep in WALLCLOCK:
+        data = pat.sub(rep, data)
+    return hashlib.sha256(data).hexdigest()
+
+
+def is_png(path):
+    return path.lower().endswith(".png")
 
 
 # ---------------------------------------------------------------- allowlist
@@ -174,8 +203,10 @@ def compare(golden_path, run_path, allow, case, backend):
         return "PASS", {"max_abs": 0, "pixels": 0, "pct": 0.0}
     rsha, rw, rh = canonical_bytes(run_path)
     if gsha == rsha:
-        return "PASS", {"max_abs": 0, "pixels": 0, "pct": 0.0,
-                        "note": "re-encoded, same pixels"}
+        # PLAN.md 4.5: PASS is a byte-identical PNG. The same pixels in other
+        # bytes means the encoder or its settings changed: report it, fail it.
+        return "FAIL", {"max_abs": 0, "pixels": 0, "pct": 0.0,
+                        "note": "re-encoded, same pixels, different PNG bytes"}
     if (gw, gh) != (rw, rh):
         return "FAIL", {"max_abs": 255, "pixels": gw * gh, "pct": 100.0,
                         "note": "size %dx%d vs %dx%d" % (gw, gh, rw, rh)}
@@ -233,6 +264,14 @@ def write_heat(golden_path, run_path, out_path, d):
 
 # ---------------------------------------------------------------- reporting
 
+def exit_text(code):
+    if code == 124:
+        return "124 (timeout)"
+    if code < 0:
+        return "%d (no producing process recorded)" % code
+    return str(code)
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("golden")
@@ -253,7 +292,7 @@ def main(argv=None):
     if args.only:
         cases = [c for c in cases if fnmatch.fnmatchcase(c, args.only)]
 
-    counts = {"PASS": 0, "ALLOWED": 0, "FAIL": 0, "MISSING": 0}
+    counts = {"PASS": 0, "ALLOWED": 0, "FAIL": 0, "MISSING": 0, "EXIT": 0}
     fails = []
     allowed = []
     for case in cases:
@@ -270,7 +309,23 @@ def main(argv=None):
         if not os.path.exists(gp) or not os.path.exists(rp):
             counts["FAIL"] += 1
             counts["MISSING"] += 1
-            fails.append((case, {"max_abs": 0, "pixels": 0, "pct": 0.0, "note": "no PNG file"}))
+            fails.append((case, {"max_abs": 0, "pixels": 0, "pct": 0.0, "note": "no output file"}))
+            continue
+        if g.exit != 0 or r.exit != 0:
+            # The process that wrote this case failed or timed out: what it left
+            # behind is not a valid render, whatever its bytes are.
+            counts["FAIL"] += 1
+            counts["EXIT"] += 1
+            fails.append((case, {"max_abs": 0, "pixels": 0, "pct": 0.0,
+                                 "note": "exit golden %s / run %s" % (exit_text(g.exit), exit_text(r.exit))}))
+            continue
+        if not is_png(gp):
+            if masked_sha(gp) == masked_sha(rp):
+                counts["PASS"] += 1
+            else:
+                counts["FAIL"] += 1
+                fails.append((case, {"max_abs": 0, "pixels": 0, "pct": 0.0,
+                                     "note": "non-PNG output differs (sha256, wall-clock fields masked)"}))
             continue
         cls, d = compare(gp, rp, allow, case, args.backend)
         counts[cls] += 1
@@ -281,7 +336,7 @@ def main(argv=None):
         elif cls == "ALLOWED":
             allowed.append((case, d))
 
-    total = sum(counts.values())
+    total = counts["PASS"] + counts["ALLOWED"] + counts["FAIL"]   # MISSING / EXIT are kinds of FAIL
     if args.report:
         with open(args.report, "w", encoding="utf-8") as f:
             f.write("# render parity: %s\n\n" % args.run)
@@ -291,6 +346,7 @@ def main(argv=None):
                 f.write("| %s | %d |\n" % (k, counts[k]))
             f.write("| total | %d |\n\n" % total)
             f.write("missing on one side: %d\n\n" % counts["MISSING"])
+            f.write("process exit non-zero or timed out: %d\n\n" % counts["EXIT"])
             if allowed:
                 f.write("## Allowed cases\n\n| case | class | max abs | pixels | % |\n|---|---|---|---|---|\n")
                 for case, d in allowed:
@@ -307,8 +363,9 @@ def main(argv=None):
                 f.write("\n")
 
     if not args.quiet:
-        print("PASS %d / ALLOWED %d / FAIL %d (total %d, missing %d)" % (
-            counts["PASS"], counts["ALLOWED"], counts["FAIL"], total, counts["MISSING"]))
+        print("PASS %d / ALLOWED %d / FAIL %d (total %d, missing %d, bad exit %d)" % (
+            counts["PASS"], counts["ALLOWED"], counts["FAIL"], total,
+            counts["MISSING"], counts["EXIT"]))
         for case, d in fails[:20]:
             print("  FAIL %-64s max %3d px %8d %6.3f%% %s" % (
                 case[:64], d["max_abs"], d["pixels"], d["pct"], d.get("note", "")))
