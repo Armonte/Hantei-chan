@@ -4,9 +4,12 @@ render_parity_tools). No GPU, no game data: every PNG is generated here.
 
     python3 tools/render_parity/test_diff.py
 
-Covered: identical, one-pixel diff, re-encoded identical pixels, size mismatch,
-missing case, an allowlist entry inside/outside its bounds, region=edges, and
-the allowlist guard that rejects a glob covering a whole area.
+Covered: identical, one-pixel diff, re-encoded identical pixels (a FAIL: PASS
+is byte-identical only), size mismatch, missing case, an allowlist entry
+inside/outside its bounds, region=edges, the allowlist guard that rejects a glob
+covering a whole area, a non-zero / timed-out / unknown process exit on either
+side, and non-PNG export outputs compared by sha with only the wall-clock
+durations masked.
 """
 import os
 import shutil
@@ -32,13 +35,24 @@ def check(cond, what):
         FAILS.append(what)
 
 
-def make_run(root, name, cases, round_no=1):
-    """cases: {case: ndarray|None}. None = manifest row whose PNG is missing."""
+def make_run(root, name, cases, round_no=1, exits=None):
+    """cases: {case: ndarray|bytes|None}. None = manifest row whose PNG is
+    missing; bytes = a non-PNG output written verbatim under that case name.
+    exits: {case: exit code} for the manifest's exit column (default 0)."""
+    exits = exits or {}
     os.makedirs(os.path.join(root, "shots"), exist_ok=True)
     rows = []
     for case, px in cases.items():
         if px is None:
             rows.append((case, "shots/%s.png" % case, "0" * 64, 0, 0, 1))
+            continue
+        if isinstance(px, bytes):
+            import hashlib
+            rel = "shots/%s" % case
+            path = os.path.join(root, rel)
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            open(path, "wb").write(px)
+            rows.append((case, rel, hashlib.sha256(px).hexdigest(), 0, 0, exits.get(case, 0)))
             continue
         h, w = px.shape[:2]
         rel = "shots/%s.png" % case
@@ -46,7 +60,7 @@ def make_run(root, name, cases, round_no=1):
         Image.fromarray(px.astype(np.uint8), "RGBA").save(path)
         import hashlib
         sha = hashlib.sha256(open(path, "rb").read()).hexdigest()
-        rows.append((case, rel, sha, w, h, 0))
+        rows.append((case, rel, sha, w, h, exits.get(case, 0)))
     with open(os.path.join(root, "manifest.tsv"), "w") as f:
         f.write("case\tpng\tsha256\tw\th\texit\tround\n")
         for case, rel, sha, w, h, rc in rows:
@@ -146,8 +160,9 @@ def main():
         txt = open(os.path.join(r9, "manifest.tsv")).read().splitlines()
         txt[1] = "\t".join(txt[1].split("\t")[:2] + [sha] + txt[1].split("\t")[3:])
         open(os.path.join(r9, "manifest.tsv"), "w").write("\n".join(txt) + "\n")
-        rc, _ = run_diff(g9, r9)
-        check(rc == 0, "a re-encoded PNG with the same pixels passes")
+        rc, out = run_diff(g9, r9, "--report", os.path.join(tmp, "r9.md"))
+        check(rc == 1, "a re-encoded PNG with the same pixels fails (PASS is byte-identical only)")
+        check("re-encoded" in open(os.path.join(tmp, "r9.md")).read(), "the re-encode is named in the report")
 
         # 10. the allowlist guard rejects a glob covering a whole area
         with open(allow, "w") as f:
@@ -168,6 +183,31 @@ def main():
         # 12. diff.py golden golden -> 100% PASS
         rc, _ = run_diff(g9, g9)
         check(rc == 0, "diff.py <golden> <golden> is 100% PASS")
+
+        # 13. a non-zero process exit fails the case even with identical bytes,
+        #     on either side; 124 is the runner's timeout, -1 an unclaimed file
+        for side, code in (("run", 1), ("run", 124), ("golden", 3), ("run", -1)):
+            make_run(g, "g", {"case_same": same}, exits={"case_same": code} if side == "golden" else None)
+            make_run(r, "r", {"case_same": same.copy()}, exits={"case_same": code} if side == "run" else None)
+            rc, _ = run_diff(g, r)
+            check(rc == 1, "exit %d on the %s side fails an identical case" % (code, side))
+
+        # 14. non-PNG export outputs: equal except the wall-clock durations ->
+        #     PASS; any other byte differing -> FAIL
+        js = b'{\n  "pattern": 10,\n  "timing_ms": {\n    "analysis": %s,\n    "png_encode": 2.5\n  },\n  "tool": "x"\n}\n'
+        res = b'OK\nExported 1 PNG (0 skipped) in %s ms.\n'
+        make_run(g, "g", {"e/a.json": js % b"5.576", "e/export_result.txt": res % b"40"})
+        make_run(r, "r", {"e/a.json": js % b"22.336", "e/export_result.txt": res % b"57"})
+        rc, out = run_diff(g, r)
+        check(rc == 0, "non-PNG outputs that differ only in wall-clock durations pass")
+        make_run(r, "r", {"e/a.json": (js % b"5.576").replace(b'"pattern": 10', b'"pattern": 11'),
+                          "e/export_result.txt": res % b"40"})
+        rc, _ = run_diff(g, r)
+        check(rc == 1, "a non-PNG output with a changed field fails")
+        make_run(r, "r", {"e/a.json": js % b"5.576",
+                          "e/export_result.txt": (res % b"40").replace(b"1 PNG", b"2 PNG")})
+        rc, _ = run_diff(g, r)
+        check(rc == 1, "a non-PNG output with a changed count fails")
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
     if FAILS:

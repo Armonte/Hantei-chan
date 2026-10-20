@@ -18,6 +18,11 @@ Three of the committed shot scripts work on fixtures they also write back:
 * `cgm_smoke.sh` also pre-exports `work/ab_s45/fx/plain` (a cgtool export with
   one picture recoloured), which `cgm_4_folders` imports.
 
+The browsed game folders have to be fixed too (the archive browser shows
+their file counts): `C:/games/rbo_run` is a directory junction to the RBO
+install, and the GOF1 shots browse `work/render_parity/fixtures/gof1_run`
+(hard links to the game files) instead of the live `C:/games/gof1/run`.
+
 The read-only PNG inputs (`work/pacnyx/*.png`, `work/texundo/*.png`) are inputs
 only; they are checked for existence and never rewritten.
 """
@@ -29,6 +34,51 @@ import sys
 
 GAMEDATA = "/mnt/c/dev/hantei-chan/gamedata"
 MBAACC = "/mnt/c/games/mbaacc"
+
+
+GOF1_FILES = ("gof.exe", "gof_00.p", "gof_01.p", "gof_02.p", "gof_03.p")
+
+
+def winpath(p):
+    """/mnt/c/a/b -> C:\\a\\b, also for a path that does not exist yet."""
+    assert p.startswith("/mnt/c/"), p
+    return "C:\\" + p[len("/mnt/c/"):].replace("/", "\\")
+
+
+def win_cmd(*args):
+    # cmd.exe refuses a \\wsl.localhost working folder, so run it from C:.
+    return subprocess.run(["cmd.exe", "/c"] + list(args), cwd="/mnt/c", capture_output=True, text=True)
+
+
+def win_sees(path):
+    """True when the Windows side can open <path> (a WSL symlink on DrvFs
+    is visible to Linux but not to the exe)."""
+    r = win_cmd("if", "exist", winpath(path), "(echo", "yes)", "else", "(echo", "no)")
+    return r.stdout.strip().endswith("yes")
+
+
+def ensure_junction(link, target, probe):
+    """Make <link> a Windows directory junction to <target> and prove the exe's
+    side resolves it by opening <link>\\<probe> through cmd.exe."""
+    wl, wt = winpath(link), winpath(target)
+    probe_path = wl + "\\" + probe
+    if win_cmd("if", "exist", probe_path, "(echo", "yes)").stdout.strip() == "yes":
+        say("%s is a Windows-visible link to %s" % (wl, wt))
+        return True
+    if os.path.lexists(link):
+        if not os.path.islink(link):
+            print("fixtures: %s exists and is not a link; not touching it" % link, file=sys.stderr)
+            return False
+        os.unlink(link)   # the WSL symlink only, never the target
+    r = win_cmd("mklink", "/J", wl, wt)
+    if r.returncode != 0:
+        print("fixtures: mklink /J %s %s failed: %s%s" % (wl, wt, r.stdout, r.stderr), file=sys.stderr)
+        return False
+    if win_cmd("if", "exist", probe_path, "(echo", "yes)").stdout.strip() != "yes":
+        print("fixtures: %s still not visible from Windows" % probe_path, file=sys.stderr)
+        return False
+    say("%s -> %s (junction)" % (wl, wt))
+    return True
 
 
 def say(what):
@@ -114,18 +164,34 @@ def main(argv=None):
     else:
         print("fixtures: cgmtool.exe or chr000.cg missing, 'plain' not rebuilt", file=sys.stderr)
 
-    # ---- /mnt/c/games/rbo_run: the RBO shots browse it. It was a copy of the
-    # install at capture time and later went missing, so the browser listed a
-    # different number of entries. Point it at the install again (a symlink),
-    # which is what the golden's file counts came from.
-    rbo_link = '/mnt/c/games/rbo_run'
-    rbo_src = '/mnt/c/games/rbo'
-    if os.path.isdir(rbo_src) and not os.path.exists(rbo_link):
-        try:
-            os.symlink(rbo_src, rbo_link)
-            say('C:/games/rbo_run -> C:/games/rbo')
-        except OSError as e:
-            print('fixtures: could not link rbo_run: %s' % e, file=sys.stderr)
+    # ---- C:/games/rbo_run: the RBO shots browse it. It has to be something
+    # the Windows exe can traverse: a WSL symlink (what this script made until
+    # 2026-10-19) is an LX reparse point that Windows cannot open, so every RBO
+    # shot showed the C:/games root and its live "Files in games (N)" count
+    # instead of RBO. A directory junction is resolved by Windows itself. The
+    # RBO browser lists DATA's top-level files only (non-recursive), which do
+    # not change; the live folders next to it (pcdev, logs) are never listed.
+    if not ensure_junction("/mnt/c/games/rbo_run", "/mnt/c/games/rbo", "DATA\\Update01.PAC"):
+        return 1
+
+    # ---- the GOF1 shots (04_ex3_image, 08_gof1_character_view) browse a
+    # fixed folder instead of C:/games/gof1/run: that folder is the live run
+    # copy (PovertyCaster logs and screenshots land there), and the browser
+    # shows its file count ("Files in run (N)"). The fixture holds NTFS hard
+    # links to the five game files only, so the listing is the same every run
+    # and no game data is copied.
+    gof1 = os.path.join(work, "render_parity/fixtures/gof1_run")
+    fresh_dir(gof1)
+    for name in GOF1_FILES:
+        src = os.path.join("/mnt/c/games/gof1/run", name)
+        if not os.path.exists(src):
+            print("fixtures: missing %s" % src, file=sys.stderr)
+            return 1
+        os.link(src, os.path.join(gof1, name))
+    if not win_sees(os.path.join(gof1, "gof_03.p")):
+        print("fixtures: Windows cannot see %s" % gof1, file=sys.stderr)
+        return 1
+    say("work/render_parity/fixtures/gof1_run <- hard links to %s" % ", ".join(GOF1_FILES))
 
     # ---- read-only PNG inputs the scripts import --------------------------
     needed = [

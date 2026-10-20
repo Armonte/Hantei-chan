@@ -24,5 +24,6 @@ RUN="$RENDER_ROOT/runs/smoke_$(date +%Y%m%d_%H%M%S)"
 bash "$ROOT/tools/render_parity/run_corpus.sh" "$EXE_DIR" "$RUN" --force --only smoke >/dev/null 2>&1
 python3 "$ROOT/tools/render_parity/diff.py" "$GOLDEN" "$RUN"
 rc=$?
-[ $rc -eq 0 ] || echo "render_parity: see $RUN" >&2
+# A passing run has nothing left to look at: drop it (C: is nearly full).
+if [ $rc -eq 0 ]; then rm -rf "$RUN"; else echo "render_parity: see $RUN" >&2; fi
 exit $rc

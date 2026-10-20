@@ -1,5 +1,5 @@
 # GOF1: EX3 (byte-pair compressed BMP) previewed without extracting
-browse C:\games\gof1\run
+browse C:\dev\hantei-chan\work\render_parity\fixtures\gof1_run
 waitidle
 type Images
 filter .ex3

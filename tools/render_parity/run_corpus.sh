@@ -5,7 +5,11 @@
 # Renders the committed corpus (tools/render_parity/corpus/) with one process per
 # file, headless, and writes <out-dir>/manifest.tsv:
 #     case  png  sha256  w  h  exit  round
-# One row per captured PNG (= one corpus case). Each .batch is run with
+# One row per captured PNG (= one corpus case), plus one row per non-PNG file an
+# export writes (w = h = 0; diff.py compares those by sha). `exit` is the exit
+# code of the process that wrote the file (124 = killed by the timeout), taken
+# from the output paths each corpus file names (<status>.outputs); a file no
+# process claims gets -1, which diff.py fails. Each .batch is run with
 # --headless --batch; each corpus/ui/*.txt with --headless --ui-script. The
 # scratch folder on C: holds the exe, res/ and the rewritten scripts, the way
 # tools/ui/ab_shot.sh does it. Runs resume: a file whose .status says done is
@@ -78,6 +82,17 @@ setup_shard() {   # <k>
 	# and archives"). A run would otherwise show whatever the previous run left,
 	# so the file starts from a fixed state (PLAN.md 4.3).
 	printf '[browser]\nThumbs=1\n' > "$W/han2_settings.ini"
+	# MBAACC DXT stages (bg01 ...) compress their bank to DXT5 at load with the
+	# in-process D3DX9 encoder (d3dx9_36.dll + a D3D9 HAL device,
+	# src/background/bg_gametex.cpp), and fall back to the builtin BC3 encoder
+	# when that device cannot be created. Which one runs depends on the machine's
+	# GPU state at that moment, not on the build: on 2026-10-19 the golden binary
+	# itself rendered stage_mbaacc_bg01_{c,l,r} with the builtin encoder
+	# (max |d| 78, 418319 px, 45.39 % vs the golden). The exe directory comes
+	# first in the DLL search order, so this placeholder makes LoadLibrary fail
+	# the same way every time and every binary uses the builtin encoder (PLAN.md
+	# 4.3: pin the cause, not the golden).
+	printf 'render parity: not a DLL; pins the builtin BC3 encoder (run_corpus.sh)\n' > "$W/d3dx9_36.dll"
 }
 
 win() { wslpath -w "$1"; }
@@ -144,6 +159,10 @@ run_file() {   # <corpus-file> <kind> <shard> [<case-base>]
 		( cd "$W" && timeout "$TIMEOUT" ./gonptechan.exe "${RUN_ARGS[@]}" "${extra[@]}" "${arg[@]}" "$(win "$W/$base.run")" </dev/null >"$W/$base.run.log" 2>&1 )
 	fi
 	local rc=$?
+	# The outputs this process was asked to write (capture / export paths and
+	# --export-png folders), relative to the shot folder: the manifest gives
+	# every file under them this process's exit code.
+	grep -o "$SHOTS_WSL/[^ ;\"]*" "$W/$base.run" | sed "s#^$SHOTS_WSL/##" | sort -u > "${st%.status}.outputs"
 	printf 'done %d\n' "$rc" > "$st"
 	echo "== $case_base exit $rc"
 	return 0
@@ -221,31 +240,64 @@ wait
 # The .status files are the authority on failures (a shard log also records them)
 while IFS= read -r st; do grep -q '^done 0$' "$st" || fail=1; done < <(find "$OUT" -maxdepth 1 -name '*.status')
 
-# manifest: every PNG under the shot folder, one case per file
+# manifest: every file under the shot folder, one case per file
 python3 - "$OUT" "$ROUND" <<'PY'
-import hashlib, os, struct, sys
+import glob, hashlib, os, struct, sys
 out, rnd = sys.argv[1], sys.argv[2]
 shots = os.path.join(out, "shots")
+# output path (relative to shots/) -> exit code of the process that wrote it
+claims = {}
+for st in glob.glob(os.path.join(out, "*.status")):
+    words = open(st).read().split()
+    rc = int(words[1]) if len(words) > 1 and words[0] == "done" else -1
+    o = st[:-len(".status")] + ".outputs"
+    if not os.path.exists(o):
+        continue
+    for rel in open(o).read().split():
+        rel = rel.rstrip("/")
+        claims[rel] = max(claims.get(rel, 0), rc) if rc >= 0 else rc
+def exit_of(rel):
+    # the exact file, else the longest claimed folder above it (--export-png)
+    p = rel
+    while p:
+        if p in claims:
+            return claims[p]
+        p = p.rsplit("/", 1)[0] if "/" in p else ""
+    return -1
 rows = []
 for dirpath, _, names in os.walk(shots):
     for n in sorted(names):
-        if not n.endswith(".png"):
-            continue
         p = os.path.join(dirpath, n)
         rel = os.path.relpath(p, out).replace(os.sep, "/")
-        case = rel[len("shots/"):-4] if rel.startswith("shots/") else rel[:-4]
+        inner = rel[len("shots/"):]
         h = hashlib.sha256(open(p, "rb").read()).hexdigest()
-        with open(p, "rb") as f:
-            head = f.read(24)
-        w, ht = struct.unpack(">II", head[16:24])
-        rows.append((case, rel, h, w, ht, 0, rnd))
+        if n.endswith(".png"):
+            case = inner[:-4]
+            with open(p, "rb") as f:
+                head = f.read(24)
+            w, ht = struct.unpack(">II", head[16:24])
+        else:
+            case, w, ht = inner, 0, 0
+        rows.append((case, rel, h, w, ht, exit_of(inner), rnd))
 rows.sort()
 path = os.path.join(out, "manifest.tsv")
 with open(path, "w", encoding="utf-8") as f:
     f.write("case\tpng\tsha256\tw\th\texit\tround\n")
     for r in rows:
         f.write("%s\t%s\t%s\t%d\t%d\t%d\t%s\n" % r)
-print("manifest: %d cases -> %s" % (len(rows), path))
+bad = sum(1 for r in rows if r[5] != 0)
+print("manifest: %d cases (%d non-PNG, %d with a non-zero or unknown exit) -> %s" % (
+    len(rows), sum(1 for r in rows if r[3] == 0), bad, path))
 PY
+
+# Keep the logs, drop the scratch (shards, exe copies, rewritten scripts): a
+# full run's scratch is hundreds of MB on a nearly full C:.
+mkdir -p "$OUT/logs"
+for k in $(seq 0 $((JOBS - 1))); do
+	cp "$ROOT/shard$k.log" "$OUT/logs/" 2>/dev/null || true
+	mkdir -p "$OUT/logs/shard$k"
+	cp "$ROOT/shard$k"/*.run.log "$OUT/logs/shard$k/" 2>/dev/null || true
+done
+rm -rf "$ROOT"
 
 exit $fail

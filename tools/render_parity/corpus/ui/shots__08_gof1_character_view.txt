@@ -1,4 +1,4 @@
-browse C:\games\gof1\run
+browse C:\dev\hantei-chan\work\render_parity\fixtures\gof1_run
 waitidle
 select AKIKO.DAT
 waitidle
