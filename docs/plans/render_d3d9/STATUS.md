@@ -108,9 +108,19 @@ of the affected areas, byte-identical.
 |---|---|---|---|---|
 | H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
+| P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl`, report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
 | ctest | **PASS** | `build/ctest -j6` | 100/100 (93 before the HLSL/FX/LINUX merges), incl. `render_parity` 60/60, `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*`, `portable_*` | 2026-10-19 |
 
 ## BLOCKED
+
+- **Gate P0 (2026-10-19, `a5862c9`): needs the coordinator's golden decision.**
+  16 area-D shots show the archive browser's live "Files in games" count of
+  C:/games, which other agents change; the golden binary renders them the same
+  as this build today (30/30), so no code change can make them match the
+  golden. Options (mailbox 14:20): re-render the golden from the determinism
+  binary, or point those shots at a pinned folder. Also open: ctest
+  `cgm_folder_mbaacc` now needs ~1500 s alone and times out at the 300 s
+  ctest timeout.
 
 ## Phase P0: SDL3 platform, GL kept (PLAN.md 6 P0)
 
@@ -223,7 +233,23 @@ of the affected areas, byte-identical.
       of step 5 PASS again. ctest at `-j8`: 99/100, `cgm_folder_mbaacc`
       timed out at 300 s under that load; alone it passes (659 s).
 
-**Gate P0: parity and ctest PASS.**
+**Gate P0 run, 2026-10-19 at `a5862c9`: FAIL.** Run `runs/20261019_a5862c9_gl`
+(`--renderer gl`, `-j 8`, load average 45-112 from other agents), diffed against
+the golden with the committed (header-only) allowlist, report
+`runs/p0_gate_report.md`. Everything this gate asks for passes except two items,
+and the gate fails on them:
+
+| gate item | result | evidence |
+|---|---|---|
+| corpus A, B, C, E byte-identical | **PASS** | A 2459 (incl. smoke 60, mbac 12), B 10, C 236, E 20: 2725/2725 PASS |
+| corpus D byte-identical or `AA` | **FAIL** | D 122 cases: 106 PASS / 0 ALLOWED / **16 FAIL**. The 16 are the same archive-browser "Files in games" shots as steps 5 and 8 (max abs 193, 114 px = 0.012 % each, now 38956 -> 38947 files in C:/games). Not a rendering difference and not `AA`, so no allowlist entry. The golden binary (`baseline_bin/<BASELINE>_det`) re-run now on the 7 affected ui scripts (30 cases) is byte-identical to this build 30/30 (`runs/p0_gate_env_check.md`) and differs from the golden on the same 16. Golden NOT changed: the coordinator's decision from the 14:20 mailbox entry (re-render the golden, or pin the browsed folder) is still open, and the gate cannot pass without it. |
+| detached windows open, render, take shortcuts, capture | **PASS** | `tools/render_parity/detach_check.sh`: key run `view_onion_enabled` 1 in detached host 1 with focus, control 0; both detached captures 1130x672, 1727 colours; the control capture is byte-identical to the golden binary's (`render_parity/detach_check_baseline/control_win_1.png`); the key capture differs from the golden binary's by 78 px in an 11x11 box (the hovered resize grip under the real desktop cursor, as at step 5) |
+| drag-drop opens files | **PASS** | new `tools/render_parity/drop_check.sh` (commits `6dc271b`, `a5862c9`): `--post-drop C:\games\mbaacc\data\akiha.txt` posts the shell's `WM_DROPFILES` to the app's own main window (no desktop input); SDL turns it into `SDL_EVENT_DROP_FILE`. Visible run: `views 1`, `active_file C:\games\mbaacc\data\akiha.txt`, main capture 1884x961 with akiha drawn; control: `views 0` |
+| every `tools/ui/shots*/` script run visibly once | **PASS** | new `tools/render_parity/visible_sweep.sh` (`AB_VISIBLE=1`, in-app capture only): shots 24, shots_cgm 4, shots_layout 7, plus s8 4 = 39/39 exit 0, 122/122 captures written (`render_parity/visible_sweep/sweep.tsv`). The scripts' own "failed" lines (the RBO `select ACOLYTE_F.DT2` entry is gone from the browsed folder, `viewpan` is not a command, `source Update01`, `layer front`) are identical in the golden binary's run of the same scripts (18 lines, same sorted md5), so pre-existing script staleness, not P0 |
+| ctest green | **FAIL** | full `ctest -j8 --timeout 300` twice. Run 1 (during the corpus diff, load 60-110): 97/100, `texsrc_unit` and `texsrc_rbo_sheets` failed once (output lost; both pass alone and in run 2) and `cgm_folder_mbaacc` timed out. Run 2 (`--output-on-failure`, load ~60): 99/100, `cgm_folder_mbaacc` timed out at 300 s. Alone with `--timeout 1500` it passes in **1499 s** (256 s on 2026-10-19 morning, 659-700 s at steps 5/8): it is getting slower, cgmtool shares no code with P0, but it is not green |
+
+Earlier P0 results (steps 1-8), kept for history:
+
 
 | what | result | evidence |
 |---|---|---|
@@ -232,8 +258,8 @@ of the affected areas, byte-identical.
 | ctest | **PASS** | 100/100, including `render_parity` (60-case smoke). After step 5: 99/100 at `-j8` with `cgm_folder_mbaacc` timing out at 300 s (load average 55-81 from other agents; cgmtool shares no code with this step); it passes alone in 700 s |
 | corpus timing | **PASS** | full corpus at `-j 8` in 3m28, `-j 1` vs `-j 8` byte-identical on the smoke subset, `stage3d_dfci` and the cgm palettes |
 | detached windows | **PASS** | `tools/render_parity/detach_check.sh` (step 5): open, render (byte-identical to the baseline exe), take a shortcut through `--post-key`, capture |
-| full corpus after step 8 | **2831 PASS / 0 ALLOWED / 16 FAIL**, all 16 environment drift | run `runs/20261019_225582a_gl`, report `runs/p0_step8_report.md`; golden binary re-run on the 30 cases of the affected scripts = this build 30/30 (`runs/p0_step8_env_check.md`). Golden NOT changed (same open decision as step 5). The step-5 run `20261019_f041e10_gl` was deleted (numbers above). |
-| drag-drop | pending | not exercised by a scripted run yet (drop points now go through `platform::PollEvents`) |
+| full corpus after step 8 | **2831 PASS / 0 ALLOWED / 16 FAIL**, all 16 environment drift | run `runs/20261019_225582a_gl` (deleted after the gate run superseded it), report `runs/p0_step8_report.md`; golden binary re-run on the 30 cases of the affected scripts = this build 30/30 (`runs/p0_step8_env_check.md`). Golden NOT changed (same open decision as step 5). The step-5 run `20261019_f041e10_gl` was deleted (numbers above). |
+| drag-drop | **PASS** (gate run) | `drop_check.sh`, see the gate run above |
 | full corpus after step 5 | **2828 PASS / 0 ALLOWED / 19 FAIL**, all 19 environment drift | run `runs/20261019_f041e10_gl`, report `runs/p0_step5_report.md`. The golden binary itself (`baseline_bin/<BASELINE>_det`) re-run today on the same 39 cases renders all 19 differently from the golden and byte-identically to the step-5 build (det vs new 39/39 PASS, `runs/p0_step5_env_check.md`). 16 UI shots: the archive browser's "Files in games (38956)" is now 38939 (C:/games changes under other agents; e.g. PovertyCaster logs in C:/games/mbaacc). 3 `stage_mbaacc_bg01_*`: the mist layer differs, `bg01.dat` unchanged (2026-07-03); the cause is outside the app binary. Golden NOT changed: needs the coordinator's decision (re-render the golden from the determinism binary, as on 2026-10-18, or pin the browsed folder). |
 
 `tools/render_parity/allowlist.tsv` is still header-only: no case needed an
