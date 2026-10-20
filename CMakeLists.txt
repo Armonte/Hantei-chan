@@ -1164,6 +1164,10 @@ add_test(NAME han2_pacselftest COMMAND han2tool pacselftest build/pacselftest_ou
 add_test(NAME sysconst COMMAND sysconst_test build/sysconst_test_out C:/dev/hantei-chan/gamedata/mbaacc_ref/vanilla_0002 C:/games/mbaacc/story/battle WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 # --headless view export (hidden window, FBO readback): PNG size + checksum stability, batch == single shot
 add_test(NAME headless_export COMMAND bash tools/ui/headless_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${CMAKE_BINARY_DIR}/headless_out" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Archive browser type-to-search through a real SDL_EVENT_TEXT_INPUT, and SDL text input kept on with no text field
+# active (P0 fix 2). The browsed folder has to be Windows-visible, so the work folder is on C: (as HC_CTEST_WORKDIR).
+set(HC_CTEST_INPUT_DIR "/mnt/c/dev/hantei-chan/work/ctest_input" CACHE PATH "Windows-side work folder for ctest input_text")
+add_test(NAME input_text COMMAND bash tools/ui/input_ctest.sh $<TARGET_FILE:gonptechan> tests/fixtures/headless/chr000.ha6 "${HC_CTEST_INPUT_DIR}" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # CG manager core + command line (docs/cg/cg_manager_design.md)
 set(CGM_CORE_SOURCES src/cgm/cgm_bank.cpp src/cgm/cgm_ops.cpp src/cgm/cgm_export.cpp src/cgm/cgm_io.cpp src/cgm/cgm_palette.cpp src/cgm/cgm_struct.cpp src/cgm/cgm_folder.cpp src/cgm/cgm_ccpal.cpp)
