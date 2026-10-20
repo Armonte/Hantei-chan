@@ -1,6 +1,7 @@
 // 3D stage view, see s3d_view.h and docs/stage3d/SCOPE.md.
 #include "s3d_view.h"
 #include "../ui/ui_style.h"
+#include "../imgui_utils.h"
 
 #include "s3d_bglist.h"
 #include "s3d_dds.h"
@@ -677,7 +678,7 @@ void Draw()
 			DrawAlignView(s, avail);
 		} else if (const float sc = std::min(avail.x / s.rt.width(), avail.y / s.rt.height()); sc > 0.f) {
 			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (avail.x - s.rt.width() * sc) * 0.5f));
-			ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
+			ui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(s.rt.width() * sc, s.rt.height() * sc), ImVec2(0, 1), ImVec2(1, 0));
 			// Interactive fight camera: drag pans (game px of the 1280x720 frame), wheel zooms about the frame, double-click
 			// resets. Same state the cam fields above edit, so values can still be typed exactly.
 			if (ImGui::IsItemHovered()) {
@@ -703,7 +704,7 @@ void DrawAlignView(State& s, ImVec2 avail)
 	if (sc <= 0.f) return;
 	ImGui::SetCursorPosX(ImGui::GetCursorPosX() + std::max(0.f, (avail.x - 640.f * sc) * 0.5f));
 	const ImVec2 o = ImGui::GetCursorScreenPos();
-	ImGui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(640.f * sc, 480.f * sc), ImVec2(0.125f, 1.f), ImVec2(0.875f, 0.f));
+	ui::Image((ImTextureID)(intptr_t)s.rt.texture(), ImVec2(640.f * sc, 480.f * sc), ImVec2(0.125f, 1.f), ImVec2(0.875f, 0.f));
 	ImDrawList* dl = ImGui::GetWindowDrawList();
 	auto P = [&](float x, float y) { return ImVec2(o.x + x * sc, o.y + y * sc); };
 	dl->PushClipRect(P(0, 0), P(640, 480), true);   // landmarks off the 640x480 picture (walls at cam 0) are not drawn

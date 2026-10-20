@@ -52,8 +52,25 @@ bool Init(const InitDesc& desc, std::string& error)
 	g.desc = desc;
 	g.headless = desc.headless;
 	g_platformHeadless = desc.headless;
+	// platform::MessageBox's box (platform_message.h). SDL_ShowSimpleMessageBox
+	// works before SDL_Init too, so an Init failure below can still be shown.
+	// No parent window, like the MessageBoxA(nullptr, ...) calls it replaces.
+	g_showMessageBox = [](const char* title, const char* text, int severity) {
+		const SDL_MessageBoxFlags f = severity >= 2 ? SDL_MESSAGEBOX_ERROR : severity == 1 ? SDL_MESSAGEBOX_WARNING : SDL_MESSAGEBOX_INFORMATION;
+		if (!SDL_ShowSimpleMessageBox(f, title, text, nullptr)) HC_LOG_WARN("platform: SDL_ShowSimpleMessageBox: {}", SDL_GetError());
+	};
 
 	SDL_SetHint(SDL_HINT_APP_NAME, "gonptechan");
+	// The pre-SDL exe never declared DPI awareness (no manifest entry, no
+	// SetProcessDpiAwareness*), so Windows scaled its window as a bitmap and the
+	// app saw 96-DPI sizes. SDL3 declares per-monitor-v2 awareness unless told
+	// otherwise, which changes window, framebuffer and mouse sizes on any scaled
+	// display. Keep the old behaviour. The hint has no macro in SDL3's headers;
+	// SDL_windowsvideo.c reads it by this name in WIN_InitDPIAwareness.
+	SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS", "unaware");
+	// A plain Win32 window never blocked the screensaver; SDL disables it by
+	// default while a window is open.
+	SDL_SetHint(SDL_HINT_VIDEO_ALLOW_SCREENSAVER, "1");
 
 	SDL_WindowFlags flags = SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY;
 	if (desc.openGL) flags |= SDL_WINDOW_OPENGL;

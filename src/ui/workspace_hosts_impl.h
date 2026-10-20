@@ -462,7 +462,7 @@ void MainFrame::DrawDetachedViewSurface(uint64_t hostId, CharacterView* view, Im
 	if (!target.ensure(w, h, false)) return;   // texture must exist for the image
 
 	ImDrawList* dl = ImGui::GetWindowDrawList();
-	dl->AddImage((ImTextureID)(intptr_t)target.texture(), mn, ImVec2(mn.x + w, mn.y + h), ImVec2(0, 1), ImVec2(1, 0));
+	ui::ImageWithOwnSampler(dl, (ImTextureID)(intptr_t)target.texture(), mn, ImVec2(mn.x + w, mn.y + h), ImVec2(0, 1), ImVec2(1, 0));
 
 	ImGui::SetCursorScreenPos(mn);
 	ImGui::InvisibleButton("##view_surface", ImVec2((float)w, (float)h),

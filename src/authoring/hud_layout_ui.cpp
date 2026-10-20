@@ -6,6 +6,7 @@
 // undo step per gesture, saved and live-applied (the game re-reads hud.ini with the tuning). UI thread only: the
 // textures are GL objects of the editor's context.
 #include "../ui/ui_style.h"
+#include "../imgui_utils.h"
 #include "hud_layout.h"
 #include "edit_sink.h"
 #include "../tag_tuning/tag_sidecar.h"
@@ -120,7 +121,7 @@ void DrawFace(ImDrawList* dl, const Tex* t, ImVec2 o, float s, HudRect dst, HudR
 	const ImVec2 a(o.x + dst.x * s, o.y + dst.y * s), b(o.x + (dst.x + dst.w) * s, o.y + (dst.y + dst.h) * s);
 	if (t) {
 		const ImVec2 uv0(src.x / t->w, src.y / t->h), uv1((src.x + src.w) / t->w, (src.y + src.h) / t->h);
-		dl->AddImage((ImTextureID)(uintptr_t)t->id, a, b, uv0, uv1, tint);
+		ui::ImageWithOwnSampler(dl, (ImTextureID)(uintptr_t)t->id, a, b, uv0, uv1, tint);
 	} else {
 		dl->AddRectFilled(a, b, (fallback & 0x00FFFFFFu) | 0x50000000u);
 		dl->AddText(ImVec2(a.x + 2, a.y + 1), fallback, label);

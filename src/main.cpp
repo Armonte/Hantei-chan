@@ -14,6 +14,8 @@
 #include <chrono>
 #include <thread>
 #include <cwctype>
+#include <string>
+#include <vector>
 #include <imgui.h>
 #include "imsearch.h"
 
@@ -387,6 +389,50 @@ static void AppSdlEvent(const SDL_Event& e, MainFrame* mf)
 	}
 }
 
+namespace {
+
+struct CmdArgs {
+	std::vector<std::string> utf8, acp;   // the same arguments, index for index
+};
+
+#ifdef _WIN32
+std::string WideToCodePage(const wchar_t* w, UINT cp)
+{
+	const int n = WideCharToMultiByte(cp, 0, w, -1, nullptr, 0, nullptr, nullptr);
+	if (n <= 1) return std::string();
+	std::string s((size_t)n, '\0');
+	WideCharToMultiByte(cp, 0, w, -1, s.data(), n, nullptr, nullptr);
+	s.pop_back();
+	return s;
+}
+#endif
+
+// The process command line, re-read from the wide original on Windows (as
+// wWinMain's CommandLineToArgvW did) so each argument exists in the ANSI code
+// page too. SDL's UTF-8 argv is the fallback.
+CmdArgs CommandLineArgs(int argC, char** argV)
+{
+	CmdArgs a;
+#ifdef _WIN32
+	int n = 0;
+	if (LPWSTR* w = CommandLineToArgvW(GetCommandLineW(), &n)) {
+		for (int i = 0; i < n; i++) {
+			a.utf8.push_back(WideToCodePage(w[i], CP_UTF8));
+			a.acp.push_back(WideToCodePage(w[i], CP_ACP));
+		}
+		LocalFree(w);
+		return a;
+	}
+#endif
+	for (int i = 0; i < argC; i++) {
+		a.utf8.push_back(argV[i] ? argV[i] : "");
+		a.acp.push_back(a.utf8.back());
+	}
+	return a;
+}
+
+}  // namespace
+
 int main(int argC, char** argV)
 {
 	// Allocate console for debug output with Shift-JIS support (DISABLED FOR RELEASE)
@@ -399,12 +445,18 @@ int main(int argC, char** argV)
 	//printf("=== Hantei-chan Debug Console (UTF-8) ===\n\n");
 	
 	bool useIni = true;
-	// SDL3 hands over UTF-8 argv (the Windows backend converts the command line
-	// with CP_UTF8; libc's argv is UTF-8 on Linux), so no wide conversion and no
-	// CommandLineToArgvW/LocalFree anymore.
+	// The command line in the two code pages the pre-SDL wWinMain handed out.
+	// SDL's argv is UTF-8, but the loaders behind --open, --cg, --game and the
+	// other path options open files with the ANSI (A) APIs, so those values
+	// stay in the ANSI code page, as wWinMain's WideCharToMultiByte(CP_ACP)
+	// gave them; the script, batch, capture and stats paths were converted with
+	// CP_UTF8 and still are. Flags are compared in UTF-8 (all ASCII). On Linux
+	// argv is UTF-8 and both lists are the same.
+	const CmdArgs args = CommandLineArgs(argC, argV);
+	argC = (int)args.utf8.size();
 	for(int i=0; i<argC; i++)
 	{
-		const char * arg = argV[i];
+		const char * arg = args.utf8[i].c_str();
 		if(!strcmp(arg, "--test"))
 		{
 			std::ofstream coutFile, cerrFile;
@@ -416,7 +468,7 @@ int main(int argC, char** argV)
 		else if(i+1<argC && !strcmp(arg, "--fxr-selftest"))
 		{
 			// Effect recolour tab self-test: programmatic load/save/assign/new-rule + report, see fxr_panel.cpp. Pair with --capture <png>.
-			const std::string v = argV[i+1];
+			const std::string v = args.utf8[i+1];
 			_putenv_s("HANTEI_FXR_SELFTEST", v.c_str()); _putenv_s("HANTEI_CGM_TAB", "fxr");
 			gStartup.tool = "cgm";
 			i++;
@@ -430,7 +482,7 @@ int main(int argC, char** argV)
 		                     && strcmp(arg, "--authoring-unlock"))
 		{
 			// startup actions, see startup_args.h
-			const std::string v = argV[i+1];
+			const std::string v = args.acp[i+1];
 			if(!strcmp(arg, "--open")) gStartup.open = v;
 			else if(!strcmp(arg, "--open-any")) gStartup.openAny = v;
 			else if(!strcmp(arg, "--capture")) gStartup.capture = v;
@@ -482,7 +534,7 @@ int main(int argC, char** argV)
 		{
 			gStartup.noPups = true;
 		}
-		else if(ParseWave2StartupArg(arg, i+1<argC ? argV[i+1] : nullptr, i))
+		else if(ParseWave2StartupArg(arg, i+1<argC ? args.acp[i+1].c_str() : nullptr, i+1<argC ? args.utf8[i+1].c_str() : nullptr, i))
 		{
 			// --tick/--onion/--detach/--capture-view/--export-*/--save-project
 			// (render checks, see startup_args.h); consumed its value if any.
@@ -496,7 +548,7 @@ int main(int argC, char** argV)
 			i+=1;
 			int res[2];
 			for(int j = 0; j < 2; j++)
-				res[j] = atoi(argV[i+j]);
+				res[j] = atoi(args.utf8[i+j].c_str());
 			gSettings.winSizeX = res[0];
 			gSettings.winSizeY = res[1];
 		}
@@ -510,7 +562,9 @@ int main(int argC, char** argV)
 	}
 	
 	// Build version string with build number and git hash
-	std::string windowTitle = "gonpt\xc3\xa9chan v" VERSION_WITH_COMMIT;
+	// UTF-8 "gonpt\u00e9chan" (the old wide title). The literal is split after
+	// the escape: "\xa9c..." would read as one out-of-range hex escape.
+	std::string windowTitle = "gonpt\xc3\xa9" "chan v" VERSION_WITH_COMMIT;
 
 	// The ImGui context and the ini come first: the window is created from the
 	// ini's position, size, maximised flag and detachable-windows preference.
@@ -545,8 +599,9 @@ int main(int argC, char** argV)
 	desc.allowViewports = gSettings.detachableWindows && !gStartup.headless;
 	std::string platformError;
 	if (!platform::Init(desc, platformError)) {
-		HC_LOG_ERROR("platform: {}", platformError);
-		MessageBoxA(nullptr, platformError.c_str(), "gonptechan", MB_ICONERROR | MB_OK);
+		// Logged; a box only when visible (under --headless/--batch nobody is
+		// there to close it).
+		platform::MessageBox("gonptechan", ("platform: " + platformError).c_str(), 2);
 		return 3;
 	}
 	mainWindowHandle = (HWND)platform::NativeWindowHandle();

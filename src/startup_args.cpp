@@ -23,7 +23,9 @@
 
 #include <glad/glad.h>
 #include <windows.h>
-#include <shlobj.h>   // DROPFILES (--post-drop)
+#include <shlobj.h>   // DROPFILES (--post-drop), BHID_DataObject (--post-drop-ole)
+#include <shobjidl.h>
+#include <oleidl.h>
 #include <fstream>
 #include <functional>
 #include <memory>
@@ -90,12 +92,89 @@ static bool ParseLayerArg(const std::string &v)
 	gStartup.layerMask = m; return true;
 }
 
-bool ParseWave2StartupArg(const char* arg, const char* next, int& i)
+namespace {
+
+// --post-drop / --post-drop-ole: --post-drop-at in client pixels, else the
+// client area's centre.
+POINT PostDropPoint(HWND hwnd)
 {
-	// argv is UTF-8 under SDL3 (the Windows backend converts the command line
-	// with CP_UTF8, libc's argv is UTF-8 on Linux). No codepage conversion
-	// needed; the old CP_ACP/CP_UTF8 split disappears with wWinMain.
-	auto value = [&](unsigned) { ++i; return next ? std::string(next) : std::string(); };
+	RECT rc{};
+	if (hwnd) GetClientRect(hwnd, &rc);
+	POINT p{ (rc.right - rc.left) / 2, (rc.bottom - rc.top) / 2 };
+	if (gStartup.postDropAt[0] >= 0 && gStartup.postDropAt[1] >= 0) p = POINT{ gStartup.postDropAt[0], gStartup.postDropAt[1] };
+	return p;
+}
+
+// The --post-drop-ole outcome for --stats ("" = not run).
+std::string g_oleDropResult;
+
+// --post-drop-ole <file>: the calls a shell drag makes on the window's
+// registered OLE drop target (DragEnter, DragOver, Drop at one point), in
+// process, without desktop input. SDL initialises OLE and registers an
+// IDropTarget with RegisterDragDrop for every window, so this, not
+// WM_DROPFILES, is the route a file dragged from Explorer takes. The data object
+// is the shell's own for the file (SHCreateItemFromParsingName ->
+// BHID_DataObject), the kind Explorer's drag source hands over, with CF_HDROP.
+// The target comes from the window property RegisterDragDrop stores it under
+// ("OleDropTargetInterface"); it is checked to be committed memory whose vtable
+// lies in this exe (SDL is linked in statically) before it is called.
+void PostOleDrop(HWND hwnd, const std::string& utf8Path, POINT client)
+{
+	auto fail = [&](const std::string& why) {
+		g_oleDropResult = "fail " + why;
+		HC_LOG_WARN("--post-drop-ole: {}", why);
+	};
+	IDropTarget* target = (IDropTarget*)GetPropW(hwnd, L"OleDropTargetInterface");
+	MEMORY_BASIC_INFORMATION mbi{};
+	if (!target || !VirtualQuery(target, &mbi, sizeof mbi) || mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)))
+		return fail("no OLE drop target registered on the main window");
+	{
+		const HMODULE self = GetModuleHandleW(nullptr);
+		const auto* dos = (const IMAGE_DOS_HEADER*)self;
+		const auto* nt = (const IMAGE_NT_HEADERS*)((const char*)self + dos->e_lfanew);
+		const uintptr_t lo = (uintptr_t)self, hi = lo + nt->OptionalHeader.SizeOfImage;
+		const uintptr_t vtbl = *(const uintptr_t*)target;
+		if (vtbl < lo || vtbl >= hi) return fail("the window's drop target is not SDL's (vtable outside the exe)");
+	}
+	IShellItem* item = nullptr;
+	if (FAILED(SHCreateItemFromParsingName(Utf8ToWide(utf8Path).c_str(), nullptr, IID_PPV_ARGS(&item))))
+		return fail("no shell item for " + utf8Path);
+	IDataObject* data = nullptr;
+	const HRESULT hb = item->BindToHandler(nullptr, BHID_DataObject, IID_PPV_ARGS(&data));
+	item->Release();
+	if (FAILED(hb) || !data) return fail("no shell data object for " + utf8Path);
+	FORMATETC fe{ CF_HDROP, nullptr, DVASPECT_CONTENT, -1, TYMED_HGLOBAL };
+	const bool hdrop = data->QueryGetData(&fe) == S_OK;
+	fe.cfFormat = CF_UNICODETEXT;
+	const bool text = data->QueryGetData(&fe) == S_OK;
+	POINT sp = client;
+	ClientToScreen(hwnd, &sp);
+	const POINTL pt{ sp.x, sp.y };
+	target->AddRef();
+	DWORD effect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+	const HRESULT he = target->DragEnter(data, MK_LBUTTON, pt, &effect);
+	effect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+	const HRESULT ho = target->DragOver(MK_LBUTTON, pt, &effect);
+	effect = DROPEFFECT_COPY | DROPEFFECT_MOVE | DROPEFFECT_LINK;
+	const HRESULT hd = target->Drop(data, 0, pt, &effect);
+	target->Release();
+	data->Release();
+	char b[200];
+	snprintf(b, sizeof b, "enter=%08lx over=%08lx drop=%08lx effect=%lu hdrop=%d unicodetext=%d at %ld,%ld screen %ld,%ld",
+		(unsigned long)he, (unsigned long)ho, (unsigned long)hd, (unsigned long)effect, hdrop ? 1 : 0, text ? 1 : 0, client.x, client.y, sp.x, sp.y);
+	g_oleDropResult = b;
+	HC_LOG_INFO("--post-drop-ole {}: {}", utf8Path, g_oleDropResult);
+}
+
+}  // namespace
+
+bool ParseWave2StartupArg(const char* arg, const char* nextAcp, const char* nextUtf8, int& i)
+{
+	// The value in the code page this option always used (wWinMain converted
+	// each one with CP_ACP or CP_UTF8; the loaders behind the CP_ACP ones open
+	// files with the ANSI APIs).
+	const char* next = nextUtf8;
+	auto value = [&](unsigned cp) { ++i; const char* v = cp == CP_UTF8 ? nextUtf8 : nextAcp; return v ? std::string(v) : std::string(); };
 	if (!strcmp(arg, "--detach")) { gStartup.detach = true; return true; }
 	if (!strcmp(arg, "--quit")) { gStartup.quit = true; return true; }
 	if (!strcmp(arg, "--export-boxes")) { gStartup.exportBoxes = true; return true; }
@@ -140,6 +219,12 @@ bool ParseWave2StartupArg(const char* arg, const char* next, int& i)
 	if (!strcmp(arg, "--stats")) { gStartup.stats = value(CP_UTF8); return true; }
 	if (!strcmp(arg, "--post-key")) { gStartup.postKey = (int)strtol(value(CP_ACP).c_str(), nullptr, 0); return true; }
 	if (!strcmp(arg, "--post-drop")) { gStartup.postDrop = value(CP_UTF8); return true; }
+	if (!strcmp(arg, "--post-drop-ole")) { gStartup.postDropOle = value(CP_UTF8); return true; }
+	if (!strcmp(arg, "--post-drop-at")) {
+		const std::string v = value(CP_ACP);
+		if (sscanf(v.c_str(), "%d,%d", &gStartup.postDropAt[0], &gStartup.postDropAt[1]) != 2) gStartup.postDropAt[0] = gStartup.postDropAt[1] = -1;
+		return true;
+	}
 	return false;
 }
 
@@ -644,21 +729,21 @@ void MainFrame::ProcessStartupArgs()
 		}
 	}
 	if (!gStartup.postDrop.empty() && n == 12) {
-		// --post-drop <file>: the WM_DROPFILES message a shell drag-drop sends,
-		// posted to the app's own main window (no desktop input). SDL's window
-		// procedure turns it into SDL_EVENT_DROP_FILE, which the platform loop
-		// hands to queueDroppedFile, the same path as a file dragged from
-		// Explorer. The drop point is the client area's centre.
+		// --post-drop <file>: the WM_DROPFILES message a shell drag-drop sends
+		// to a DragAcceptFiles window, posted to the app's own main window (no
+		// desktop input). SDL's window procedure turns it into
+		// SDL_EVENT_DROP_FILE, which the platform loop hands to
+		// queueDroppedFile. SDL only takes this route when OleInitialize fails;
+		// a real shell drag goes through its OLE IDropTarget (--post-drop-ole).
+		// The drop point is --post-drop-at, else the client area's centre.
 		const std::wstring wpath = Utf8ToWide(gStartup.postDrop);
 		const SIZE_T bytes = sizeof(DROPFILES) + (wpath.size() + 2) * sizeof(wchar_t);
 		HWND hwnd = (HWND)platform::NativeWindowHandle();
-		RECT rc{};
-		if (hwnd) GetClientRect(hwnd, &rc);
+		const POINT at = PostDropPoint(hwnd);
 		HGLOBAL mem = hwnd ? GlobalAlloc(GHND, bytes) : nullptr;
 		if (DROPFILES *df = mem ? (DROPFILES *)GlobalLock(mem) : nullptr) {
 			df->pFiles = sizeof(DROPFILES);
-			df->pt.x = (rc.right - rc.left) / 2;
-			df->pt.y = (rc.bottom - rc.top) / 2;
+			df->pt = at;
 			df->fNC = FALSE;
 			df->fWide = TRUE;
 			memcpy((char *)df + sizeof(DROPFILES), wpath.c_str(), wpath.size() * sizeof(wchar_t));   // GHND zeroes the double terminator
@@ -671,6 +756,11 @@ void MainFrame::ProcessStartupArgs()
 			if (mem) GlobalFree(mem);
 			HC_LOG_WARN("--post-drop: no main window to drop on");
 		}
+	}
+	if (!gStartup.postDropOle.empty() && n == 12) {
+		HWND hwnd = (HWND)platform::NativeWindowHandle();
+		if (hwnd) PostOleDrop(hwnd, gStartup.postDropOle, PostDropPoint(hwnd));
+		else HC_LOG_WARN("--post-drop-ole: no main window to drop on");
 	}
 	if (!gStartup.stats.empty() && n >= 10 && n < 20) {
 		gStartup.sceneMs += m_lastSceneMs;
@@ -689,6 +779,14 @@ void MainFrame::ProcessStartupArgs()
 			const CharacterView *active = getActiveView();
 			const CharacterInstance *activeChar = active ? active->getCharacter() : nullptr;
 			fprintf(f, "views %zu\nactive_file %s\n", views.size(), activeChar ? activeChar->getTxtPath().c_str() : "");
+			// Where the last drop landed: main-window client pixels, desktop
+			// pixels, and the client area's desktop origin they relate by.
+			if (m_haveDropPoint) {
+				int ox = 0, oy = 0; platform::WindowPos(ox, oy);
+				fprintf(f, "drop_client %.0f %.0f\ndrop_screen %.0f %.0f\nclient_origin %d %d\n",
+					m_dropClient[0], m_dropClient[1], m_dropScreen[0], m_dropScreen[1], ox, oy);
+			}
+			if (!g_oleDropResult.empty()) fprintf(f, "ole_drop %s\n", g_oleDropResult.c_str());
 			if (CharacterView *v = findViewById(m_startupViewId)) {
 				const auto owner = m_session.owner(v->getId());
 				fprintf(f, "view_host %llu\nview_onion_enabled %d\nshortcut_view %llu\nfocused_host %llu\n",

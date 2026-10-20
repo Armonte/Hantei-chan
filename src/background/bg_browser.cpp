@@ -1,5 +1,6 @@
 // Stage browser window; see bg_browser.h.
 #include "../ui/ui_style.h"
+#include "../imgui_utils.h"
 #include "bg_browser.h"
 #include "bg_gametex.h"
 #include "../bgm_player.h"
@@ -204,7 +205,7 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 				if (ImGui::IsMouseDoubleClicked(0) && !e.datPath.empty() && hooks.open) hooks.open(e.datPath);
 			}
 			ImGui::TableNextColumn();
-			if (const Thumb* t = LoadDds(e.previewPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2(ui::Px(117), ui::Px(44)));
+			if (const Thumb* t = LoadDds(e.previewPath)) ui::Image((ImTextureID)(intptr_t)t->id, ImVec2(ui::Px(117), ui::Px(44)));
 			ImGui::TableNextColumn();
 			ImGui::TextUnformatted(e.name.empty() ? "-" : e.name.c_str());
 			if (!e.nameJp.empty() && e.nameJp != e.name) ImGui::TextDisabled("%s", e.nameJp.c_str());
@@ -229,11 +230,11 @@ void DrawStageBrowser(StageProject& pr, const std::string& currentDat, const Bro
 	if (!sel && cur) { g_selected = cur->id; sel = cur; }
 	if (!sel) return;
 	ImGui::Separator();
-	if (const Thumb* t = LoadDds(sel->previewPath)) { ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h)); ImGui::SameLine(); }
+	if (const Thumb* t = LoadDds(sel->previewPath)) { ui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h)); ImGui::SameLine(); }
 	ImGui::BeginGroup();
 	ImGui::Text(TXT("Stage %02d  %s"), sel->id, sel->datPath.empty() ? "(no .dat: the game drops this entry)" : sel->datPath.c_str());
 	if (!sel->bgmComment.empty()) ImGui::TextUnformatted(SjisToUtf8(sel->bgmComment).c_str());
-	if (const Thumb* t = LoadDds(sel->nameEnPath)) ImGui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h));
+	if (const Thumb* t = LoadDds(sel->nameEnPath)) ui::Image((ImTextureID)(intptr_t)t->id, ImVec2((float)t->w, (float)t->h));
 	ImGui::BeginDisabled(sel->datPath.empty() || !hooks.open);
 	if (ImGui::Button(LBL("Open stage"))) hooks.open(sel->datPath);
 	ImGui::EndDisabled();

@@ -1,5 +1,6 @@
 // [game-view] The Game panel — see game_view.h and docs/HANTEI_AUTHORING_MODE.md §12.2.
 #include "../ui/ui_style.h"
+#include "../imgui_utils.h"
 #include "game_view.h"
 #include "authoring_state.h"
 #include "game_view_input.h"
@@ -415,7 +416,7 @@ void DrawGameView(HostContext& host)
 	dl->PushClipRect(shown, ImVec2(shown.x + size.x, shown.y + size.y), true);
 	const bool layeredAvailable = (f.flags & kSlotLayered) && FindLayer(f, kLayerChars);
 	if (!g.layeredView || !layeredAvailable) {
-		dl->AddImage(g.full.Im(), origin, end);
+		ui::ImageWithOwnSampler(dl, g.full.Im(), origin, end);
 		if (g.layeredView && !layeredAvailable && g.layeredNote.empty()) {
 			ImGui::SetCursorScreenPos(ImVec2(origin.x + 6, origin.y + 6));
 			ImGui::TextColored(kColWarn, TXT("no layers in this frame (Game > Embed: layered capture): showing the full frame"));
@@ -429,26 +430,27 @@ void DrawGameView(HostContext& host)
 		dl->AddRectFilled(origin, end, IM_COL32(0, 0, 0, 255));
 		unsigned back = 0, front = 0;
 		const float camPx = cam.cameraX / 128.0f, camPy = cam.cameraY / 128.0f;   // as drawn (§12.3: no shake to add)
+		ui::BeginOwnSampler(dl);   // every layer below with its own filter; the ResetRenderState after the HUD ends it
 		if (g.stageSource == StageSource::Hantei && host.renderStage) {
 			back = host.renderStage(camPx, camPy, zoom, vw, vh, 1, cam.heatBlurX1000 / 1000.0f);
 			front = host.renderStage(camPx, camPy, zoom, vw, vh, 2, 0.0f);
 		}
-		if (back) dl->AddImage((ImTextureID)(intptr_t)back, v0, v1, ImVec2(0, 1), ImVec2(1, 0));   // FBO: bottom-up
+		if (back) dl->AddImage((ImTextureID)(intptr_t)back, v0, v1, ImVec2(0, 1), ImVec2(1, 0));   // FBO: bottom-up; own sampler
 		else if (g.stageSource == StageSource::TestPattern || (g.stageSource == StageSource::Hantei && !back)) {
 			const uint32_t pitch = PitchFor((uint32_t)vw);
 			g.testStagePx.resize((size_t)pitch * vh);
 			DrawTestStage(g.testStagePx.data(), (uint32_t)vw, (uint32_t)vh, pitch, cam);
 			g.testStage.Upload(g.testStagePx.data(), vw, vh, pitch);
-			dl->AddImage(g.testStage.Im(), v0, v1);
+			dl->AddImage(g.testStage.Im(), v0, v1);   // own sampler
 		}
 		if (cam.superFlashDarkX1000) dl->AddRectFilled(v0, v1, IM_COL32(0, 0, 0, (int)std::min(255u, cam.superFlashDarkX1000 * 255u / 1000u)));
 		dl->AddCallback(BlendPremul, nullptr);
 		const FrameLayer* ch = FindLayer(f, kLayerChars);
-		dl->AddImage(g.chars.Im(), ImVec2(origin.x + ch->x * scale, origin.y + ch->y * scale),
+		dl->AddImage(g.chars.Im(), ImVec2(origin.x + ch->x * scale, origin.y + ch->y * scale),   // own sampler
 		             ImVec2(origin.x + (ch->x + ch->width) * scale, origin.y + (ch->y + ch->height) * scale));
-		if (front) dl->AddImage((ImTextureID)(intptr_t)front, v0, v1, ImVec2(0, 1), ImVec2(1, 0));
+		if (front) dl->AddImage((ImTextureID)(intptr_t)front, v0, v1, ImVec2(0, 1), ImVec2(1, 0));   // own sampler
 		if (const FrameLayer* hud = FindLayer(f, kLayerHud))
-			dl->AddImage(g.hud.Im(), ImVec2(origin.x + hud->x * scale, origin.y + hud->y * scale),
+			dl->AddImage(g.hud.Im(), ImVec2(origin.x + hud->x * scale, origin.y + hud->y * scale),   // own sampler
 			             ImVec2(origin.x + (hud->x + hud->width) * scale, origin.y + (hud->y + hud->height) * scale));
 		dl->AddCallback(ImDrawCallback_ResetRenderState, nullptr);
 		if (g.stageSource == StageSource::Hantei && !back) {
