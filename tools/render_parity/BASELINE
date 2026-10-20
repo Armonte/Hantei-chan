@@ -45,7 +45,7 @@ golden_rendered=2026-10-19 (determinism exe above, -j 8, twice; 2847/2847 PNGs b
 # The previous golden (golden/<baseline_sha>, 2847 cases) is deleted.
 # 2026-10-20 (P0 fix 3): four cases added, nothing re-rendered or changed. The
 # new corpus files corpus/ui/shots__nz_archive_zoom.txt and
-# shots__nz_texsrc_zoom.txt (zoomed GL_NEAREST previews: the archive browser's
+# shots__nz_texsrc_zoom.txt (zoomed nearest-filter previews: the archive browser's
 # IMG preview at 4x / 3x, the CG + .pat textures tab at 2x / 3x) were rendered by
 # this same determinism binary twice (byte-identical) and their four rows
 # appended to the manifest (2887 -> 2891 rows; was fca19396...). The manifest
