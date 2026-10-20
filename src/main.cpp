@@ -27,6 +27,7 @@
 #include <shellapi.h>
 #include "png_writer.h"
 #include "app_log.h"
+#include "platform/platform_message.h"
 
 #include <glad/glad.h>
 
@@ -266,14 +267,38 @@ static void EndDrag(MainFrame* mf, int button)
 	}
 }
 
-// WM_ACTIVATE(WA_INACTIVE): close any gesture in progress.
-static void CancelDrags(MainFrame* mf)
+// WM_CANCELMODE / WM_ACTIVATE(WA_INACTIVE): close every gesture in progress,
+// the main view's pan/draw drags and the ImGui-driven box / position / UV drags
+// of every view (CancelViewportGestures). Runs when an app window loses focus
+// and, synchronously, when a modal box or dialog is about to open
+// (platform::NotifyModalOpening), as WM_CANCELMODE did: the button release then
+// goes to the dialog, never to the view.
+static MainFrame* g_mainFrame = nullptr;
+static void CancelAllGestures(MainFrame* mf)
 {
-	if (!g_dragLeft && !g_dragRight) return;
 	if (mf) mf->CancelViewportGestures();
+	if (!g_dragLeft && !g_dragRight) return;
 	SDL_CaptureMouse(false);
 	g_dragLeft = g_dragRight = false;
 	if (mf) mf->SetMouseDragActive(false);
+}
+
+// WM_CHAR reached the app in every one of its windows whether or not an ImGui
+// text field was active, so ImGui's character queue fed the archive browser's
+// type-to-search (io.InputQueueCharacters) and the IME stayed associated with
+// the window. SDL only turns WM_CHAR into SDL_EVENT_TEXT_INPUT while text input
+// is on for that window, and imgui_impl_sdl3 stops it whenever no field wants
+// it; so it is turned back on here, once per loop, for the main window and each
+// detached one. The backend still places the IME on an active field and stops
+// and restarts around it.
+static void KeepTextInputActive()
+{
+	auto keep = [](SDL_Window* w) { if (w && !SDL_TextInputActive(w)) SDL_StartTextInput(w); };
+	keep((SDL_Window*)platform::Window());
+	if (!ImGui::GetCurrentContext()) return;
+	for (ImGuiViewport* vp : ImGui::GetPlatformIO().Viewports)
+		if (vp != ImGui::GetMainViewport() && vp->PlatformHandle)
+			keep(SDL_GetWindowFromID((SDL_WindowID)(intptr_t)vp->PlatformHandle));
 }
 
 static int MouseButtonIndex(Uint8 sdlButton)
@@ -309,9 +334,13 @@ static void AppSdlEvent(const SDL_Event& e, MainFrame* mf)
 		// WM_KEYDOWN in the main window, or in a detached window through the
 		// removed per-HWND subclass. The shortcut router decides: a focused text
 		// field keeps its keys; ImGui's focus picks the view the shortcut acts on.
+		// The VK follows the keyboard layout and NumLock like wParam did, and
+		// the modifiers are the event's own, not the keyboard state now.
 		if (!IsAppWindow(e.key.windowID)) break;
-		const uint32_t vk = platform::VkFromScancode((int)e.key.scancode);
-		if (vk && mf) mf->HandleKeys(vk, e.key.repeat, io.WantCaptureKeyboard, io.WantTextInput);
+		const uint32_t vk = platform::VkFromKeyEvent((int)e.key.scancode, (uint32_t)e.key.key, (uint16_t)e.key.mod, e.key.raw);
+		if (vk && mf)
+			mf->HandleKeys(vk, platform::ChordModsFromKey((int)e.key.scancode, (uint16_t)e.key.mod), e.key.repeat,
+			               io.WantCaptureKeyboard, io.WantTextInput);
 		break;
 	}
 	case SDL_EVENT_MOUSE_BUTTON_DOWN: {
@@ -339,16 +368,19 @@ static void AppSdlEvent(const SDL_Event& e, MainFrame* mf)
 	case SDL_EVENT_MOUSE_WHEEL:
 		// WM_MOUSEWHEEL: only when ImGui does not capture the mouse and nothing
 		// is being dragged; the zoom point is the cursor in client coordinates.
+		// A horizontal scroll (y == 0, the old WM_MOUSEHWHEEL) never zooms.
 		if (e.wheel.windowID != mainId) break;
-		if (mf && !io.WantCaptureMouse && !(g_dragLeft || g_dragRight))
-			mf->HandleMouseWheel((e.wheel.y > 0) != gSettings.invertWheelZoom,
-			                     (int)e.wheel.mouse_x, (int)e.wheel.mouse_y);
+		if (mf && !io.WantCaptureMouse && !(g_dragLeft || g_dragRight)) {
+			const int step = platform::WheelZoomStep(e.wheel.y, gSettings.invertWheelZoom);
+			if (step != 0) mf->HandleMouseWheel(step > 0, (int)e.wheel.mouse_x, (int)e.wheel.mouse_y);
+		}
 		break;
 	case SDL_EVENT_WINDOW_FOCUS_GAINED:
 		if (e.window.windowID == mainId) g_justActivated = true;
 		break;
 	case SDL_EVENT_WINDOW_FOCUS_LOST:
-		if (e.window.windowID == mainId) CancelDrags(mf);
+		// The main window or a detached one: no gesture survives losing focus.
+		if (IsAppWindow(e.window.windowID)) CancelAllGestures(mf);
 		break;
 	default:
 		break;
@@ -541,6 +573,8 @@ int main(int argC, char** argV)
 	}
 
 	MainFrame* frame = new MainFrame(platform::Window());
+	g_mainFrame = frame;
+	platform::g_onModalOpening = [] { CancelAllGestures(g_mainFrame); };
 
 	// The SDL event pump owns the input translation; the app's own switch runs
 	// after ImGui has seen each event (the old WndProc order). PostQuitMessage is
@@ -586,6 +620,7 @@ int main(int argC, char** argV)
 
 	for (;;)
 	{
+		KeepTextInputActive();
 		if (!platform::PollEvents()) break;
 		if (gAppQuit) break;
 
@@ -604,6 +639,8 @@ int main(int argC, char** argV)
 		}
 	}
 
+	platform::g_onModalOpening = nullptr;
+	g_mainFrame = nullptr;
 	delete frame;
 	viewports::Shutdown();
 	ImGui_ImplOpenGL3_Shutdown();

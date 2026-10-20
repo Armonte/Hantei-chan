@@ -63,14 +63,16 @@ public:
 	void HandleMouseUp(bool dragRight, bool dragLeft);
 	// Key press routed through the central shortcut table. `imguiWantsKeyboard`
 	// / `imguiTextInput` are ImGui's io.WantCaptureKeyboard / io.WantTextInput:
-	// a focused text field keeps its keys (incl. its own Ctrl+Z).
-	bool HandleKeys(uint64_t vkey, bool isRepeat = false,
+	// a focused text field keeps its keys (incl. its own Ctrl+Z). `modifiers`
+	// are the key event's chord modifiers (shortcutCtrl/Shift/Alt bits, from
+	// platform::ChordModsFromKey).
+	bool HandleKeys(uint64_t vkey, uint32_t modifiers, bool isRepeat = false,
 	                bool imguiWantsKeyboard = false, bool imguiTextInput = false);
 	// Left press in the viewport (after HandleMouseDown); starts a position
 	// tool drag when it lands on a handle.
 	void LeftClick(int x, int y);
-	// Window lost capture/activation mid-gesture: close box drags, cancel
-	// position drags.
+	// Window lost activation, or a modal box/dialog is opening (WM_CANCELMODE),
+	// mid-gesture: close box and UV drags, cancel position drags.
 	void CancelViewportGestures();
 	void HandleMouseWheel(bool isIncrease, int mouseX, int mouseY);
 

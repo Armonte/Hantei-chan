@@ -26,12 +26,14 @@
 //   --capture-windows <prefix>  save every detached OS window (its GL frame) as <prefix>_<n>.png
 //   --post-key <vk>      frame 12: push a key press <vk> (Win32 virtual-key code) into the SDL queue for the
 //                        first detached window, else the main window (checks shortcut routing from a
-//                        detached window); a key down then its key up, the VK mapped to an SDL scancode
+//                        detached window); a key down then its key up, the VK mapped to an SDL scancode plus the
+//                        raw scan code of the active layout (platform::PostKeyParts), so the loop maps it back to <vk>
 //   --post-drop <file>   frame 12: post a WM_DROPFILES carrying <file> (UTF-8) to the main window, the message the
 //                        shell's drag-drop sends; SDL turns it into SDL_EVENT_DROP_FILE (checks the drop route)
 //   --stats <file>       frames 10-19: average scene render / onion-skin cost (CPU ms)
 //   --ui-script <file>   run a scripted UI session: one command per line (# = comment): wait N | waitidle | waitms <ms> | waits3dchange <s> (until the 3D stage model on disk changes) | capture <png> | quit | openany <path> |
 //                        pattern N | frame N | viewframe N | zoomview N | framenodes MASK (hold open: 1 Attack data, 2 Effects, 4 Conditions) | copypattern N | pastepattern N | gameformat G | layer N | switchview N |
+//                        sdltext <text> (SDL_EVENT_TEXT_INPUT per char) | wmchar <text> (WM_CHAR posted to the main window) | textinput (log SDL text-input state) |
 //                        and every abrowser::ScriptCommand (browse, source, filter, type, select, open, key, ...)
 //   --quit               quit after the actions even without --capture
 // Headless render / export (Hantei_Docs startup args doc, "Headless export"):

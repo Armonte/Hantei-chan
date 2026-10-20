@@ -24,6 +24,17 @@ namespace platform {
 // tool targets that share shader.cpp / vao.cpp link nothing new.
 inline bool g_platformHeadless = false;
 
+// WM_CANCELMODE's job under SDL: a modal box or dialog is about to open, so any
+// mouse gesture in progress (a view pan or draw drag, a box / position / UV
+// drag) has to end now; the button release will go to the dialog. The app sets
+// the callback (main.cpp); every modal entry point (MessageBox below, the file
+// and folder dialogs) calls NotifyModalOpening first.
+inline void (*g_onModalOpening)() = nullptr;
+inline void NotifyModalOpening()
+{
+	if (g_onModalOpening) g_onModalOpening();
+}
+
 inline void MessageBox(const char* title, const char* text, int severity)
 {
 	if (g_platformHeadless) {
@@ -32,6 +43,7 @@ inline void MessageBox(const char* title, const char* text, int severity)
 		return;
 	}
 #ifdef _WIN32
+	NotifyModalOpening();
 	// The same call the code used before this phase.
 	const unsigned type = severity >= 2 ? 0x10u : (severity >= 1 ? 0x30u : 0x40u);
 	::MessageBoxA(nullptr, text ? text : "", title ? title : "", type);

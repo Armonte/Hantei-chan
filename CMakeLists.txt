@@ -892,6 +892,17 @@ if(MINGW)
 endif()
 add_test(NAME shortcut_router COMMAND shortcut_router_test)
 
+# SDL key/mouse event -> WndProc input rules (P0 fix 2): keyboard-layout VK
+# mapping, NumLock keypad, chord modifiers from the event, the shortcut
+# recorder's modifier filter, the wheel rule and the --post-key round trip.
+# Only SDL's headers (constants); MapVirtualKeyW on Windows.
+add_executable(platform_input_test tests/platform_input_test.cpp src/platform/platform_keys.cpp)
+target_include_directories(platform_input_test PRIVATE "src" "${PROJECT_SOURCE_DIR}/deps/SDL/include")
+if(MINGW)
+	target_link_options(platform_input_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME platform_input COMMAND platform_input_test)
+
 # Native Linux groundwork (lane LINUX, docs/render/linux.md, PLAN.md P5): the
 # portable helpers behind src/platform/portable. Same test on the Windows mingw
 # build and natively, so both implementations are covered by one ctest.

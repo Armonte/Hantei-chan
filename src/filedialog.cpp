@@ -1,5 +1,6 @@
 #include "filedialog.h"
 #include "main.h"
+#include "platform/platform_message.h"
 #include <commdlg.h>
 
 std::string FileDialog(int fileType, bool save, char* defaultName)
@@ -115,6 +116,8 @@ std::string FileDialog(int fileType, bool save, char* defaultName)
 	if(!save)
 		ofn.Flags |= OFN_PATHMUSTEXIST | OFN_FILEMUSTEXIST;
 
+	// A modal dialog: end any view gesture first (WM_CANCELMODE).
+	platform::NotifyModalOpening();
 	// Display the Open dialog box. 
 	if(save)
 	{

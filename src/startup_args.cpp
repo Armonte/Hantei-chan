@@ -26,6 +26,7 @@
 #include <shlobj.h>   // DROPFILES (--post-drop)
 #include <fstream>
 #include <functional>
+#include <memory>
 #include <filesystem>
 #include <vector>
 #include <cstdint>
@@ -329,6 +330,37 @@ static void RunUiScript(MainFrame &mf, const std::function<void(const std::strin
 			WritePng(arg, rgb.data(), w, h);
 			continue;
 		}
+		// Typed text through the real input paths, no desktop input (P0 fix 2):
+		//   sdltext <text>  pushes one SDL_EVENT_TEXT_INPUT per character at the main window (what SDL makes of a
+		//                   WM_CHAR), so it reaches ImGui's character queue through imgui_impl_sdl3;
+		//   wmchar <text>   posts WM_CHAR to the app's own main window, so SDL's window procedure decides whether it
+		//                   becomes text input (only while text input is on for the window);
+		//   textinput       logs whether SDL text input is on for the main window and ImGui wants text.
+		if (cmd == "sdltext" || cmd == "wmchar") {
+			static std::vector<std::unique_ptr<std::string>> keep;   // SDL keeps the pointer until the event is read
+			for (size_t i = 0; i < arg.size(); i++) {
+				if (cmd == "sdltext") {
+					keep.push_back(std::make_unique<std::string>(1, arg[i]));
+					SDL_Event ev{};
+					ev.type = SDL_EVENT_TEXT_INPUT;
+					ev.text.timestamp = SDL_GetTicksNS();
+					ev.text.windowID = platform::MainWindowId();
+					ev.text.text = keep.back()->c_str();
+					SDL_PushEvent(&ev);
+				} else {
+					PostMessageW((HWND)platform::NativeWindowHandle(), WM_CHAR, (WPARAM)(unsigned char)arg[i], 1);
+				}
+			}
+			LogLine((cmd + " " + arg + " -> ok").c_str());
+			waitFrames = 3; return;
+		}
+		if (cmd == "textinput") {
+			SDL_Window *w = (SDL_Window *)platform::Window();
+			const std::string m = std::string("textinput main=") + (w && SDL_TextInputActive(w) ? "1" : "0") +
+			                      " want_text=" + (ImGui::GetIO().WantTextInput ? "1" : "0");
+			LogLine(m.c_str());
+			continue;
+		}
 		std::string msg;
 		if (mf.PatScriptCommand(cmd, arg, &msg)) {   // PAT editor commands (ui/pat_editor_impl.h)
 			if (!msg.empty()) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "%s\n", msg.c_str()); fclose(lf); } }
@@ -574,16 +606,29 @@ void MainFrame::ProcessStartupArgs()
 		// the first detached window (else the main window). It then takes the
 		// same path as a typed key: ImGui, then MainFrame::HandleKeys. The key
 		// up follows so ImGui does not keep the key held.
+		// The event carries the raw scan code under the active layout as well
+		// (platform::PostKeyParts), so the event loop maps it back to the same
+		// VK as a real key press; a letter's scancode and keycode are the ones
+		// the layout gives that letter, so ImGui sees the same key.
 		SDL_WindowID target = platform::MainWindowId();
 		for (ImGuiViewport *vp : ImGui::GetPlatformIO().Viewports)
 			if (vp != ImGui::GetMainViewport() && vp->PlatformHandle) { target = (SDL_WindowID)(intptr_t)vp->PlatformHandle; break; }
-		if (int sc = platform::ScancodeFromVk((uint32_t)gStartup.postKey)) {
+		platform::KeyParts kp;
+		if (platform::PostKeyParts((uint32_t)gStartup.postKey, kp)) {
+			SDL_Scancode sc = (SDL_Scancode)kp.scancode;
+			SDL_Keycode key = SDL_GetKeyFromScancode(sc, (SDL_Keymod)kp.mod, false);
+			if (gStartup.postKey >= 'A' && gStartup.postKey <= 'Z') {
+				key = (SDL_Keycode)('a' + (gStartup.postKey - 'A'));
+				if (SDL_Scancode lsc = SDL_GetScancodeFromKey(key, nullptr)) sc = lsc;
+			}
 			SDL_Event ev{};
 			ev.type = SDL_EVENT_KEY_DOWN;
 			ev.key.timestamp = SDL_GetTicksNS();
 			ev.key.windowID = target;
-			ev.key.scancode = (SDL_Scancode)sc;
-			ev.key.key = SDL_GetKeyFromScancode((SDL_Scancode)sc, SDL_KMOD_NONE, false);
+			ev.key.scancode = sc;
+			ev.key.key = key;
+			ev.key.mod = (SDL_Keymod)kp.mod;
+			ev.key.raw = kp.raw;
 			ev.key.down = true;
 			SDL_PushEvent(&ev);
 			ev.type = SDL_EVENT_KEY_UP;
