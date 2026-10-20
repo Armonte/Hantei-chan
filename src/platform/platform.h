@@ -115,7 +115,11 @@ enum : uint32_t { kModCtrl = 1u << 0, kModShift = 1u << 1, kModAlt = 1u << 2 };
 // the keyboard state at processing time, which has moved on by the time a
 // batch of queued events is handled). Shift + a keypad digit with NumLock on
 // drops Shift, as the driver's fake Shift release did for WM_KEYDOWN.
+// AltGr (right Alt on a layout that has AltGr) adds Ctrl, as the fake left
+// Ctrl Windows sends with it did for GetKeyState.
 uint32_t ChordModsFromKey(int sdlScancode, uint16_t mod);
+// The same with the layout given: altGrLayout = the active layout has AltGr.
+uint32_t ChordModsFromKeyLayout(int sdlScancode, uint16_t mod, bool altGrLayout);
 // The chord modifiers as of the event being dispatched now (kMod* bits):
 // updated from every key event in queue order, so a mouse event handled after
 // a Ctrl release sees Ctrl up, as GetKeyState did inside WM_MOUSEMOVE.
