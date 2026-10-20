@@ -110,7 +110,8 @@ of the affected areas, byte-identical.
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
 | P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl` (deleted), report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
 | golden re-render (P0 fix 1): determinism exe twice | **PASS** | `golden/<BASELINE>_20261019` vs `..._repeat` (repeat deleted), report `golden/h1_20261019_report.md` | 2887/2887 PASS: 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical once the wall-clock durations are masked (their raw bytes differ only there) | 2026-10-19 |
-| P0 fix 1: branch build vs the new golden | **PASS** | `runs/20261019_84a60ec_gl` (exe of `fc0644f`), report `runs/p0_fix1_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; A 2459, B 10, C 236, D 122, E 20 PNG + 40 non-PNG | 2026-10-19 |
+| P0 fix 2: input parity, branch build vs the golden | **PASS** | `runs/20261019_00909d1_gl`, report `runs/p0_fix2_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; ctest 103/103 (`platform_input`, `input_text` new) | 2026-10-20 |
+| P0 fix 1: branch build vs the new golden | **PASS** | `runs/20261019_84a60ec_gl` (exe of `fc0644f`, deleted), report `runs/p0_fix1_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; A 2459, B 10, C 236, D 122, E 20 PNG + 40 non-PNG | 2026-10-19 |
 | ctest after P0 fix 1 | **PASS** | `build/ctest -j8 --timeout 300` | 101/101 (100 + the new `cgm_ctest_workdir` setup test); `cgm_folder_mbaacc` 42 s (was 256-1500 s), `render_parity` 60/60 | 2026-10-19 |
 | ctest | **PASS** | `build/ctest -j6` | 100/100 (93 before the HLSL/FX/LINUX merges), incl. `render_parity` 60/60, `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*`, `portable_*` | 2026-10-19 |
 
@@ -319,6 +320,78 @@ of the affected areas, byte-identical.
       - **Result:** `./build.sh` clean; ctest 101/101; full corpus
         `runs/20261019_84a60ec_gl` vs the new golden **2887 PASS / 0 ALLOWED
         / 0 FAIL** (report `runs/p0_fix1_report.md`).
+
+- [x] P0 fix 2 (2026-10-20): keyboard, text and mouse input parity with the
+      old WndProc (`git show b1181ab:src/main.cpp`), the regressions the gate
+      audit found. Commits `c45b97f`, `a37243d`, `0eb2a97`, `00909d1` and the
+      step commit.
+      1. **Layout VKs.** `platform::VkFromKeyEvent` maps the event's raw scan
+         code (SDL: `0xE0xx` for extended keys) through
+         `MapVirtualKeyW(raw, MAPVK_VSC_TO_VK_EX)`, the active layout, as the
+         driver did for WM_KEYDOWN (AZERTY A/Q/Z/W/M, the OEM keys); sided
+         modifiers come back as the generic VK_SHIFT/CONTROL/MENU wParam
+         carried. Without a raw code letters follow the keycode, the rest the
+         table. `--post-key` pushes scancode + keycode + mod + the layout's raw
+         code (`platform::PostKeyParts`), and the round trip gives back the
+         same VK for every key the test lists.
+      2. **Type-to-search.** `KeepTextInputActive` (main.cpp) turns SDL text
+         input back on, once per loop, for the main window and every detached
+         one when imgui_impl_sdl3 has turned it off (no field active), so a
+         WM_CHAR becomes `SDL_EVENT_TEXT_INPUT` and reaches
+         `io.InputQueueCharacters` as before. The backend still owns the IME
+         placement and its stop/start around a field.
+      3. **Wheel.** `platform::WheelZoomStep`: `y == 0` (horizontal scroll,
+         the old WM_MOUSEHWHEEL) never zooms.
+      4. **Recorder.** `platform::IsModifierOnlyVk` drops bare Shift/Ctrl/Alt/
+         AltGr (generic and sided, VK_LMENU/VK_RMENU included) and the Windows
+         keys.
+      5. **Event modifiers.** `HandleKeys` takes the chord modifiers from
+         `e.key.mod` (`platform::ChordModsFromKey`), with the two driver rules
+         GetKeyState saw: AltGr on an AltGr layout is Ctrl+Alt (the fake left
+         Ctrl), and Shift + a keypad digit with NumLock on drops Shift. The
+         position drag's Alt (precision) / Shift (axis lock) read
+         `platform::EventKeyMods()`, the state as of the last key event in queue
+         order. No `GetKeyState`/`GetAsyncKeyState` is left in `src/`.
+      6. **Keys outside the table.** VK_OEM_102, VK_APPS, F13-F24, the JIS and
+         Korean keys and the media keys come through the layout (and the table
+         as the fallback); the keypad with NumLock off (or Shift) gives
+         VK_HOME/UP/PRIOR/LEFT/CLEAR/RIGHT/END/DOWN/NEXT/INSERT/DELETE as Win32
+         did; Pause and NumLock are fixed up (SDL folds their scan codes).
+      7. **WM_CANCELMODE.** `CancelAllGestures` runs on focus loss of any app
+         window and, through `platform::NotifyModalOpening`, before every modal:
+         `platform::MessageBox`, `FileDialog`, `BrowseForFolderUtf8`. It ends
+         the main view's pan/draw drags and calls `CancelViewportGestures`
+         (box, position and UV drags, and now a detached view's box drag).
+      - **Tests.** New ctest `platform_input` (`tests/platform_input_test.cpp`,
+        the mapping table: AZERTY and JIS mappers, the real MapVirtualKeyW on
+        layout-independent keys, NumLock keypad, chord modifiers incl. AltGr,
+        recorder filter, wheel y == 0, the --post-key round trip). New ctest
+        `input_text` (`tools/ui/input_ctest.sh`, headless): an
+        `SDL_EVENT_TEXT_INPUT` pushed with `SDL_PushEvent` (ui-script
+        `sdltext`, not `g_injType`) moves the browser cursor from alpha to
+        charlie, the control run stays on alpha, and SDL text input is on for
+        the main window with no field active (`textinput main=1
+        want_text=0`). Visible check `tools/render_parity/text_input_check.sh`
+        (`AB_VISIBLE=1`, in-app capture, no desktop input): **PASS**, control
+        cursor 0, `sdltext c` cursor 2, capture shows `charlie.ha6` selected
+        (`render_parity/text_input_check/typed.png`); its `wmchar d` half
+        (WM_CHAR posted to the app's own window) is reported, not judged: a
+        window started from WSL had no keyboard focus, and SDL drops text for
+        an unfocused window.
+      - **Known, kept:** the old WndProc handled WM_KEYDOWN only, so Alt+key
+        and F10 (WM_SYSKEYDOWN) never reached `HandleKeys` or the recorder;
+        under SDL they do. No default binding uses Alt or F10, so nothing that
+        worked before changes; a user can now record and use an Alt chord.
+      - **Result:** `./build.sh` clean (only the pre-existing
+        `generated/version.h` warning). ctest **103/103** at `-j8` (the first
+        full run was 102/103: `ha4_golden`, ActCadenza convert in `ha4tool`,
+        exited non-zero after WLEN.DAT under load average 31-35 with no error
+        line; it shares no file with this step and passed alone in 147 s and
+        in the second full run). Full corpus `runs/20261019_00909d1_gl`
+        (`--renderer gl -j 8`, 5m53) vs `golden/<BASELINE>_20261019`:
+        **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit (report
+        `runs/p0_fix2_report.md`). The fix-1 run `20261019_84a60ec_gl` was
+        deleted (numbers above).
 
 **Gate P0 run, 2026-10-19 at `a5862c9`: FAIL.** Run `runs/20261019_a5862c9_gl`
 (`--renderer gl`, `-j 8`, load average 45-112 from other agents), diffed against
