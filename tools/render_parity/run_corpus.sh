@@ -289,6 +289,9 @@ bad = sum(1 for r in rows if r[5] != 0)
 print("manifest: %d cases (%d non-PNG, %d with a non-zero or unknown exit) -> %s" % (
     len(rows), sum(1 for r in rows if r[3] == 0), bad, path))
 PY
+# A run without a manifest is not a run (DrvFs can fail a walk with ENOMEM when
+# the machine is short of memory): fail loudly; a re-run resumes and rewrites it.
+[ $? = 0 ] || { echo "run_corpus: manifest not written" >&2; rm -f "$OUT/manifest.tsv"; fail=1; }
 
 # Keep the logs, drop the scratch (shards, exe copies, rewritten scripts): a
 # full run's scratch is hundreds of MB on a nearly full C:.
