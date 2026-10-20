@@ -6,7 +6,8 @@
 # UTF-8. Copies MBAACC akiha into a folder named "café" (é is the one byte 0xE9
 # in code page 1252, two bytes C3 A9 in UTF-8) and runs the exe headless with
 # --open on it. Pass: the "startup: --open" log line holds the code page 1252
-# bytes "caf\xE9\akiha.txt" (no UTF-8 C3 A9).
+# byte 0xE9 in "caf\xE9\akiha.txt" (quill escapes it as that text), not the UTF-8
+# pair C3 A9.
 #
 # What happens next is the baseline's behaviour, reported, not judged: the
 # loaders read akiha.txt and its four HA6 files through the ANSI file APIs,
@@ -33,8 +34,10 @@ WW="$(wslpath -w "$W")"
 	--stats "$WW\\stats.txt" --ui-script "$(wslpath -w "$W/run/script.txt")")
 echo "exit $?"
 LINE="$(grep -a 'startup: --open ' "$W/run/hanteichan.log" | tail -1)"
-echo "log: $(printf '%s' "$LINE" | iconv -f cp1252 -t utf-8 2>/dev/null)"
-if printf '%s' "$LINE" | LC_ALL=C grep -aq $'caf\xe9\\\\akiha.txt' && ! printf '%s' "$LINE" | LC_ALL=C grep -aq $'\xc3\xa9'; then
+echo "log: $LINE"
+# quill writes a non-ASCII byte as the text \xNN: code page 1252 gives caf\xE9,
+# UTF-8 would give caf\xC3\xA9 (a raw byte is accepted too).
+if printf '%s' "$LINE" | grep -aqF 'caf\xE9\akiha.txt' || printf '%s' "$LINE" | LC_ALL=C grep -aq $'caf\xe9\\\\akiha.txt'; then
 	echo "argv_check: PASS (the --open value is in code page 1252)"; exit 0
 fi
 echo "argv_check: FAIL"; exit 1
