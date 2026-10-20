@@ -34,6 +34,16 @@ struct WindowState {
 };
 WindowState g;
 EventHandlers g_handlers;
+uint32_t g_eventMods = 0;   // EventKeyMods(): the modifiers as of the event being dispatched
+
+uint32_t ModsFromSdl(SDL_Keymod mod)
+{
+	uint32_t m = 0;
+	if (mod & SDL_KMOD_CTRL) m |= kModCtrl;
+	if (mod & SDL_KMOD_SHIFT) m |= kModShift;
+	if (mod & SDL_KMOD_ALT) m |= kModAlt;
+	return m;
+}
 
 }  // namespace
 
@@ -225,6 +235,8 @@ uint32_t MainWindowId()
 
 void SetEventHandlers(const EventHandlers& h) { g_handlers = h; }
 
+uint32_t EventKeyMods() { return g_eventMods; }
+
 
 bool PollEvents()
 {
@@ -237,6 +249,9 @@ bool PollEvents()
 		// backend's business: its close button, size and position are not the
 		// main window's, and must not quit the app or overwrite the ini.
 		const bool mainWindow = e.window.windowID == mainId;
+		// Each key event carries the modifier state of its own moment; the
+		// events after it (mouse drags) see that state, in queue order.
+		if (e.type == SDL_EVENT_KEY_DOWN || e.type == SDL_EVENT_KEY_UP) g_eventMods = ModsFromSdl(e.key.mod);
 		switch (e.type) {
 		case SDL_EVENT_QUIT:
 			running = false;

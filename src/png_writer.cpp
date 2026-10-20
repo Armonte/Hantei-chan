@@ -1,4 +1,5 @@
 #include "png_writer.h"
+#include "platform/platform_message.h"
 
 #include <windows.h>
 #include <wincodec.h>
@@ -256,6 +257,7 @@ std::string BrowseForFolderUtf8(const std::string& initialUtf8)
 			folder->Release();
 		}
 	}
+	platform::NotifyModalOpening();   // a modal dialog: end any view gesture first (WM_CANCELMODE)
 	if (SUCCEEDED(dialog->Show(nullptr))) {
 		IShellItem* item = nullptr;
 		if (SUCCEEDED(dialog->GetResult(&item))) {

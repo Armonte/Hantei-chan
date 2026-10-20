@@ -11,23 +11,26 @@
 // Shortcuts
 // ---------------------------------------------------------------------------
 
-bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard, bool imguiTextInput)
+static_assert((uint32_t)shortcutCtrl == platform::kModCtrl && (uint32_t)shortcutShift == platform::kModShift &&
+              (uint32_t)shortcutAlt == platform::kModAlt, "platform::kMod* must be the shortcut modifier bits");
+
+bool MainFrame::HandleKeys(uint64_t vkey, uint32_t modifiers, bool isRepeat, bool imguiWantsKeyboard, bool imguiTextInput)
 {
 	// A non-text ImGui owner (slider being dragged, modal popup) keeps the
 	// keyboard entirely. A focused text field keeps everything except the
 	// bindings marked duringTextInput (Save), so its native Ctrl+Z works.
 	// Key capture for the Keyboard shortcuts window (issue #9): the next
 	// non-modifier key becomes the chord; Esc cancels.
+	// `modifiers` are the key event's own (platform::ChordModsFromKey: the
+	// kMod* bits are the shortcut* bits), not the keyboard state now.
 	if (m_keyCapture >= 0) {
-		if (vkey == VK_SHIFT || vkey == VK_CONTROL || vkey == VK_MENU || vkey == VK_LSHIFT ||
-		    vkey == VK_RSHIFT || vkey == VK_LCONTROL || vkey == VK_RCONTROL || vkey == VK_LWIN || vkey == VK_RWIN)
+		// A bare modifier, Alt and AltGr included, is not a chord.
+		if (platform::IsModifierOnlyVk((uint32_t)vkey))
 			return true;
 		if (vkey != VK_ESCAPE) {
 			ShortcutChord c;
 			c.key = (uint32_t)vkey;
-			if (GetKeyState(VK_CONTROL) & 0x8000) c.modifiers |= shortcutCtrl;
-			if (GetKeyState(VK_SHIFT) & 0x8000) c.modifiers |= shortcutShift;
-			if (GetKeyState(VK_MENU) & 0x8000) c.modifiers |= shortcutAlt;
+			c.modifiers = (uint8_t)(modifiers & (shortcutCtrl | shortcutShift | shortcutAlt));
 			shortcuts.registry().setBindingChord((size_t)m_keyCapture, c);
 			gSettings.keyBindings = shortcuts.registry().serializeOverrides();
 			ImGui::MarkIniSettingsDirty();
@@ -41,9 +44,7 @@ bool MainFrame::HandleKeys(uint64_t vkey, bool isRepeat, bool imguiWantsKeyboard
 
 	ShortcutChord chord;
 	chord.key = (uint32_t)vkey;
-	if (GetKeyState(VK_CONTROL) & 0x8000) chord.modifiers |= shortcutCtrl;
-	if (GetKeyState(VK_SHIFT) & 0x8000) chord.modifiers |= shortcutShift;
-	if (GetKeyState(VK_MENU) & 0x8000) chord.modifiers |= shortcutAlt;
+	chord.modifiers = (uint8_t)(modifiers & (shortcutCtrl | shortcutShift | shortcutAlt));
 
 	// A NUMERIC field being typed in (InputInt/InputFloat, Ctrl+click on a drag): Q / E may step keyframes from it
 	// (issue #61); a text field (names) keeps every letter.
@@ -658,11 +659,13 @@ void MainFrame::PositionDragBy(int dx, int dy)
 	if (!seq || m_posDrag.frame >= (int)seq->frames.size()) { EndPositionDrag(true); return; }
 	Frame& f = seq->frames[m_posDrag.frame];
 
-	const float precision = (GetKeyState(VK_MENU) & 0x8000) ? 0.15f : 1.f;
+	// Modifiers as of this mouse event (in queue order), as GetKeyState gave them inside WM_MOUSEMOVE.
+	const uint32_t mods = platform::EventKeyMods();
+	const float precision = (mods & platform::kModAlt) ? 0.15f : 1.f;
 	m_posDrag.totalDX += dx * precision;
 	m_posDrag.totalDY += dy * precision;
 	float sx = m_posDrag.totalDX, sy = m_posDrag.totalDY;
-	if (GetKeyState(VK_SHIFT) & 0x8000) {   // lock to the dominant screen axis
+	if (mods & platform::kModShift) {   // lock to the dominant screen axis
 		if (std::fabs(sx) >= std::fabs(sy)) sy = 0; else sx = 0;
 	}
 
@@ -713,6 +716,10 @@ void MainFrame::EndPositionDrag(bool cancel)
 
 void MainFrame::CancelViewportGestures()
 {
+	// A detached view's box drag (DrawDetachedViewSurface) ends here too, so a
+	// button still held after the dialog closes does not keep resizing the box
+	// outside its (now committed) undo step.
+	m_hostBoxDragView = 0;
 	if (m_boxDragCharacter) EndBoxDrag();
 	if (m_posDrag.active) EndPositionDrag(true);
 	if (m_uvDrag.active) EndUvDrag(false);
