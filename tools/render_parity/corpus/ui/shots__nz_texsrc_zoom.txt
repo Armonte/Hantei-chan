@@ -1,0 +1,22 @@
+# Zoomed GL_NEAREST preview: the "CG + .pat textures" tab on RBO ACOLYTE_F (lineage sample, read-only), part sheet 0 at 4x and
+# CG sprite 0 at 3x (textures uploaded with nearest filtering, drawn through ui::ImageWithOwnSampler).
+browse C:\games\rbo\_lineage_samples
+waitidle
+select ACOLYTE_F.DT2
+waitidle
+wait 30
+open
+wait 160
+cgm open
+wait 30
+cgm tab CG + .pat textures
+wait 10
+cgm texsel 2 0
+cgm texzoom 4
+wait 20
+capture OUT/shots_nz_texsrc_zoom_nz_texsrc_sheet_zoom4.png
+cgm texsel 0 0
+cgm texzoom 3
+wait 20
+capture OUT/shots_nz_texsrc_zoom_nz_texsrc_cg_zoom3.png
+quit
