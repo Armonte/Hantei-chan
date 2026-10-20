@@ -178,6 +178,20 @@ bool Init(const InitDesc& desc, std::string& error)
 		HC_LOG_INFO("platform: OpenGL {} via SDL3", (const char*)glGetString(GL_VERSION));
 	}
 
+#ifdef _WIN32
+	// The awareness SDL applied from the hint above (0 = unaware, as before
+	// SDL; 1 = system, 2 = per monitor). Looked up at run time: the calls are
+	// Windows 10 1607+.
+	{
+		using GetCtx = HANDLE (WINAPI*)();
+		using GetAwareness = int (WINAPI*)(HANDLE);
+		HMODULE user32 = GetModuleHandleW(L"user32.dll");
+		auto getCtx = user32 ? (GetCtx)(void*)GetProcAddress(user32, "GetThreadDpiAwarenessContext") : nullptr;
+		auto getAw = user32 ? (GetAwareness)(void*)GetProcAddress(user32, "GetAwarenessFromDpiAwarenessContext") : nullptr;
+		if (getCtx && getAw) HC_LOG_INFO("platform: DPI awareness {} (0 = unaware)", getAw(getCtx()));
+	}
+#endif
+	HC_LOG_INFO("platform: screensaver {}", SDL_ScreenSaverEnabled() ? "allowed" : "blocked");
 	if (!desc.headless) SDL_ShowWindow(g.window);
 	return true;
 }
