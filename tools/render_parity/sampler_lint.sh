@@ -3,7 +3,7 @@
 # texture's own sampler (src/imgui_utils.h ui::Image / ui::ImageWithOwnSampler /
 # ui::BeginOwnSampler). The baseline build (IMGUI_IMPL_OPENGL_ES2) never bound a
 # sampler; without ES2 the GL3 backend binds a linear one unless asked not to,
-# which blurs the GL_NEAREST pixel-art previews. A raw ImGui::Image /
+# which blurs the nearest-filter pixel-art previews. A raw ImGui::Image /
 # ImageWithBg / ImageButton / ImDrawList::AddImage* call fails this check unless
 # its line says "own sampler" (a run opened by ui::BeginOwnSampler).
 set -u

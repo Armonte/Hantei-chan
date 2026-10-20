@@ -1,4 +1,4 @@
-# Zoomed GL_NEAREST preview: the archive browser's image preview of GOF2 00_LOSE.IMG at 4x and 3x (texture MAG_FILTER nearest).
+# Zoomed nearest-filter preview: the archive browser's image preview of GOF2 00_LOSE.IMG at 4x and 3x (texture MAG_FILTER nearest).
 # The baseline ImGui GL3 backend (ES2 mode) drew app textures with their own filter; without ES2 it binds a linear sampler unless
 # the draw asks for the texture's own (ui::ImageWithOwnSampler), which would blur these blocks.
 browse C:\games\gof2_run

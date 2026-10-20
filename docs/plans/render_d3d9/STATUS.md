@@ -13,7 +13,7 @@ Naming the two shas, as PLAN.md 4.2/4.3 asks.
 | plain baseline exe sha256 | `a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b` |
 | determinism commits (BASELINE + these four only is the golden binary) | `81a948a`, `f2e1cc0`, `a4eb48f`, `4f6ba36` |
 | determinism exe sha256 | `cf92645f1c77f7bd9780631d1d6e46fdd2b445b96e16150f7f7842de1aad7113` |
-| golden (re-rendered 2026-10-19, P0 fix 1) | `/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_20261019`, manifest sha256 `fca193965766db514007a3176eaa9125a0c4c923760d3462dd2d112fb393ebd2` (2887 rows: 2847 PNG + 40 export .json/.txt) |
+| golden (re-rendered 2026-10-19, P0 fix 1; 4 cases added 2026-10-20, P0 fix 3) | `/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_20261019`, manifest sha256 `8e62d4b8b1573fcb09e6ee9b68cb144c48effde07d0ded3947f61944f5f89fad` (2891 rows: 2851 PNG + 40 export .json/.txt; the 2887-row manifest `fca19396...` is kept as `golden/manifest_20261019_before_nz.tsv`) |
 | smoke golden (60 cases, outside git) | `/mnt/c/dev/hantei-chan/render_parity/golden_smoke` |
 | runs | `/mnt/c/dev/hantei-chan/render_parity/runs/<run-id>` |
 
@@ -110,6 +110,7 @@ of the affected areas, byte-identical.
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
 | P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl` (deleted), report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
 | golden re-render (P0 fix 1): determinism exe twice | **PASS** | `golden/<BASELINE>_20261019` vs `..._repeat` (repeat deleted), report `golden/h1_20261019_report.md` | 2887/2887 PASS: 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical once the wall-clock durations are masked (their raw bytes differ only there) | 2026-10-19 |
+| P0 fix 3: own sampler, DPI, screensaver, ANSI argv, MessageBox, OLE drop | **PASS** | `runs/20261020_8addd25_gl`, report `runs/p0_fix3_report.md` | **2891 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit (incl. the 4 new nz cases); ctest 104/104 (`imgui_sampler_lint` new); drop_check (OLE + WM_DROPFILES), detach_check, argv_check PASS | 2026-10-20 |
 | P0 fix 2: input parity, branch build vs the golden | **PASS** | `runs/20261019_00909d1_gl`, report `runs/p0_fix2_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; ctest 103/103 (`platform_input`, `input_text` new) | 2026-10-20 |
 | P0 fix 1: branch build vs the new golden | **PASS** | `runs/20261019_84a60ec_gl` (exe of `fc0644f`, deleted), report `runs/p0_fix1_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; A 2459, B 10, C 236, D 122, E 20 PNG + 40 non-PNG | 2026-10-19 |
 | ctest after P0 fix 1 | **PASS** | `build/ctest -j8 --timeout 300` | 101/101 (100 + the new `cgm_ctest_workdir` setup test); `cgm_folder_mbaacc` 42 s (was 256-1500 s), `render_parity` 60/60 | 2026-10-19 |
@@ -153,7 +154,15 @@ of the affected areas, byte-identical.
       (src/platform/platform_message.h): a real box when visible, a log line
       under `--headless`. Not cosmetic: the GL error paths called
       `MessageBoxA`, and under `--headless` a modal box blocked the batch
-      renderer forever.
+      renderer forever. Finished in P0 fix 3: every message is logged through
+      quill (`HC_LOG_*`, no `fprintf`), the visible box is
+      `SDL_ShowSimpleMessageBox`, and the platform-init failure path no longer
+      calls `MessageBoxA` (headless: log only). File dialogs: PLAN.md keeps the
+      Windows dialog code on Windows ("keep filedialog.cpp's Windows ... code
+      under #ifdef _WIN32, with the same API"), so `FileDialog` stays
+      `GetOpenFileNameA`/`GetSaveFileNameA` (it returns an ANSI path, which
+      every caller expects) and `BrowseForFolderUtf8` stays `IFileOpenDialog`;
+      the SDL3 dialog path is P5's (the Linux build has no GUI target yet).
 - [x] 5. Detached windows through the SDL3 + GL3 backends;
       `workspace_viewports.{h,cpp}` and its per-HWND key subclass deleted
       (commits `345e264`, `c21d517`, `f041e10` and the step commit).
@@ -393,6 +402,117 @@ of the affected areas, byte-identical.
         `runs/p0_fix2_report.md`). The fix-1 run `20261019_84a60ec_gl` was
         deleted (numbers above).
 
+- [x] P0 fix 3 (2026-10-20): the rest of the gate audit findings. Commits
+      `f26c65d`, `f3871c2`, `1bff434`, `0ac5859`, `8addd25` and the step
+      commit.
+      1. **Own sampler at every app image draw.** The baseline imgui GL3
+         backend ran in ES2 mode and never bound a sampler, so every app
+         texture, nearest or linear, was drawn with its own filter and wrap
+         mode; without ES2 it binds a linear clamp sampler. All 19 raw sites
+         now use the texture's own sampler (`src/imgui_utils.h`: `ui::Image`
+         for `ImGui::Image`, `ui::ImageWithOwnSampler` for draw-list images,
+         `ui::BeginOwnSampler` for a run of them): `han2_inspector.cpp` CG
+         preview (nearest, zoomable), `han2_pac_window.cpp` IMG and QoH/Rosa
+         viewers (nearest, zoomable), `stage_card_ui.cpp` (nearest, 2x),
+         `tool_windows_impl.h` gauge sheets and portraits (nearest, scaled
+         down), `hud_layout_ui.cpp` (nearest), `game_view.cpp` full frame and
+         the layered stage/chars/HUD run (MAG nearest; one
+         `BeginOwnSampler` after the premultiplied blend, ended by its existing
+         `ResetRenderState`), `workspace_hosts_impl.h` view surface (nearest
+         FBO), `s3d_view.cpp` x2 (linear FBO) and `bg_browser.cpp` x3 (linear
+         DDS thumbnails, default REPEAT wrap, which the backend's clamp sampler
+         changed at the edges). The 11 sites converted in P0 step 4 were
+         already right. New ctest `imgui_sampler_lint`
+         (`tools/render_parity/sampler_lint.sh`): any raw `ImGui::Image` /
+         `ImageWithBg` / `ImageButton` / `->AddImage*` in `src/` fails unless its
+         line says "own sampler" (20 hits at `d8523dc`, 0 now).
+         **New coverage:** `tools/ui/shots/nz_archive_zoom.txt` (archive
+         browser IMG preview of GOF2 00_LOSE.IMG at 4x and 3x) and
+         `nz_texsrc_zoom.txt` (CG + .pat textures tab, RBO ACOLYTE_F part sheet 2
+         at 2x, CG sprite 0 at 3x), copied into `corpus/ui/` by
+         `make_corpus.py build_ui` (no other corpus file changed). Both use only
+         commands the baseline binary has. Rendered by
+         `baseline_bin/<BASELINE>_det` twice, byte-identical, and the 4 rows
+         appended to the golden manifest (`tools/render_parity/BASELINE`). In
+         the golden's 4x shot 97 % of the preview's 4x4 blocks are one colour,
+         which only nearest filtering gives. The newly converted sites
+         themselves (inspector zoom, PAC viewer zoom, stage card, HUD sheets,
+         game view, HUD layout) cannot be reached by any ui-script command the
+         baseline binary knows, so they cannot be in the golden; the lint
+         guards them instead.
+      2. **DPI.** `SDL_SetHint("SDL_WINDOWS_DPI_AWARENESS", "unaware")` before
+         `SDL_Init` (SDL3 has no macro for it; `WIN_InitDPIAwareness` reads that
+         name). SDL3 otherwise declares per-monitor-v2; the old exe declared
+         nothing (no manifest entry, no `SetProcessDpiAwareness*`). The log now
+         says `platform: DPI awareness 0 (0 = unaware)`.
+      3. **Screensaver.** `SDL_HINT_VIDEO_ALLOW_SCREENSAVER=1`; log
+         `platform: screensaver allowed`.
+      4. **ANSI argv.** `main.cpp` re-reads the command line with
+         `CommandLineToArgvW(GetCommandLineW())`, as `wWinMain` did, and keeps
+         every argument in UTF-8 and in CP_ACP. Each value goes in the code
+         page it always had: `--open`, `--open-any`, `--capture`, `--cg`,
+         `--game`, `--tool`, `--tag-*`, `--authoring-*` and the wave-2 options
+         the old code converted with CP_ACP get the ANSI bytes; `--fxr-selftest`,
+         `--batch`, `--ui-script`, `--capture-view`, `--capture-windows`,
+         `--export-png`, `--stats`, `--post-drop*` get UTF-8
+         (`ParseWave2StartupArg(arg, nextAcp, nextUtf8, i)`). SDL's argv is the
+         fallback. New `tools/render_parity/argv_check.sh`: `--open
+         ...\café\akiha.txt` headless; PASS, the new `startup: --open` log line
+         holds `caf\xE9` (code page 1252), not UTF-8 `C3 A9`.
+         **Pre-existing bug found, not fixed (reported):** with a non-ASCII
+         path the loaders read akiha.txt and its four HA6 files through the ANSI
+         APIs and then `CharacterInstance::loadFromTxt` (and `loadHA6`)
+         `std::filesystem::path(narrow string)` throws "Cannot convert character
+         sequence" (libstdc++ converts with the C locale) and the app exits 3.
+         The golden binary does exactly the same with the same command
+         (`terminate called ... Illegal byte sequence`, exit 3), and a File >
+         Open of such a path takes the same route, so it is a baseline bug, not
+         a P0 regression.
+      5. **Messages.** See step 7 above. `--headless` with
+         `SDL_VIDEO_DRIVER=bogus`: exit 3 at once, log line `[ERROR] gonptechan:
+         platform: SDL_Init failed: bogus not available`, no box. The GCC
+         hex-escape warning at the title is gone: `"gonpt\xc3\xa9" "chan v"`
+         (`\xa9c` read as one escape garbled the title); `./build.sh` logs no
+         compiler warning for this build.
+      6. **Drag-drop through OLE.** SDL initialises OLE and registers an
+         `IDropTarget` per window (`WIN_AcceptDragAndDrop`), so a file dragged
+         from Explorer never sends `WM_DROPFILES`; the old `--post-drop` only
+         proved SDL's fallback. New `--post-drop-ole <file>` (+ `--post-drop-at
+         X,Y`, client pixels, default the centre) takes the target from the
+         window property `RegisterDragDrop` stores
+         (`OleDropTargetInterface`), checks it is committed memory with a vtable
+         inside the exe (SDL is static), builds the shell's own data object for
+         the file (`SHCreateItemFromParsingName` -> `BHID_DataObject`, CF_HDROP)
+         and calls `DragEnter`, `DragOver`, `Drop` at the point, in process.
+         `--stats` now also writes `drop_client`, `drop_screen`,
+         `client_origin` and `ole_drop`. Found and fixed on the way: SDL's
+         `WM_DROPFILES` handler sends no drop position, so a WM_DROPFILES drop
+         landed at (0,0) (the old WndProc used `DragQueryPoint`); an
+         `SDL_SetWindowsMessageHook` now reads `DragQueryPoint` and the platform
+         loop puts it on that drop's file events.
+         `drop_check.sh` runs both paths: **PASS**. OLE: `ole_drop
+         enter=00000000 over=00000000 drop=00000000 effect=1 hdrop=1
+         unicodetext=0`, views 1, `active_file C:\games\mbaacc\data\akiha.txt`,
+         `drop_client 300 200`, `drop_screen 318 241` = `client_origin 18 41` +
+         (300, 200). WM_DROPFILES: views 1, akiha.txt, `drop_client 942 480` =
+         the centre of the 1884x961 client. Control: views 0.
+         Known, kept: SDL's `Drop` prefers `text/uri-list`, then UTF-8/Unicode/
+         ANSI text, and only then CF_HDROP; a drag source that offers text as
+         well as files (not Explorer: `unicodetext=0` above) arrives as
+         `SDL_EVENT_DROP_TEXT`, which the app ignores, where the old
+         DragAcceptFiles window got the files.
+      - **Result:** `./build.sh` clean. Full corpus `runs/20261020_8addd25_gl`
+        (`--renderer gl -j 8`, 6m17, load average 24-37) vs the golden:
+        **2891 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit (report
+        `runs/p0_fix3_report.md`); the nz files re-run after their comment
+        lines were reworded (no GL symbol names in the harness): 4/4 identical.
+        ctest: first full run 103/104 (`rhi_lint`: the new comments named
+        `GL_NEAREST`; reworded), then 104/104. `detach_check.sh` PASS (control
+        detached capture vs the golden binary's: 78 px in a 12x12 box, the
+        hovered resize grip under the real cursor, as at step 5).
+        `drop_check.sh` PASS, `argv_check.sh` PASS. The fix-2 run
+        `20261019_00909d1_gl` was deleted (numbers above).
+
 **Gate P0 run, 2026-10-19 at `a5862c9`: FAIL.** Run `runs/20261019_a5862c9_gl`
 (`--renderer gl`, `-j 8`, load average 45-112 from other agents), diffed against
 the golden with the committed (header-only) allowlist, report
@@ -459,5 +579,6 @@ None.
 ## Allowlist changes
 
 None yet (P0 fix 1 added no entry; its golden change is recorded in
-`tools/render_parity/BASELINE` and under P0 fix 1 above). `tools/render_parity/allowlist.tsv` is empty (header only) and stays
+`tools/render_parity/BASELINE` and under P0 fix 1 above; P0 fix 3 added four
+golden cases from the determinism binary, no entry). `tools/render_parity/allowlist.tsv` is empty (header only) and stays
 empty until a P2 `EMU`/`AA`/`FLT` case needs an evidence-backed entry.
