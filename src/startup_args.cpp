@@ -334,7 +334,8 @@ static void RunUiScript(MainFrame &mf, const std::function<void(const std::strin
 		//   sdltext <text>  pushes one SDL_EVENT_TEXT_INPUT per character at the main window (what SDL makes of a
 		//                   WM_CHAR), so it reaches ImGui's character queue through imgui_impl_sdl3;
 		//   wmchar <text>   posts WM_CHAR to the app's own main window, so SDL's window procedure decides whether it
-		//                   becomes text input (only while text input is on for the window);
+		//                   becomes text input (only while text input is on for the window, and only while the
+		//                   window has the keyboard focus: never under --headless);
 		//   textinput       logs whether SDL text input is on for the main window and ImGui wants text.
 		if (cmd == "sdltext" || cmd == "wmchar") {
 			static std::vector<std::unique_ptr<std::string>> keep;   // SDL keeps the pointer until the event is read
@@ -356,8 +357,10 @@ static void RunUiScript(MainFrame &mf, const std::function<void(const std::strin
 		}
 		if (cmd == "textinput") {
 			SDL_Window *w = (SDL_Window *)platform::Window();
+			SDL_Window *focus = SDL_GetKeyboardFocus();
 			const std::string m = std::string("textinput main=") + (w && SDL_TextInputActive(w) ? "1" : "0") +
-			                      " want_text=" + (ImGui::GetIO().WantTextInput ? "1" : "0");
+			                      " want_text=" + (ImGui::GetIO().WantTextInput ? "1" : "0") +
+			                      " keyboard_focus=" + (!focus ? "none" : focus == w ? "main" : "other");
 			LogLine(m.c_str());
 			continue;
 		}
