@@ -108,7 +108,8 @@ of the affected areas, byte-identical.
 |---|---|---|---|---|
 | H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
-| P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl` (deleted), report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
+| **P0 (SDL3 platform, GL kept), re-run at `a217146`** | **PASS** | `runs/20261020_a217146_gl` (kept), report `runs/p0_gate3_report.md` | **2891 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit: A 2459, B 10, C 236, D 126, E 60 (20 PNG + 40 export .json/.txt); ctest 104/104; visible sweep 41/41 scripts, 126/126 captures; detach_check, drop_check (OLE + WM_DROPFILES), argv_check PASS | 2026-10-20 |
+| P0 (SDL3 platform, GL kept), first run at `a5862c9` (superseded) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl` (deleted), report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
 | golden re-render (P0 fix 1): determinism exe twice | **PASS** | `golden/<BASELINE>_20261019` vs `..._repeat` (repeat deleted), report `golden/h1_20261019_report.md` | 2887/2887 PASS: 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical once the wall-clock durations are masked (their raw bytes differ only there) | 2026-10-19 |
 | P0 fix 3: own sampler, DPI, screensaver, ANSI argv, MessageBox, OLE drop | **PASS** | `runs/20261020_8addd25_gl`, report `runs/p0_fix3_report.md` | **2891 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit (incl. the 4 new nz cases); ctest 104/104 (`imgui_sampler_lint` new); drop_check (OLE + WM_DROPFILES), detach_check, argv_check PASS | 2026-10-20 |
 | P0 fix 2: input parity, branch build vs the golden | **PASS** | `runs/20261019_00909d1_gl`, report `runs/p0_fix2_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; ctest 103/103 (`platform_input`, `input_text` new) | 2026-10-20 |
@@ -513,7 +514,27 @@ of the affected areas, byte-identical.
         `drop_check.sh` PASS, `argv_check.sh` PASS. The fix-2 run
         `20261019_00909d1_gl` was deleted (numbers above).
 
-**Gate P0 run, 2026-10-19 at `a5862c9`: FAIL.** Run `runs/20261019_a5862c9_gl`
+**Gate P0 re-run, 2026-10-20 at `a217146`: PASS.** Exactly the PLAN.md 6
+Gate P0 items, on a fresh `./build.sh` of `a217146` (clean; only make's clock
+skew notices). Run `runs/20261020_a217146_gl` (`--renderer gl -j 8`, 7m55, load
+average 20-28 from other agents), diffed against
+`golden/<BASELINE>_20261019` with the committed (header-only) allowlist, report
+`runs/p0_gate3_report.md`. Older runs deleted (`20261020_8addd25_gl`, and an
+earlier unrecorded render of this same sha); this run is kept as the P0 gate
+run.
+
+| gate item | result | evidence |
+|---|---|---|
+| corpus A, B, C, E byte-identical | **PASS** | A 2459 (uni2 832, mbaacc 532, mbtl 463, dfci 372, unib 188, smoke 60, mbac 12), B 10, C 236 (stage3d 225 + 2D 11), E 60 (20 PNG + 40 export .json/.txt, timing fields masked): 2765/2765 PASS |
+| corpus D byte-identical or `AA` | **PASS** | D 126 (122 + the 4 nz shots): 126 PASS / 0 ALLOWED / 0 FAIL. No allowlist entry used |
+| detached windows open, render, take shortcuts, capture | **PASS** | `detach_check.sh`: key run `view_onion_enabled` 1 in detached host 1 with focus, control 0; both detached captures 1130x672, 1725 colours. Key capture byte-identical to the golden binary's (`detach_check_baseline/key_win_1.png`); control capture differs by 78 px in a 12x12 box (274,470)-(285,481), the hovered resize grip under the real desktop cursor, as at step 5 and fix 3 |
+| drag-drop opens files | **PASS** | `drop_check.sh`: OLE `IDropTarget` path (`enter/over/drop=00000000 effect=1 hdrop=1`) and WM_DROPFILES path both open `C:\games\mbaacc\data\akiha.txt` (`views 1`); drop points exact (OLE 300,200 = screen 318,241 - origin 18,41; WM_DROPFILES 942,480 = client centre); control `views 0` |
+| every `tools/ui/shots*/` script run visibly once | **PASS** | `visible_sweep.sh` (`AB_VISIBLE=1`, in-app capture only, no desktop input): shots 26, shots_cgm 4, shots_layout 7, s8 4 = 41/41 exit 0, 126/126 captures written (`render_parity/visible_sweep/sweep.tsv`). The only "failed" lines are `10_keyboard`'s two `info` lines: the browser's `info` command reports its state and returns false by design (`src/archive_browser_ui.cpp:805`), so the runner prints it as failed |
+| ctest green | **PASS** | `ctest -j8 --timeout 300 --output-on-failure`: **104/104** in 172 s (load average 28), incl. `render_parity` 60/60 smoke, `render_parity_tools`, `imgui_sampler_lint`, `rhi_lint`, `platform_input`, `input_text`, `cgm_folder_mbaacc` 50 s |
+| extra: `argv_check.sh` | **PASS** | the `--open` value reaches the loader in code page 1252 (`caf\xE9`); exit 3 afterwards is the known baseline non-ASCII path bug (fix 3 item 4), identical in the golden binary |
+
+**Gate P0 run, 2026-10-19 at `a5862c9`: FAIL** (superseded by the re-run
+above). Run `runs/20261019_a5862c9_gl`
 (`--renderer gl`, `-j 8`, load average 45-112 from other agents), diffed against
 the golden with the committed (header-only) allowlist, report
 `runs/p0_gate_report.md`. Everything this gate asks for passes except two items,
