@@ -21,10 +21,38 @@
 #include <string>
 
 #include <windows.h>
+#include <shellapi.h>   // DragQueryPoint
 
 namespace platform {
 
 namespace {
+
+// WM_DROPFILES carries its drop point (DragQueryPoint, client pixels of the
+// window it was sent to), but SDL's handler sends the files without an
+// SDL_EVENT_DROP_POSITION, so their x/y would be the previous drop's (0,0 on
+// the first). The old WndProc read the point from the message; this hook,
+// which SDL runs on every message before dispatching it, does the same, and
+// PollEvents puts it on that drop's file events. SDL only takes this route when
+// OleInitialize failed (else a shell drag is an OLE drop with its own position
+// events); an app-posted WM_DROPFILES (--post-drop) takes it too.
+struct WmDropPoint {
+	bool valid = false;
+	POINT pt{};
+};
+WmDropPoint g_wmDrop;
+
+#ifdef _WIN32
+bool SDLCALL WindowsMessageHook(void*, MSG* msg)
+{
+	if (msg && msg->message == WM_DROPFILES) {
+		POINT pt{};
+		DragQueryPoint((HDROP)msg->wParam, &pt);   // filled also when it returns FALSE (a non-client drop), as the old WndProc used it
+		g_wmDrop.valid = true;
+		g_wmDrop.pt = pt;
+	}
+	return true;   // SDL still handles the message
+}
+#endif
 
 struct WindowState {
 	SDL_Window* window = nullptr;
@@ -83,6 +111,9 @@ bool Init(const InitDesc& desc, std::string& error)
 		error = std::string("SDL_Init failed: ") + SDL_GetError();
 		return false;
 	}
+#ifdef _WIN32
+	SDL_SetWindowsMessageHook(WindowsMessageHook, nullptr);
+#endif
 
 	if (desc.openGL) {
 		SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -298,11 +329,16 @@ bool PollEvents()
 				int wx = 0, wy = 0, mx = 0, my = 0;
 				if (SDL_Window* w = SDL_GetWindowFromID(e.drop.windowID)) SDL_GetWindowPosition(w, &wx, &wy);
 				SDL_GetWindowPosition(g.window, &mx, &my);
-				const float sx = (float)wx + e.drop.x, sy = (float)wy + e.drop.y;
+				float dx = e.drop.x, dy = e.drop.y;
+				if (e.type == SDL_EVENT_DROP_FILE && g_wmDrop.valid) { dx = (float)g_wmDrop.pt.x; dy = (float)g_wmDrop.pt.y; }
+				const float sx = (float)wx + dx, sy = (float)wy + dy;
 				g_handlers.onDropPoint(sx, sy, sx - (float)mx, sy - (float)my, g_handlers.user);
 			}
 			if (e.type == SDL_EVENT_DROP_FILE && g_handlers.onDropFile && e.drop.data)
 				g_handlers.onDropFile(e.drop.data, g_handlers.user);
+			break;
+		case SDL_EVENT_DROP_COMPLETE:
+			g_wmDrop.valid = false;   // the WM_DROPFILES point belonged to this drop only
 			break;
 		default:
 			break;
