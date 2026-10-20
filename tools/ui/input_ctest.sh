@@ -22,7 +22,7 @@ fail() { echo "FAIL: $*"; exit 1; }
 run() {  # run <name> <script lines...>: the browser on dir, cursor on alpha, then the lines, then info + textinput
 	local name="$1"; shift
 	{
-		printf 'browse %s\\dir\nwaitidle\nwait 5\nkey Down\nwait 5\n' "$(W "$WORK")"
+		printf 'browse %s\\dir\nwaitidle\nwait 5\nkey Down\nwait 5\nfocus\n' "$(W "$WORK")"
 		for l in "$@"; do printf '%s\n' "$l"; done
 		printf 'wait 5\ninfo\ntextinput\nquit\n'
 	} > "$WORK/$name.txt"

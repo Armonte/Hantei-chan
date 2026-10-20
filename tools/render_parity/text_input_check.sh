@@ -7,14 +7,18 @@
 # character only becomes SDL_EVENT_TEXT_INPUT while SDL text input is on for the
 # window, which imgui_impl_sdl3 turns off whenever no field wants it. This runs
 # the editor VISIBLY (AB_VISIBLE=1, through tools/ui/ab_shot.sh) on a folder of
-# four characters (alpha, bravo, charlie, delta), cursor on alpha, three times:
+# four characters (alpha, bravo, charlie, delta), cursor on alpha and ImGui focus
+# on the browser window (script `focus`, what a click on it does: the OS focus of
+# a window started from WSL comes and goes at startup, and ImGui's multi-viewport
+# code then sets its window focus to none, which the type-to-search needs), twice:
 #
-#   control  nothing typed                           -> cursor 0 (alpha)
-#   sdltext  "c" as a real SDL_EVENT_TEXT_INPUT       -> cursor 2 (charlie)
-#            pushed at the main window (SDL_PushEvent)
-#   wmchar   "c" as WM_CHAR posted to the app's own   -> cursor 2, when the window has the keyboard focus
-#            main window (SDL's window procedure       (SDL drops text for an unfocused window; the run
-#            turns it into text input)                  then reports it instead of failing)
+#   control  nothing typed                              -> cursor 0 (alpha)
+#   typed    "c" as a real SDL_EVENT_TEXT_INPUT pushed   -> cursor 2 (charlie)
+#            at the main window (SDL_PushEvent), then
+#            after 1.2 s (a new search) "d" as WM_CHAR   -> cursor 3 (delta), when the window has the keyboard
+#            posted to the app's own main window (SDL's     focus (SDL drops text for an unfocused window, and a
+#            window procedure makes it text input)          window started from WSL usually gets none; the run
+#                                                           then reports it instead of judging it)
 #
 # and checks SDL text input is on for the main window with no field active.
 # No desktop input: every event is the app's own; captures are in-app GL reads.
@@ -35,36 +39,43 @@ run() {  # run <name> <script lines...>
 	local name="$1"; shift
 	rm -f "$OUT/${name}.png"
 	{
-		printf 'browse %s\\dir\nwaitidle\nwait 5\nkey Down\nwait 5\ntextinput\n' "$OUTW"
+		printf 'browse %s\\dir\nwaitidle\nwait 5\nkey Down\nwait 5\nfocus\ntextinput\n' "$OUTW"
 		for l in "$@"; do printf '%s\n' "$l"; done
 		printf 'wait 10\ninfo\ntextinput\ncapture %s/%s.png\nquit\n' "$OUTM" "$name"
 	} > "$OUT/${name}_script.txt"
-	AB_VISIBLE=1 AB_TIMEOUT=60 AB_EXE="$EXE" AB_WORK=/mnt/c/dev/hantei-chan/work/ab_text_input_check \
+	AB_VISIBLE=1 AB_TIMEOUT=60 AB_EXE="$EXE" AB_WORK="/mnt/c/dev/hantei-chan/work/ab_text_input_check_$name" \
 		bash "$D/tools/ui/ab_shot.sh" "$OUT/${name}_script.txt" > "$OUT/${name}_run.log" 2>&1
 	echo "== $name: $(head -1 "$OUT/${name}_run.log")"
 	sed 's/^/   /' "$OUT/${name}_run.log" | tail -n +2
 }
-cursor() { grep -o 'cursor=-\?[0-9]*' "$OUT/$1_run.log" | tail -1 | cut -d= -f2; }
-focus() { grep '^textinput' "$OUT/$1_run.log" | tail -1 | grep -o 'keyboard_focus=[a-z]*' | cut -d= -f2; }
-check() {  # check <name> <expected cursor> [focus-required]
-	local name="$1" want="$2" c f
-	c="$(cursor "$name")"; f="$(focus "$name")"
-	[ "$(head -1 "$OUT/${name}_run.log")" = "exit 0" ] || { echo "FAIL $name: $(head -1 "$OUT/${name}_run.log")"; fail=1; return; }
+cursors() { grep -o 'cursor=-\?[0-9]*' "$OUT/$1_run.log" | cut -d= -f2 | tr '\n' ' '; }
+nth() { echo "$1" | awk -v n="$2" '{ print $n }'; }
+# the keyboard focus when the WM_CHAR was posted: the textinput line logged right after it
+wmfocus() { grep -A3 '^wmchar' "$OUT/$1_run.log" | grep -o 'keyboard_focus=[a-z]*' | head -1 | cut -d= -f2; }
+common() {  # common <name>
+	local name="$1"
+	[ "$(head -1 "$OUT/${name}_run.log")" = "exit 0" ] || { echo "FAIL $name: $(head -1 "$OUT/${name}_run.log")"; fail=1; return 1; }
 	[ -s "$OUT/${name}.png" ] || { echo "FAIL $name: no capture"; fail=1; }
 	grep -q '^textinput main=1 want_text=0 ' "$OUT/${name}_run.log" \
 		|| { echo "FAIL $name: SDL text input is off for the main window with no text field active"; fail=1; }
-	if [ "${3:-}" = focus ] && [ "$f" != main ]; then
-		echo "NOTE $name: the main window has no keyboard focus ($f), so SDL drops the WM_CHAR text; cursor $c not judged"
-		return
-	fi
-	[ "$c" = "$want" ] && echo "PASS $name: cursor $c" || { echo "FAIL $name: cursor $c, want $want"; fail=1; }
+	return 0
 }
 
 run control
-run sdltext "sdltext c"
-run wmchar "wmchar c"
-check control 0
-check sdltext 2
-check wmchar 2 focus
+run typed "sdltext c" "wait 10" "info" "waitms 1200" "focus" "wmchar d" "textinput"
+if common control; then
+	c="$(cursors control)"
+	[ "$(nth "$c" 1)" = 0 ] && echo "PASS control: cursor 0" || { echo "FAIL control: cursor $(nth "$c" 1), want 0"; fail=1; }
+fi
+if common typed; then
+	c="$(cursors typed)"
+	[ "$(nth "$c" 1)" = 2 ] && echo "PASS sdltext: cursor 2" || { echo "FAIL sdltext: cursor $(nth "$c" 1), want 2"; fail=1; }
+	f="$(wmfocus typed)"
+	if [ "$f" != main ]; then
+		echo "NOTE wmchar: the main window had no keyboard focus ($f), so SDL drops the WM_CHAR text; cursor $(nth "$c" 2) not judged"
+	else
+		[ "$(nth "$c" 2)" = 3 ] && echo "PASS wmchar: cursor 3" || { echo "FAIL wmchar: cursor $(nth "$c" 2), want 3"; fail=1; }
+	fi
+fi
 [ $fail = 0 ] && echo "text_input_check: PASS" || echo "text_input_check: FAIL"
 exit $fail
