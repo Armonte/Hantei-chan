@@ -2,6 +2,7 @@
 // files for a stage id into an output folder.
 #include "stage_card.h"
 #include "../ui/ui_style.h"
+#include "../imgui_utils.h"
 
 #include "../filedialog.h"
 #include "../i18n.h"
@@ -64,7 +65,7 @@ void Window::draw()
 		if (src.tex) {
 			ImGui::SameLine();
 			// Checkerboard-free preview on the window background; 2x so the 16-px round call is readable.
-			ImGui::Image((ImTextureID)(intptr_t)src.tex, ImVec2((float)i.w * (i.h <= 32 ? 2.f : 1.f), (float)i.h * (i.h <= 32 ? 2.f : 1.f)));
+			ui::Image((ImTextureID)(intptr_t)src.tex, ImVec2((float)i.w * (i.h <= 32 ? 2.f : 1.f), (float)i.h * (i.h <= 32 ? 2.f : 1.f)));
 		}
 		ImGui::PopID();
 	}

@@ -401,7 +401,7 @@ void DrawCgWindow(CharacterInstance *ch)
 		ImDrawList *dl = ImGui::GetWindowDrawList();
 		for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16)
 			dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255));
-		ImGui::Image((ImTextureID)(intptr_t)g_prev.tex, sz);
+		ui::Image((ImTextureID)(intptr_t)g_prev.tex, sz);
 	} else ImGui::TextDisabled("%s", TXT("(empty image)"));
 	ImGui::EndChild();
 	ImGui::EndGroup();

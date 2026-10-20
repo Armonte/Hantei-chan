@@ -1,5 +1,6 @@
 #include "han2_pac_window.h"
 #include "ui/ui_style.h"
+#include "imgui_utils.h"
 #include "han2_typed_files.h"
 #include "han2_browser.h"
 #include "archive_browser.h"
@@ -389,7 +390,7 @@ void DrawFileViewers()
 				for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16)
 					dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255));
 			}
-			ImGui::Image((ImTextureID)(intptr_t)v.tex, sz);
+			ui::Image((ImTextureID)(intptr_t)v.tex, sz);
 			ImGui::EndChild();
 		} else if (v.kind == Viewer::Poly) {
 			// GOF1 .B polygon object (docs/formats/frenchbread_rbo_gof.md section 7): wireframe of every triangle/quad face, orthographic, drag to rotate
@@ -438,7 +439,7 @@ void DrawFileViewers()
 			ImGui::BeginChild("img", ImVec2(0, 0), true, ImGuiWindowFlags_HorizontalScrollbar);
 			ImVec2 sz(v.img.width * v.zoom, v.img.height * v.zoom), p0 = ImGui::GetCursorScreenPos();
 			if (v.checker) { ImDrawList *dl = ImGui::GetWindowDrawList(); for (float y = 0; y < sz.y; y += 16) for (float x = 0; x < sz.x; x += 16) dl->AddRectFilled(ImVec2(p0.x + x, p0.y + y), ImVec2(std::min(p0.x + x + 16, p0.x + sz.x), std::min(p0.y + y + 16, p0.y + sz.y)), (((int)(x / 16) + (int)(y / 16)) & 1) ? IM_COL32(110, 110, 110, 255) : IM_COL32(160, 160, 160, 255)); }
-			ImGui::Image((ImTextureID)(intptr_t)v.tex, sz);
+			ui::Image((ImTextureID)(intptr_t)v.tex, sz);
 			ImGui::EndChild();
 		} else if (v.kind == Viewer::Fob) {
 			ImGui::Text(TXT("dMp script bank: %zu functions, %zu instructions, %zu bytes of data"), v.fob.funcs.size(), v.fob.nInsns, v.fob.rawBytes);

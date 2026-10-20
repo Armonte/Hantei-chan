@@ -1468,6 +1468,10 @@ add_test(NAME render_parity_tools
 add_test(NAME rhi_lint
 	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/rhi_lint.sh" "${CMAKE_SOURCE_DIR}"
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
+# Every ImGui draw of an app texture keeps the texture's own sampler (P0 fix 3).
+add_test(NAME imgui_sampler_lint
+	COMMAND bash "${CMAKE_SOURCE_DIR}/tools/render_parity/sampler_lint.sh" "${CMAKE_SOURCE_DIR}"
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR})
 
 # Lane HLSL (docs/plans/render_d3d9/PLAN.md 5.2).  glsl_identity is pure Python over the
 # repo text: res/shaders/*.glsl.* must stay byte-identical to the inline GLSL until P1

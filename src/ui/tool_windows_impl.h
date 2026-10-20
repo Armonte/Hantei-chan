@@ -1151,7 +1151,7 @@ void MainFrame::drawHudWindow()
 				const int n = tx.name[6] - '0';
 				ImGui::Text("%s  -  %s", tx.name.c_str(), n >= 0 && n < 10 ? notes[n] : "");
 				const float scale = std::min(1.f, (ImGui::GetContentRegionAvail().x - 10) / (float)tx.w);
-				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * scale, tx.h * scale));
+				ui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * scale, tx.h * scale));
 				++shown;
 			}
 			if (!shown) i18n::TextDisabledWrapped("%s", TXT("No GRP/gauge_AA/gauge0*.png under the game folder (extract 0003.p / 0008.p there)."));
@@ -1164,7 +1164,7 @@ void MainFrame::drawHudWindow()
 			for (auto& tx : h.textures) {
 				if (tx.name.rfind("face", 0) != 0) continue;
 				ImGui::BeginGroup();
-				ImGui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * 0.5f, tx.h * 0.5f));
+				ui::Image((ImTextureID)(uintptr_t)tx.id, ImVec2(tx.w * 0.5f, tx.h * 0.5f));
 				ImGui::TextUnformatted(tx.name.c_str());
 				ImGui::EndGroup();
 				if (++col % 4) ImGui::SameLine();

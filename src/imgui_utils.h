@@ -19,16 +19,44 @@ namespace ui {
 //
 // These textures are drawn at 1:1 or by an integer factor, so the correct
 // filter is exactly the one they carry.
-inline void ImageWithOwnSampler(ImDrawList* dl, ImTextureID tex, const ImVec2& a, const ImVec2& b,
-                                const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
-                                ImU32 tint = IM_COL32_WHITE)
+//
+// The baseline build (IMGUI_IMPL_OPENGL_ES2) never bound a sampler, so every
+// app texture, linear or nearest, was drawn with its own filter and wrap mode.
+// Every app-texture draw goes through one of the helpers below (ctest
+// imgui_sampler_lint checks src/ for raw ImGui::Image / AddImage calls).
+
+// Start a run of draws that use the textures' own parameters. The run ends at
+// EndOwnSampler or at the next DrawCallback_ResetRenderState.
+inline void BeginOwnSampler(ImDrawList* dl)
 {
 	ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
 	if (pio.DrawCallback_SetSamplerFromTex)
 		dl->AddCallback(pio.DrawCallback_SetSamplerFromTex, nullptr);
-	dl->AddImage(tex, a, b, uv0, uv1, tint);
+}
+
+inline void EndOwnSampler(ImDrawList* dl)
+{
+	ImGuiPlatformIO& pio = ImGui::GetPlatformIO();
 	if (pio.DrawCallback_SetSamplerFromTex)
 		dl->AddCallback(pio.DrawCallback_ResetRenderState, nullptr);
+}
+
+inline void ImageWithOwnSampler(ImDrawList* dl, ImTextureID tex, const ImVec2& a, const ImVec2& b,
+                                const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1),
+                                ImU32 tint = IM_COL32_WHITE)
+{
+	BeginOwnSampler(dl);
+	dl->AddImage(tex, a, b, uv0, uv1, tint);   // own sampler
+	EndOwnSampler(dl);
+}
+
+// ImGui::Image (item layout included) with the texture's own sampler.
+inline void Image(ImTextureID tex, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1))
+{
+	ImDrawList* dl = ImGui::GetWindowDrawList();
+	BeginOwnSampler(dl);
+	ImGui::Image(tex, size, uv0, uv1);   // own sampler
+	EndOwnSampler(dl);
 }
 
 }  // namespace ui

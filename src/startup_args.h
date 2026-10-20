@@ -102,7 +102,9 @@ struct StartupArgs {
 	std::string saveProject;
 	std::string stats;           // UTF-8
 	int postKey = 0;
-	std::string postDrop;          // --post-drop <file> (UTF-8)
+	std::string postDrop;          // --post-drop <file> (UTF-8): WM_DROPFILES to the main window
+	std::string postDropOle;       // --post-drop-ole <file> (UTF-8): the OLE IDropTarget path a shell drag takes
+	int postDropAt[2] = {-1, -1};  // --post-drop-at X,Y: the drop point in main-window client pixels (default: the centre)
 	double sceneMs = 0, onionSimMs = 0, onionTotalMs = 0;
 	int statFrames = 0, onionSamples = 0;
 	bool quit = false;
@@ -124,8 +126,10 @@ struct StartupArgs {
 };
 
 // Parses one wave-2 option; advances i past its value. False if not ours.
-// The next argument is UTF-8 (as SDL3 hands over argv) or null.
-bool ParseWave2StartupArg(const char* arg, const char* next, int& i);
+// The next argument comes in the two code pages the pre-SDL wWinMain converted
+// to (main.cpp): nextAcp in the ANSI code page (CP_ACP) and nextUtf8 in UTF-8,
+// or both null. Each option takes the one it always took.
+bool ParseWave2StartupArg(const char* arg, const char* nextAcp, const char* nextUtf8, int& i);
 extern StartupArgs gStartup;
 
 #endif
