@@ -13,7 +13,7 @@ Naming the two shas, as PLAN.md 4.2/4.3 asks.
 | plain baseline exe sha256 | `a347a3e7aa1d3d535f93c5857515bb8e6ebe532ee1224316b1ce5e724cda9c1b` |
 | determinism commits (BASELINE + these four only is the golden binary) | `81a948a`, `f2e1cc0`, `a4eb48f`, `4f6ba36` |
 | determinism exe sha256 | `cf92645f1c77f7bd9780631d1d6e46fdd2b445b96e16150f7f7842de1aad7113` |
-| golden | `/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a` |
+| golden (re-rendered 2026-10-19, P0 fix 1) | `/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_20261019`, manifest sha256 `fca193965766db514007a3176eaa9125a0c4c923760d3462dd2d112fb393ebd2` (2887 rows: 2847 PNG + 40 export .json/.txt) |
 | smoke golden (60 cases, outside git) | `/mnt/c/dev/hantei-chan/render_parity/golden_smoke` |
 | runs | `/mnt/c/dev/hantei-chan/render_parity/runs/<run-id>` |
 
@@ -108,12 +108,15 @@ of the affected areas, byte-identical.
 |---|---|---|---|---|
 | H1 (two baseline runs byte-identical) | **PASS** | `golden/<BASELINE>` vs `..._repeat`, report `runs/h1_report.md` | 2847 cases, 0 differing | 2026-10-18 |
 | H2 (`test_diff.py` + `diff.py golden golden`) | **PASS** | `runs/h2_report.md` | test_diff 14/14; diff golden golden 2847/2847 PASS | 2026-10-18 |
-| P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl`, report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
+| P0 (SDL3 platform, GL kept) | **FAIL** (16 area-D drift FAILs, ctest 99/100) | `runs/20261019_a5862c9_gl` (deleted), report `runs/p0_gate_report.md` | A/B/C/E 2725/2725 PASS; D 106 PASS / 0 ALLOWED / 16 FAIL; total 2831 / 0 / 16 of 2847 | 2026-10-19 |
+| golden re-render (P0 fix 1): determinism exe twice | **PASS** | `golden/<BASELINE>_20261019` vs `..._repeat` (repeat deleted), report `golden/h1_20261019_report.md` | 2887/2887 PASS: 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical once the wall-clock durations are masked (their raw bytes differ only there) | 2026-10-19 |
+| P0 fix 1: branch build vs the new golden | **PASS** | `runs/20261019_84a60ec_gl` (exe of `fc0644f`), report `runs/p0_fix1_report.md` | **2887 PASS / 0 ALLOWED / 0 FAIL**, 0 missing, 0 bad exit; A 2459, B 10, C 236, D 122, E 20 PNG + 40 non-PNG | 2026-10-19 |
+| ctest after P0 fix 1 | **PASS** | `build/ctest -j8 --timeout 300` | 101/101 (100 + the new `cgm_ctest_workdir` setup test); `cgm_folder_mbaacc` 42 s (was 256-1500 s), `render_parity` 60/60 | 2026-10-19 |
 | ctest | **PASS** | `build/ctest -j6` | 100/100 (93 before the HLSL/FX/LINUX merges), incl. `render_parity` 60/60, `render_parity_tools`, `glsl_identity`, `hlsl_compile`, `hlsl_ref`, `fx_*`, `portable_*` | 2026-10-19 |
 
 ## BLOCKED
 
-- **Gate P0 (2026-10-19, `a5862c9`): needs the coordinator's golden decision.**
+- (resolved by P0 fix 1, 2026-10-19; kept for history) **Gate P0 (2026-10-19, `a5862c9`): needs the coordinator's golden decision.**
   16 area-D shots show the archive browser's live "Files in games" count of
   C:/games, which other agents change; the golden binary renders them the same
   as this build today (30/30), so no code change can make them match the
@@ -233,6 +236,90 @@ of the affected areas, byte-identical.
       of step 5 PASS again. ctest at `-j8`: 99/100, `cgm_folder_mbaacc`
       timed out at 300 s under that load; alone it passes (659 s).
 
+- [x] P0 fix 1 (coordinator rulings after the failed P0 gate audit, 2026-10-19):
+      Windows-visible RBO fixture, golden re-render from the baseline binary,
+      harness tightening, `cgm_folder_mbaacc` on C:. Commits `fc0644f`,
+      `84a60ec` and the step commit.
+      - **(a) RBO fixture.** `C:\games\rbo_run` was a WSL symlink (an LX
+        reparse point: `cmd.exe /c dir C:\games\rbo_run\DATA\Update01.PAC`
+        -> "The file cannot be accessed by the system"), so every RBO shot
+        browsed `C:\games` and drew its live "Files in games (N)" count: the
+        cause of all 16 P0 gate FAILs. `prepare_fixtures.py` now makes it a
+        directory junction (`mklink /J C:\games\rbo_run C:\games\rbo`, only
+        ever replacing a link, never a real folder) and proves it through
+        cmd.exe before every run (`dir C:\games\rbo_run\DATA` lists the 13
+        PACs; `dir C:\games` shows `<JUNCTION> rbo_run [C:\games\rbo]`). The
+        RBO browser lists DATA's top-level files only (13, unchanged since
+        2017), so the live folders in the install (pcdev, logs) never show.
+        Visible proof: `visible_sweep.sh build/gonptechan.exe
+        render_parity/visible_sweep_fix1 shots` = 24/24 exit 0, every capture
+        written, 0 failed lines in 03/09/pn01/pn10/pn20/pn22 (the
+        `select ACOLYTE_F.DT2` / `select ACOLYTE_F.FOB` / `source Update01`
+        failures of the gate sweep are gone); `03_rbo_archive` shows
+        "Ragnarok Battle Offline - All archives", "Files in DATA (13)" and the
+        ACOLYTE_F.DT2 preview; pn01 logs `savechar-as
+        C:\dev\hantei-chan\work\pacnyx\out\ACOLYTE_F.DT2 -> saved` (the
+        RBO install's PACs keep their 2004-2017 dates, no `.bak`).
+        Live counts elsewhere: the two GOF1 shots (`04_ex3_image`,
+        `08_gof1_character_view`) drew "Files in run (61)" of
+        `C:\games\gof1\run`, the live run copy where PovertyCaster writes
+        its logs. They now browse `work/render_parity/fixtures/gof1_run`
+        (NTFS hard links to gof.exe + gof_00..03.p, rebuilt by
+        `prepare_fixtures.py`; "Files in gof1_run (5)"), through
+        `make_corpus.py` `FIXED_FOLDERS` (its `build_ui` output is the
+        committed corpus/ui byte for byte apart from those two lines). The
+        other browsed folders' counted file sets have not changed since the
+        golden (GOF2 `Data` 9, MBAACC `data` 1279, UNIB/UNI2/MBTL installs).
+      - **(b) Golden re-render** from `baseline_bin/<BASELINE>_det` only
+        (sha256 `0497a82c...`), full corpus, `-j 8`, twice: 2847/2847 PNGs
+        byte-identical, the 40 export .json/.txt identical except the
+        wall-clock durations (see c). New golden
+        `golden/<BASELINE>_20261019`, manifest sha256 `fca19396...`, recorded
+        in `tools/render_parity/BASELINE` with the reason. The old golden and
+        the repeat are deleted.
+        **`stage_mbaacc_bg01_{c,l,r}` mist drift, cause found and pinned.**
+        MBAACC DXT stages compress their CG bank to DXT5 at load
+        (`src/background/bg_gametex.cpp` `ComposeGameTexture`): with the
+        in-process d3dx9_36 encoder, which needs a D3D9 HAL device, and with
+        the builtin BC3 encoder when that device cannot be created. Whether it
+        can depends on the machine's GPU state at that moment, not on the
+        build, so both binaries drifted together at step 5. Proof: the golden
+        binary with `d3dx9_36` blocked renders bg01 with max |d| 78, 418319 px,
+        45.391 % vs the old golden, exactly the step-5 numbers; unblocked it
+        matched the old golden. Pin: `run_corpus.sh` writes a placeholder
+        `d3dx9_36.dll` into every shard (the exe folder is first in the DLL
+        search order, neither exe imports d3dx9 statically), so every binary
+        always uses the deterministic builtin encoder; the new golden has it
+        (bg01 sha `2c79dcf2...` for c/l/r).
+        Side finding, not changed: `stage_mbaacc_bg01_l`/`_r` (and the other
+        `_l`/`_r` 2D stage cases) are byte-identical to `_c` in the golden,
+        because each line opens the stage fresh in its own shard and the
+        `center` of a fresh stage tab does not move its camera; in one process
+        (the same view reused) they differ. A corpus coverage gap for P4,
+        reported, not fixed here.
+      - **(c) Harness tightening.** `diff.py`: PASS is a byte-identical PNG
+        only (a same-pixels re-encode is now a FAIL named "re-encoded");
+        a case whose process exit is non-zero, 124 (timeout) or unknown (-1)
+        on either side FAILs; non-PNG outputs are compared by sha256 with
+        exactly two wall-clock patterns masked (`"timing_ms": {...}` in the
+        export JSON, `in N ms.` in export_result.txt). `run_corpus.sh`: each
+        file's output paths go to `<status>.outputs`, and the manifest's
+        `exit` column is the real exit code of the process that wrote the file
+        (longest claimed folder for `--export-png`); the 40 export .json/.txt
+        are manifest rows (w = h = 0); a manifest that cannot be written fails
+        the run (DrvFs returned ENOMEM once under memory pressure); the
+        `work/render_parity/run_<id>` scratch is deleted at the end (logs kept
+        under `<run>/logs/`). `run_smoke.sh` deletes a passing smoke run.
+        `test_diff.py` 22/22 (new: re-encode FAIL, exit 1/124/3/-1 on either
+        side, non-PNG masked PASS and two changed-byte FAILs).
+      - **(d)** `cgm_folder_mbaacc` runs with `WORKING_DIRECTORY`
+        `/mnt/c/dev/hantei-chan/work/ctest` (`HC_CTEST_WORKDIR`), created by
+        the `cgm_ctest_workdir` FIXTURES_SETUP test; timeout unchanged. 42 s
+        in the full `-j8` ctest (was 256-1500 s).
+      - **Result:** `./build.sh` clean; ctest 101/101; full corpus
+        `runs/20261019_84a60ec_gl` vs the new golden **2887 PASS / 0 ALLOWED
+        / 0 FAIL** (report `runs/p0_fix1_report.md`).
+
 **Gate P0 run, 2026-10-19 at `a5862c9`: FAIL.** Run `runs/20261019_a5862c9_gl`
 (`--renderer gl`, `-j 8`, load average 45-112 from other agents), diffed against
 the golden with the committed (header-only) allowlist, report
@@ -298,5 +385,6 @@ None.
 
 ## Allowlist changes
 
-None yet. `tools/render_parity/allowlist.tsv` is empty (header only) and stays
+None yet (P0 fix 1 added no entry; its golden change is recorded in
+`tools/render_parity/BASELINE` and under P0 fix 1 above). `tools/render_parity/allowlist.tsv` is empty (header only) and stays
 empty until a P2 `EMU`/`AA`/`FLT` case needs an evidence-backed entry.
