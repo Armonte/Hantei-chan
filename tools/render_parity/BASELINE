@@ -19,7 +19,7 @@ built=2026-10-18
 worktree=/home/teo/dev/hantei-chan-wt/render-baseline
 staged=/mnt/c/dev/hantei-chan/render_parity/baseline_bin/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_det
 golden=/mnt/c/dev/hantei-chan/render_parity/golden/45ea8ae59c1efd7bb6c1a9bc884c4205cef3174a_20261019
-golden_manifest_sha256=fca193965766db514007a3176eaa9125a0c4c923760d3462dd2d112fb393ebd2
+golden_manifest_sha256=8e62d4b8b1573fcb09e6ee9b68cb144c48effde07d0ded3947f61944f5f89fad
 golden_rendered=2026-10-19 (determinism exe above, -j 8, twice; 2847/2847 PNGs byte-identical, 40/40 export .json/.txt identical but for the masked wall-clock durations)
 # The golden was re-rendered on 2026-10-18 after the environment drifted:
 # C:/games/rbo_run (a copy of the RBO install the RBO shots browse) had gone
@@ -43,3 +43,10 @@ golden_rendered=2026-10-19 (determinism exe above, -j 8, twice; 2847/2847 PNGs b
 #     binary always takes the builtin encoder (the old golden had the d3dx9
 #     path; the step-5 drift, max 78 / 418319 px, is exactly the builtin one).
 # The previous golden (golden/<baseline_sha>, 2847 cases) is deleted.
+# 2026-10-20 (P0 fix 3): four cases added, nothing re-rendered or changed. The
+# new corpus files corpus/ui/shots__nz_archive_zoom.txt and
+# shots__nz_texsrc_zoom.txt (zoomed GL_NEAREST previews: the archive browser's
+# IMG preview at 4x / 3x, the CG + .pat textures tab at 2x / 3x) were rendered by
+# this same determinism binary twice (byte-identical) and their four rows
+# appended to the manifest (2887 -> 2891 rows; was fca19396...). The manifest
+# before the addition is kept as golden/manifest_20261019_before_nz.tsv.
