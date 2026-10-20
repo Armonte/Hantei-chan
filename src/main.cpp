@@ -554,6 +554,11 @@ int main(int argC, char** argV)
 		}
 	}
 
+	// The loaders get these bytes (ANSI code page); logged so a path problem
+	// can be told apart from a loader one.
+	if (!gStartup.open.empty()) HC_LOG_INFO("startup: --open {}", gStartup.open);
+	if (!gStartup.openAny.empty()) HC_LOG_INFO("startup: --open-any {}", gStartup.openAny);
+
 	//If it fails... Well, that works too.
 	if(useIni)
 	{
