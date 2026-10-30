@@ -46,6 +46,15 @@ int main()
 	CHECK(!FpanimIsSystemEffectFile("data/effect") && !FpanimIsSystemEffectFile("script/effect.txt"));
 	CHECK(FpanimParseReloadReply("OK reloadsyseff: re-pointed 1 player(s), 3 effect(s)").sysEffect);
 	CHECK(!FpanimParseReloadReply("ERROR unknown request (ping | reloadsyseff | ...)").sysEffect);
+	// System/ files -> reloadsys System/<file> (BootySama #112).
+	CHECK(FpanimIsSystemFile("System/cmd_chr000.txt") && FpanimIsSystemFile("./system\\BtlCharaTbl.txt"));
+	CHECK(!FpanimIsSystemFile("System/str_jp/x.csv") && !FpanimIsSystemFile("data/System/x.txt") && !FpanimIsSystemFile("System/"));
+	CHECK(FpanimSysReloadRequest("system/cmd_Okita.txt") == "reloadsys System/cmd_Okita.txt");
+	{
+		auto i = FpanimParseReloadReply("OK reloadsys: training command list of chara 0 (chr000): ..., 56 -> 54 entries");
+		CHECK(i.sysReload && !i.sysEffect && !i.stdReload);
+		CHECK(!FpanimParseReloadReply("OK reloadsyseff: ./data/effect.txt: 1 record(s)").sysReload);
+	}
 	CHECK(FpanimStdReloadRequest(false) == "reloadstd" && FpanimStdReloadRequest(true) == "reloadstd live");
 	auto d = FpanimParseReloadReply("OK reloadstd: Battle_Init + Battle_Std (btl_*, cmn_SetPosition, sq_stagebgm) + _combase re-run; VectorTable, BattleInfo, BoundEff reparsed | engine rebuild: chars 0/0 stage 1 quick; back in battle after 1141 ms");
 	CHECK(d.stdReload && d.engine && d.backInBattle && d.ms == 1141 && !d.refused);
@@ -136,6 +145,9 @@ int main()
 		CHECK(!r.shared && r.sysEffect && r.chr.empty() && r.request == "reloadsyseff" && !r.modsDst.empty());
 		auto rl = FpanimPlanSave("mbtl", "C:/M", "C:/w/data/sys_effect.pat", true, true, true);
 		CHECK(rl.sysEffect && rl.request == "reloadsyseff" && rl.pipe == "fpan-im-mbtl");
+		auto rs = FpanimPlanSave("uni2", uniDir, "C:/w/System/cmd_chr000.txt", true, true, false);
+		CHECK(rs.system && rs.key == "System/cmd_chr000.txt" && rs.request == "reloadsys System/cmd_chr000.txt" && rs.chr.empty());
+		CHECK(rs.modsDst == uniMods + "/System/cmd_chr000.txt");
 		auto ro = FpanimPlanSave("uni2", uniDir, "C:/w/data/_csel/csel.ha6", true, true, false);
 		CHECK(!ro.sysEffect && ro.chr.empty() && ro.request.empty());
 		auto t = FpanimPlanSave("uni2", uniDir, "C:/w/data/chr000/sub/x.ha6", true, true, false);

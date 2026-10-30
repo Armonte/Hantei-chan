@@ -477,7 +477,7 @@
 {"reloaded", "再読み込みしました"},
 {"reloaded (changed on disk)", "再読み込みしました (ディスク上で変更あり)"},
 {"Hot reload", "ホットリロード"},
-{"On save, copy the file into the game's fpan-im mods folder and reload it in the running game (fpan-im pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character.", "保存時にファイルをゲームの fpan-im mods フォルダへコピーし、実行中のゲームで再読み込みします (fpan-im パイプ)。data/chrNNN のファイルはそのキャラクターを、共通ファイル (script/*.txt、data/_combase、VectorTable、BattleInfo、BoundEff) は共通バトルスクリプトとテーブルを再実行してから全キャラクターを再読み込みします。"},
+{"On save, copy the file into the game's fpan-im mods folder and reload it in the running game (fpan-im pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character; System/cmd_*.txt reloads the training command list.", "保存時にファイルをゲームの fpan-im mods フォルダへコピーし、実行中のゲームで再読み込みします (fpan-im パイプ)。data/chrNNN のファイルはそのキャラクターを、共通ファイル (script/*.txt、data/_combase、VectorTable、BattleInfo、BoundEff) は共通バトルスクリプトとテーブルを再実行してから全キャラクターを再読み込みします。System/cmd_*.txt はトレーニングのコマンドリストを再読み込みします。"},
 {"Install folder of the game. Used for fpan-im\\mods when the game's ping reply does not name the mods folder.", "ゲームのインストールフォルダ。ゲームの ping 応答に mods フォルダが無い場合は fpan-im\\mods に使います。"},
 {"Pipe", "パイプ"},
 {"game not running (no fpan-im pipe)", "ゲームが起動していません (fpan-im パイプなし)"},

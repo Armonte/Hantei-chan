@@ -75,6 +75,7 @@ std::string Summarise(const HotDone& d, bool* ok)
 	*ok = d.reply.ok;
 	if (!d.reply.connected) { *ok = false; return TXT("Hot reload: game not running (no fpan-im pipe)"); }
 	if (info.refused) { *ok = false; return TXT("Hot reload refused: no training battle is running. Start a training battle in the game, then save again."); }
+	if (d.reply.ok && info.sysReload) return std::string(TXT("Hot reload: ")) + d.reply.text.substr(3);
 	if (d.reply.ok && info.sysEffect) {
 		snprintf(line, sizeof line, TXT("Hot reload: system effects reloaded in place (%ld ms)"), d.ms);
 		return line;

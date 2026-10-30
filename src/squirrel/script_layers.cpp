@@ -93,7 +93,7 @@ std::string ImLabel(const std::string& low) { return low == "mbtl-im" ? "MBTL-IM
 bool LooksLikeGame(const fs::path& d)
 {
 	std::error_code ec;
-	for (const char* s : {"script", "data", "d", "MBTL.exe", "uni2.exe", "UNI2-IM", "MBTL-IM", "fpan-im"})
+	for (const char* s : {"script", "data", "System", "d", "MBTL.exe", "uni2.exe", "UNI2-IM", "MBTL-IM", "fpan-im"})
 		if (fs::exists(d / s, ec)) return true;
 	return false;
 }
@@ -117,7 +117,7 @@ ScriptRootInfo ResolveScriptRoot(const std::string& chosenUtf8)
 	if (!p.has_filename() && p.has_parent_path() && p != p.root_path()) p = p.parent_path();
 	// <x>/data or <x>/script -> <x>
 	const std::string last = NameLower(p);
-	if ((last == "data" || last == "script") && p.has_parent_path()) p = p.parent_path();
+	if ((last == "data" || last == "script" || last == "system") && p.has_parent_path()) p = p.parent_path();
 	const std::string n0 = NameLower(p), n1 = NameLower(p.parent_path()), n2 = NameLower(p.parent_path().parent_path());
 	fs::path game = p;
 	if (n1 == "packs" && IsImName(n2)) {                 // <game>/UNI2-IM/Packs/<id>
@@ -183,6 +183,16 @@ bool IsSquirrelScriptRel(const std::string& relIn, const std::string* head)
 	if (low.size() < 4 || low.compare(low.size() - 4, 4, ".txt") != 0) return false;
 	if (low.find("/.hantei-backups/") != std::string::npos) return false;
 	if (low.rfind("script/", 0) == 0) return true;
+	// System/: the training command lists (cmd__common.txt, cmd_<folder>.txt) and the boot tables (BtlCharaTbl.txt,
+	// PlayBonusTbl.txt) are Squirrel; HeaderRep*.txt are ini-style and the str_<lang>/ folders hold csv.
+	if (low.rfind("system/", 0) == 0) {
+		if (low.find('/', 7) != std::string::npos) return false;
+		const std::string f = low.substr(7);
+		if (f.rfind("cmd_", 0) == 0 || f == "btlcharatbl.txt" || f == "playbonustbl.txt") return true;
+		if (!head) return false;
+		static const std::regex sqs(R"((<-|\bfunction\s*[A-Za-z_(]|\blocal\s+[A-Za-z_]|__dofile__))");
+		return std::regex_search(*head, sqs);
+	}
 	if (low.rfind("data/", 0) != 0) return false;
 	if (FpanimIsSharedFile(rel)) return true;
 	const std::string f = rel.substr(rel.find_last_of('/') + 1);
@@ -207,7 +217,7 @@ std::vector<ScriptFile> ListScriptFiles(std::vector<ScriptLayer>& layers, const 
 	};
 	for (int li = 0; li < static_cast<int>(layers.size()); li++) {
 		const fs::path root = U8(layers[li].root);
-		for (const char* sub : {"script", "data"}) {
+		for (const char* sub : {"script", "data", "system"}) {
 			std::error_code ec;
 			fs::path dir;
 			// "data" / "script" in any case (packs are often made on case-insensitive systems by hand)
@@ -222,7 +232,7 @@ std::vector<ScriptFile> ListScriptFiles(std::vector<ScriptLayer>& layers, const 
 				std::string rel = it->path().lexically_relative(root).generic_u8string();
 				rel = std::string(sub) + rel.substr(rel.find('/'));   // canonical lower-case top folder
 				std::string head;
-				if (rel.rfind("data/", 0) == 0) {
+				if (rel.rfind("data/", 0) == 0 || rel.rfind("system/", 0) == 0) {
 					std::ifstream f(it->path(), std::ios::binary);
 					head.resize(8192);
 					f.read(&head[0], static_cast<std::streamsize>(head.size()));
@@ -240,6 +250,7 @@ std::vector<ScriptFile> ListScriptFiles(std::vector<ScriptLayer>& layers, const 
 		const std::string low = Lower(r);
 		if (low.rfind("data/", 0) == 0) r = "data" + r.substr(4);
 		else if (low.rfind("script/", 0) == 0) r = "script" + r.substr(6);
+		else if (low.rfind("system/", 0) == 0) r = "system" + r.substr(6);
 		if (IsSquirrelScriptRel(r)) arch.push_back(r);
 	}
 	if (!arch.empty()) {

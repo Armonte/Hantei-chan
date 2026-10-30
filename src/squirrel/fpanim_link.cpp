@@ -43,6 +43,25 @@ std::string FpanimStdReloadRequest(bool live)
 	return live ? "reloadstd live" : "reloadstd";
 }
 
+bool FpanimIsSystemFile(const std::string& rel)
+{
+	std::string r = rel;
+	for (char& c : r) if (c == '\\') c = '/';
+	while (r.rfind("./", 0) == 0) r.erase(0, 2);
+	if (r.size() <= 7) return false;
+	std::string top = r.substr(0, 7);
+	for (char& c : top) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
+	return top == "system/" && r.find('/', 7) == std::string::npos;
+}
+
+std::string FpanimSysReloadRequest(const std::string& rel)
+{
+	std::string r = rel;
+	for (char& c : r) if (c == '\\') c = '/';
+	while (r.rfind("./", 0) == 0) r.erase(0, 2);
+	return "reloadsys System/" + r.substr(7);
+}
+
 bool FpanimIsSystemEffectFile(const std::string& rel)
 {
 	std::string r = rel;
@@ -105,7 +124,7 @@ std::string FpanimGameKey(const std::string& path)
 	std::string low = p;
 	for (char& c : low) c = static_cast<char>(tolower(static_cast<unsigned char>(c)));
 	size_t best = std::string::npos;
-	for (const char* f : {"data/", "script/"}) {
+	for (const char* f : {"data/", "script/", "system/"}) {
 		const std::string slash = std::string("/") + f;
 		size_t at = low.rfind(slash);
 		if (at != std::string::npos) at += 1;
@@ -172,9 +191,10 @@ FpanimSavePlan FpanimPlanSave(const std::string& game, const std::string& gameDi
 	// a system effect file (data/effect.ha6, sys_effect.pat, ...) -> reloadsyseff (in place, either reload mode)
 	p.shared = FpanimIsSharedFile(p.key);
 	p.sysEffect = !p.shared && FpanimIsSystemEffectFile(p.key);
-	if (!p.shared && !p.sysEffect) p.chr = FpanimCharaFolder(p.key);
+	p.system = FpanimIsSystemFile(p.key);
+	if (!p.shared && !p.sysEffect && !p.system) p.chr = FpanimCharaFolder(p.key);
 	if (hotReload)
-		p.request = p.shared ? FpanimStdReloadRequest(live) : p.sysEffect ? "reloadsyseff"
+		p.request = p.shared ? FpanimStdReloadRequest(live) : p.sysEffect ? "reloadsyseff" : p.system ? FpanimSysReloadRequest(p.key)
 		          : !p.chr.empty() ? FpanimReloadRequest(p.chr, live) : "";
 	return p;
 }
@@ -184,6 +204,7 @@ FpanimReloadInfo FpanimParseReloadReply(const std::string& reply)
 	FpanimReloadInfo info;
 	const bool err = reply.rfind("ERROR", 0) == 0;
 	info.stdReload = reply.find("reloadstd") != std::string::npos;
+	info.sysReload = reply.find("reloadsys:") != std::string::npos;
 	info.sysEffect = reply.find("reloadsyseff") != std::string::npos && reply.find("unknown request") == std::string::npos;
 	info.engine = reply.find("engine rebuild ") != std::string::npos || reply.find("engine rebuild:") != std::string::npos;
 	if (err) {
