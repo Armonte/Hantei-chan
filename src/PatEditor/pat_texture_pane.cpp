@@ -269,7 +269,10 @@ void PatTexturePane::DrawTexture()
                     
                     *curInstance->renderMode = *curInstance->renderMode == RenderMode::TEXTURE_VIEW ?
                         RenderMode::DEFAULT : RenderMode::TEXTURE_VIEW;
-                    
+                    if (*curInstance->renderMode == RenderMode::TEXTURE_VIEW) {
+                        curInstance->currState->partGraph = curInstance->parts->ShownTextureSlot(curInstance->currState->partGraph);
+                        RegenerateTexturesNames();
+                    }
 
                     auto& anim = curInstance->currState->animationSequence.frames;   // the tool pane's test animation (empty for RBO / GOF2)
                     if (curInstance->currState->frame >= 0 && curInstance->currState->frame < (int)anim.size()) {

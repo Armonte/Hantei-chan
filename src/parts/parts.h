@@ -114,6 +114,9 @@ public:
     PartProperty* GetPartProp(int partSetId, unsigned int propId);
     CutOut<>* GetCutOut(unsigned int n);
     PartGfx<>* GetPartGfx(unsigned int n);
+    // Texture slot to show when `slot` has no uploaded texture: the first one that has, else `slot` (#111: UNI2/MBTL
+    // texture ids often start at 1, and the texture view opened on the empty slot 0).
+    int ShownTextureSlot(int slot) const;
     Shape<>* GetShape(unsigned int n);
 
     // UI helpers (for decorated combo box names)

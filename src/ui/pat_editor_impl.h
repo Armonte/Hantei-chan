@@ -349,6 +349,7 @@ void MainFrame::TogglePatRenderMode(CharacterView* view, RenderMode mode)
 	if (!ch || !view->isPatEditor() || !ch->parts.loaded) return;
 	auto& st = view->getState();
 	st.renderMode = st.renderMode == mode ? RenderMode::DEFAULT : mode;
+	if (st.renderMode == RenderMode::TEXTURE_VIEW) st.partGraph = ch->parts.ShownTextureSlot(st.partGraph);
 	// The placeholder frame of a PAT document shows the part set in the default view (the pane buttons do the same).
 	if (ch->isPatDocument() && !st.animating) {
 		if (auto* seq = ch->frameData.get_sequence(0)) {

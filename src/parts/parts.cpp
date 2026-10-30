@@ -336,6 +336,14 @@ Shape<>* Parts::GetShape(unsigned int n)
     return nullptr;
 }
 
+int Parts::ShownTextureSlot(int slot) const
+{
+    if (slot >= 0 && slot < (int)gfxMeta.size() && gfxMeta[slot].textureIndex != 0) return slot;
+    for (size_t i = 0; i < gfxMeta.size(); i++)
+        if (gfxMeta[i].textureIndex != 0) return (int)i;
+    return slot;
+}
+
 PartGfx<>* Parts::GetPartGfx(unsigned int n)
 {
     if (gfxMeta.size() > n)
