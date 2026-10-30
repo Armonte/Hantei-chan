@@ -14,6 +14,9 @@
 //                               re-run and data/VectorTable, BattleInfo, BoundEff reparsed, then the engine rebuild:
 //                               "OK reloadstd: ... | engine rebuild: ...; back in battle after N ms"
 //   reloadstd live           -> the same, then sc + cmd + mv of every loaded character in place: "OK reloadstd live: ..."
+//   reloadsyseff             -> the system effects (data/effect.txt: effect.ha6 / .cg / sys_effect.pat) reloaded in
+//                               place, the system effect object re-pointed: "OK reloadsyseff: ..." (fpan-im 2026-10-30+;
+//                               older builds answer "ERROR unknown request ...")
 //   Outside a training battle both are refused: "ERROR reloadchara refused in session <s>: ...",
 //   "ERROR not in a battle (start training first)", "ERROR timeout: no battle frame within 5 s ...".
 // Calls block (a reload reply waits for the next battle frame, up to ~5 s): run them off the UI thread.
@@ -44,6 +47,7 @@ struct FpanimReloadInfo {
 	bool backInBattle = false;  // the rebuild reached the training battle again
 	long ms = -1;               // "after N ms" (-1: absent)
 	bool stdReload = false;     // a reloadstd reply (shared scripts)
+	bool sysEffect = false;     // a reloadsyseff reply (system effects)
 };
 FpanimReloadInfo FpanimParseReloadReply(const std::string& reply);
 // The request for a character reload: "reloadchara <chr>" (engine rebuild) or "reloadchara <chr> live".
@@ -54,6 +58,13 @@ std::string FpanimReloadRequest(const std::string& chr, bool live);
 bool FpanimIsSharedFile(const std::string& rel);
 // "reloadstd" (engine rebuild of every character) or "reloadstd live".
 std::string FpanimStdReloadRequest(bool live);
+// A game-relative path of the system effects the game loads once per battle from data/effect.txt (UNI2 / MBTL
+// ExtraPlayerObject_LoadEffectTxt): data/effect.* (HA6, CG, pat, txt, lst, pal), data/effect_temp.* and
+// data/sys_effect.pat. These belong to no character, so a save needs "reloadsyseff".
+bool FpanimIsSystemEffectFile(const std::string& rel);
+// "reloadsyseff" on `pipeName`; an fpan-im without that verb ("ERROR unknown request") gets "reloadstd" instead, whose
+// engine rebuild loads the battle again, system effects included.
+FpanimReply FpanimRequestSysEffectReload(const std::string& pipeName, unsigned timeoutMs);
 // The fpan-im pipe of a script-panel game profile: "mbtl" -> "fpan-im-mbtl", anything else -> "fpan-im-uni2" (fpan-im runs
 // on UNI2 1.42 and MBTL only). Both games take the same requests (reloadchara, reloadstd [live]).
 std::string FpanimPipeForGame(const std::string& game);
@@ -89,7 +100,8 @@ struct FpanimSavePlan {
 	bool alreadyInMods = false; // the saved file is already in UNI2-IM/MBTL-IM Mods or a Pack (CG manager "Save to mod folder", or a pack being edited in place)
 	std::string chr;        // the character folder (FpanimCharaFolder): "chr003", or a custom name such as "okita"
 	bool shared = false;    // a shared battle file (FpanimIsSharedFile): reloadstd
-	std::string request;    // "reloadchara chr003 [live]" / "reloadstd [live]"; "" = no reload (hot reload off, or neither kind)
+	bool sysEffect = false; // a system effect file (FpanimIsSystemEffectFile): reloadsyseff
+	std::string request;    // "reloadchara chr003 [live]" / "reloadstd [live]" / "reloadsyseff"; "" = no reload (hot reload off, or neither kind)
 	std::string pipe;       // FpanimPipeForGame(game)
 };
 // game: "uni2" / "mbtl" (anything else: no mod folder, no reload). savedPath: the file just written (UTF-8, either slash).
