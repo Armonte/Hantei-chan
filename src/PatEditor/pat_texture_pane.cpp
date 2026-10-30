@@ -1,4 +1,5 @@
 #include "pat_texture_pane.h"
+#include "pat_search.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../main_frame.h"
@@ -181,9 +182,11 @@ void PatTexturePane::DrawFbSheets()
     if (n == 0) { ImGui::TextDisabled("%s", TXT("This PAT has no sprite sheets.")); if (!fbMessage.empty()) ImGui::TextWrapped("%s", fbMessage.c_str()); return; }
 
     if (ImGui::BeginCombo(LBL("Sprite sheet"), textureDecoratedNames ? textureDecoratedNames[sel].c_str() : "", ImGuiComboFlags_HeightLargest)) {
+        patsearch::FilterBox();
         for (int i = 0; i < n; i++) {
             const auto &g = parts->gfxMeta[i];
             std::string label = std::to_string(i) + ": " + (g.data ? g.name + "  " + std::to_string(g.w) + "x" + std::to_string(g.h) : std::string(TXT("(empty)")));
+            if (!patsearch::Matches(label.c_str())) continue;
             if (ImGui::Selectable(label.c_str(), sel == i)) sel = i;
             if (sel == i) ImGui::SetItemDefaultFocus();
         }
@@ -238,8 +241,10 @@ void PatTexturePane::DrawTexture()
         if(nTexture > 0) {
             if (ImGui::BeginCombo(LBL("Texture"), textureDecoratedNames[curInstance->currState->partGraph].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
+                patsearch::FilterBox();
                 auto count = curInstance->parts->gfxMeta.size();
                 for (int n = 0; n < count; n++) {
+                    if (!patsearch::Matches(textureDecoratedNames[n].c_str())) continue;
                     const bool is_selected = (curInstance->currState->partGraph == n);
                     if (ImGui::Selectable(textureDecoratedNames[n].c_str(), is_selected)) {
                         curInstance->currState->partGraph = n;
