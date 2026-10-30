@@ -296,7 +296,7 @@ struct ScriptPanel::Impl {
 		for (const ScriptLayer& l : layers) {
 			if (l.root.empty()) continue;
 			stamp(U8(l.root));
-			for (const char* sub : {"script", "data"}) {
+			for (const char* sub : {"script", "data", "System"}) {
 				const fs::path d = U8(l.root) / sub;
 				if (!fs::is_directory(d, ec)) continue;
 				for (auto it = fs::recursive_directory_iterator(d, ec); !ec && it != fs::recursive_directory_iterator(); it.increment(ec)) {
@@ -391,6 +391,7 @@ struct ScriptPanel::Impl {
 		bool live = false;     // reloadchara <chr> live (in-place, keeps state) instead of the engine rebuild
 		bool shared = false;   // a shared battle file (script/*, data/VectorTable...): reloadstd [live]
 		bool sysEffect = false; // a system effect file (data/effect.txt ...): reloadsyseff
+		bool system = false;    // a System/ file (training command lists): reloadsys System/<file>
 		bool copy = true;      // false: the file already sits in a folder fpan-im serves (its mods / packs, the IM's Mods / Packs)
 		std::string pipe, gameDir, srcFile, chr, fileName, rel;
 	};
@@ -445,6 +446,7 @@ struct ScriptPanel::Impl {
 		} else HC_LOG_INFO("[script] hot reload: {} is served by fpan-im from its own folder (no copy)", t.srcFile);
 		// Engine rebuild: fpan-im waits up to 120 s for the training battle to tick again; live: up to 30 s.
 		const FpanimReply r = t.sysEffect ? FpanimRequestSysEffectReload(t.pipe, 35000)
+		    : t.system ? FpanimRequest(t.pipe, FpanimSysReloadRequest(t.rel), 15000)
 		    : FpanimRequest(t.pipe, t.shared ? FpanimStdReloadRequest(t.live) : FpanimReloadRequest(t.chr, t.live), t.live ? 35000 : 130000);
 		if (!r.connected) return {false, "game not running (no fpan-im pipe)"};
 		HotResult out{r.ok, r.text};
@@ -457,7 +459,7 @@ struct ScriptPanel::Impl {
 	{
 		if (hotBusy) { hotPending = t; hasHotPending = true; return; }
 		hotBusy = true;
-		hotStatus = t.reload ? (t.live ? "reloading " : "rebuilding ") + (t.shared ? std::string("shared scripts") : t.sysEffect ? std::string("system effects") : t.chr) + "..." : "ping...";
+		hotStatus = t.reload ? (t.live ? "reloading " : "rebuilding ") + (t.shared ? std::string("shared scripts") : t.sysEffect ? std::string("system effects") : t.system ? t.rel : t.chr) + "..." : "ping...";
 		hotStatusOk = true;
 		hotHasInfo = false;
 		hotJob = std::async(std::launch::async, RunHotTask, t);
@@ -479,16 +481,18 @@ struct ScriptPanel::Impl {
 	//  - data/<character>/<file> (chrNNN or a custom UNI2-IM name such as Okita): reloadchara <character> [live];
 	//  - a shared battle file (every script/*.txt, data/_combase / VectorTable / BattleInfo / BoundEff.txt), which the
 	//    game loads once per process: reloadstd [live] (re-runs them, then rebuilds every character against them);
-	//  - a system effect file (data/effect.txt, effect.ha6, sys_effect.pat): reloadsyseff (in place).
+	//  - a system effect file (data/effect.txt, effect.ha6, sys_effect.pat): reloadsyseff (in place);
+	//  - a System/ file: reloadsys System/<file> (the training command lists reload; boot-only tables are refused).
 	void hotReloadSaved()
 	{
 		if (!gSettings.sqHotReload) return;
 		HotTask t;
 		t.shared = FpanimIsSharedFile(currentRel);
 		t.sysEffect = !t.shared && FpanimIsSystemEffectFile(currentRel);
-		const std::string chr = t.shared || t.sysEffect ? std::string() : FpanimCharaFolder(currentRel);
-		if (!t.shared && !t.sysEffect && chr.empty()) {
-			hotStatus = "not a character file (data/<character>/<character>...), shared script/data file or system effect file: not reloaded";
+		t.system = FpanimIsSystemFile(currentRel);
+		const std::string chr = t.shared || t.sysEffect || t.system ? std::string() : FpanimCharaFolder(currentRel);
+		if (!t.shared && !t.sysEffect && !t.system && chr.empty()) {
+			hotStatus = "not a character file (data/<character>/<character>...), shared script/data file, system effect or System/ file: not reloaded";
 			hotStatusOk = false;
 			return;
 		}
@@ -510,7 +514,7 @@ struct ScriptPanel::Impl {
 		pollHot();
 		if (hotPipeGame != game || hotPipe.empty()) { hotPipeGame = game; hotPipe = FpanimPipeForGame(game); }
 		if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
-		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fpan-im mods folder and reload it in the running game (fpan-im pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character."));
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("On save, copy the file into the game's fpan-im mods folder and reload it in the running game (fpan-im pipe). A data/chrNNN file reloads that character; a shared file (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) re-runs the shared battle scripts and tables, then reloads every character; System/cmd_*.txt reloads the training command list."));
 		if (!gSettings.sqHotReload) return;
 		// The row wraps before an item that no longer fits (1280, Japanese labels) instead of clipping it.
 		ui::SameLineField(ui::Px(320), LBL("Game folder"));
@@ -1534,7 +1538,7 @@ bool ScriptPanel::openFile(const std::string& pathUtf8, std::string* error)
 	m->currentRel = m->root.empty() ? pathUtf8 : U8(pathUtf8).lexically_normal().lexically_relative(U8(m->root).lexically_normal()).generic_u8string();
 	{
 		const std::string low = Impl::LowerS(m->currentRel);
-		if (m->root.empty() || !(low.rfind("data/", 0) == 0 || low.rfind("script/", 0) == 0)) {
+		if (m->root.empty() || !(low.rfind("data/", 0) == 0 || low.rfind("script/", 0) == 0 || low.rfind("system/", 0) == 0)) {
 			const std::string key = FpanimGameKey(pathUtf8);
 			if (!key.empty()) {
 				const size_t sl = key.find('/');
