@@ -105,7 +105,7 @@ public:
         std::function<void(glm::mat4)> setMatrix,
         std::function<void(const float*)> setAddColor,
         float color[4]);
-    void DrawPart(int id, bool useLinearFilter = false);
+    void DrawPart(int id, bool useLinearFilter = false, int textureSlot = -1);
     // PRAL blend a part draws with (the editor's on/off "additive" plus the raw byte).
     static partrender::PartBlend PartBlendOf(const PartProperty& part);
 
