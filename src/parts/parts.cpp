@@ -420,33 +420,37 @@ std::string Parts::GetTexturesDecorateName(int n) {
 // 0x415020 -> PatPart_DrawPrimitive_DispatchByShapeType 0x4C06D0); the per-rule references are in
 // part_render_math.h.
 
-void Parts::DrawPart(int i, bool useLinearFilter)
+void Parts::DrawPart(int i, bool useLinearFilter, int textureSlot)
 {
     // Safety: Don't render if Parts is being freed or unloaded
-    if (!loaded || cutOuts.empty() || gfxMeta.empty()) {
+    if (!loaded || gfxMeta.empty()) {
         return;
     }
 
-    if (i < 0 || i >= (int)cutOuts.size()) {
-        HC_LOG_WARN_ONCE("[DrawPart] invalid cut-out index {} (size {})", i, cutOuts.size());
-        return;
+    // textureSlot >= 0: the texture / UV views draw a whole sheet, whatever cut-out i holds (#111: UNI2/MBTL cut-out 0
+    // is often the empty "〇" entry with texture -1, and the sheet stayed blank).
+    int slot = textureSlot;
+    if (slot < 0) {
+        if (i < 0 || i >= (int)cutOuts.size()) {
+            HC_LOG_WARN_ONCE("[DrawPart] invalid cut-out index {} (size {})", i, cutOuts.size());
+            return;
+        }
+        slot = cutOuts[i].texture;
     }
 
-    auto& cutout = cutOuts[i];
-
-    if (cutout.texture < 0 || cutout.texture >= (int)gfxMeta.size()) {
-        HC_LOG_WARN_ONCE("[DrawPart] invalid texture index {} (textures {})", cutout.texture, gfxMeta.size());
+    if (slot < 0 || slot >= (int)gfxMeta.size()) {
+        HC_LOG_WARN_ONCE("[DrawPart] invalid texture index {} (textures {})", slot, gfxMeta.size());
         return;
     }
 
     // Texture not created (empty slot or failed upload): skip.
-    if (gfxMeta[cutout.texture].textureIndex == 0) {
-        HC_LOG_WARN_ONCE("[DrawPart] texture {} has no GL id", cutout.texture);
+    if (gfxMeta[slot].textureIndex == 0) {
+        HC_LOG_WARN_ONCE("[DrawPart] texture {} has no GL id", slot);
         return;
     }
 
     // Determine which texture to use
-    curTexId = gfxMeta[cutout.texture].textureIndex;
+    curTexId = gfxMeta[slot].textureIndex;
 
     // Override texture in TEXTURE_VIEW mode (show currently selected texture)
     if (renderMode && currState && *renderMode == RenderMode::TEXTURE_VIEW && !currState->animating) {
@@ -532,25 +536,25 @@ void Parts::Draw(const DrawParams& params,
     const int pattern = params.pattern;
 
     // Safety: Don't render if Parts is being freed or unloaded
-    if (!loaded || partSets.empty() || cutOuts.empty()) {
+    // The texture / UV views draw one full-texture part (below) whatever the part set holds: the PAT tab shows part
+    // set 0 there, which is often empty (UNI2 chr000), and a file may have textures but no part sets or cut-outs yet.
+    const bool sheetView = renderMode && currState && *renderMode != DEFAULT && !currState->animating;
+    if (!loaded || ((partSets.empty() || cutOuts.empty()) && !sheetView)) {
         HC_LOG_WARN_ONCE("[Parts::Draw] nothing to draw: loaded={} partSets={} cutOuts={}", loaded, partSets.size(), cutOuts.size());
         return;
     }
 
-    if (pattern < 0 || pattern >= (int)partSets.size()) {
+    if (!sheetView && (pattern < 0 || pattern >= (int)partSets.size())) {
         HC_LOG_WARN_ONCE("[Parts::Draw] invalid part set {} (count {})", pattern, partSets.size());
         return;
     }
 
-    // The texture / UV views draw one full-texture part (below) whatever the part set holds: the PAT tab shows part
-    // set 0 there, which is often empty (UNI2 chr000), and the view stayed blank.
-    const bool sheetView = renderMode && currState && *renderMode != DEFAULT && !currState->animating;
-    if (partSets[pattern].groups.empty() && !sheetView) {
+    if (!sheetView && partSets[pattern].groups.empty()) {
         return;
     }
 
     // Draw order: highest priority first (see part_transform.h).
-    auto copyGroups = partSets[pattern].groups;
+    auto copyGroups = sheetView ? decltype(partSets[0].groups){} : partSets[pattern].groups;
     partxf::SortForDraw(fbPartModel, copyGroups);
 
     constexpr int tX[] = { 0,1,1, 1,0,0 };
@@ -595,12 +599,13 @@ void Parts::Draw(const DrawParams& params,
 
     for (auto& part : copyGroups)
     {
-        // Skip unused or invalid parts silently
-        if (part.ppId < 0 || part.ppId >= (int)cutOuts.size()) {
+        // Skip unused or invalid parts silently (the sheet view's dummy part needs no cut-out)
+        const bool validCut = part.ppId >= 0 && part.ppId < (int)cutOuts.size();
+        if (!validCut && !rawTextureView) {
             continue;
         }
 
-        auto cutout = cutOuts[part.ppId];
+        auto cutout = validCut ? cutOuts[part.ppId] : CutOut<>{};
 
         // PatEditor: Override cutout for texture/UV viewing modes
         auto partGfx = GetPartGfx(currState ? currState->partGraph : 0);
@@ -910,7 +915,7 @@ void Parts::Draw(const DrawParams& params,
         partVertices.Load();
         partVertices.Bind();
         // PRFL: exactly 1 draws linear; other non-zero bytes draw point like the game.
-        DrawPart(part.ppId, part.filter && (part.prfl == 0 || part.prfl == 1));
+        DrawPart(part.ppId, part.filter && (part.prfl == 0 || part.prfl == 1), rawTextureView ? cutout.texture : -1);
         partVertices.Clear();
     }
 
