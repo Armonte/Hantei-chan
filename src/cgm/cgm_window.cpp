@@ -1478,6 +1478,11 @@ void UploadPatTexture(Parts &parts, int i) {
 	PartGfx<> &g = parts.gfxMeta[i];
 	std::vector<uint8_t> rgba; int w = 0, h = 0; std::string e;
 	if (!pattex::Decode(g, rgba, w, h, &e)) return;
+	GLint maxTex = 0; glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);   // the same guards as Window::upload (issue #87)
+	if (w <= 0 || h <= 0 || rgba.size() < (size_t)w * h * 4 || (maxTex > 0 && std::max(w, h) > maxTex)) {
+		HC_LOG_WARN("CG manager: .pat texture {} decoded with an unusable size {}x{} ({} bytes); not uploaded", i, w, h, rgba.size());
+		return;
+	}
 	for (size_t k = 0; k < rgba.size(); k += 4) std::swap(rgba[k], rgba[k + 2]);   // LoadDirect takes BGRA
 	Texture *t = g.GetTextureFromId(parts.textures);
 	if (!t) { t = new Texture; parts.textures.push_back(t); }
