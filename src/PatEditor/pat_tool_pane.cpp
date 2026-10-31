@@ -1,4 +1,5 @@
 #include "pat_tool_pane.h"
+#include "pat_search.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../main_frame.h"
@@ -145,8 +146,10 @@ void PatToolPane::DrawTool()
                     {
                         if (ImGui::IsWindowAppearing())
                             RegeneratePartsetNames();
+                        patsearch::FilterBox();
                         auto count = curInstance->parts->partSets.size();
                         for (int n = 0; n < count; n++) {
+                            if (!patsearch::Matches(partSetDecoratedNames[n].c_str())) continue;
                             const bool is_selected = (frame->AF.layers[0].spriteId == n);
                             if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
                                 frame->AF.layers[0].spriteId = n;

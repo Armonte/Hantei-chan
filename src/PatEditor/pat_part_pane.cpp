@@ -1,4 +1,6 @@
+#include "../parts/pat_limits.h"
 #include "pat_part_pane.h"
+#include "pat_search.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../main_frame.h"
@@ -98,7 +100,13 @@ const char* labelBR = "BR";
 void PatPartPane::DrawPartCutOut()
 {
     auto npartData = curInstance->parts->cutOuts.size();
-        if(ImGui::Button(LBL("Add Part"))){
+        // UNI2 / MBTL have 2000 cut-out slots (parts/pat_limits.h)
+        const bool partsFull = (curInstance->parts->fbMaxPoses == 0 && !curInstance->parts->useMBAACCFormat) && npartData >= (size_t)patlimits::kMaxCutOuts;
+        ImGui::BeginDisabled(partsFull);
+        const bool addPart = ImGui::Button(LBL("Add Part"));
+        ImGui::EndDisabled();
+        if (partsFull && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", TXT("UNI2 / MBTL hold 2000 parts per .pat."));
+        if(addPart){
             auto item = &curInstance->parts->cutOuts.emplace_back();
             item->id = curInstance->parts->cutOuts.size() - 1;
             RegeneratePartCutOutsNames();
@@ -115,8 +123,10 @@ void PatPartPane::DrawPartCutOut()
         if (npartData > 0 && ImGui::BeginCombo(LBL("Part"), cutOutsDecoratedNames[curInstance->currState->partCutOut].c_str(),
                               ImGuiComboFlags_HeightLargest)) {
 
+            patsearch::FilterBox();
             auto count = curInstance->parts->cutOuts.size();
             for (int n = 0; n < count; n++) {
+                if (!patsearch::Matches(cutOutsDecoratedNames[n].c_str())) continue;
                 const bool is_selected = (curInstance->currState->partCutOut == n);
                 if (ImGui::Selectable(cutOutsDecoratedNames[n].c_str(), is_selected)) {
                     curInstance->currState->partCutOut = n;

@@ -142,6 +142,8 @@ add_executable(${EXE}
 	src/PatEditor/pat_shape_pane.cpp
 	src/PatEditor/pat_texture_pane.cpp
 	src/PatEditor/pat_tool_pane.cpp
+	src/PatEditor/pat_search.cpp
+	src/parts/pat_limits.cpp
 	src/parts/parts_partset.cpp
 	src/parts/parts_part.cpp
 	src/parts/parts_shape.cpp
@@ -1378,6 +1380,20 @@ if(MINGW)
 	target_link_options(fpanim_link_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME fpanim_link COMMAND fpanim_link_test)
+# PAT editor list filter (#113)
+add_executable(pat_search_test tests/pat_search_test.cpp)
+target_include_directories(pat_search_test PRIVATE "." "src")
+if(MINGW)
+	target_link_options(pat_search_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pat_search COMMAND pat_search_test)
+# UNI2 / MBTL .pat limits (parts/pat_limits.h)
+add_executable(pat_limits_test tests/pat_limits_test.cpp src/parts/pat_limits.cpp src/i18n.cpp)
+target_include_directories(pat_limits_test PRIVATE "." "src")
+if(MINGW)
+	target_link_options(pat_limits_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME pat_limits COMMAND pat_limits_test)
 # Script panel merged file list: fpan-im / IM layers, new data scripts, pack-folder selection (src/squirrel/script_layers.h)
 add_executable(script_layers_test tests/script_layers_test.cpp src/squirrel/script_layers.cpp src/squirrel/fpanim_link.cpp src/app_log.cpp)
 target_include_directories(script_layers_test PRIVATE "." "src")

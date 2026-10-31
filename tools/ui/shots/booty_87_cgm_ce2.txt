@@ -1,0 +1,85 @@
+# #87: CG manager on a ce2 bank with 1191 undrawable images (b_m_hisui_p.cg), walking the thumbnails
+openany C:/dev/hantei-chan/work/ab/s87/b_m_hisui_p_9.txt
+wait 120
+cgm open
+wait 40
+cgm select 0
+wait 6
+cgm select 40
+wait 6
+cgm select 80
+wait 6
+cgm select 120
+wait 6
+cgm select 160
+wait 6
+cgm select 200
+wait 6
+cgm select 240
+wait 6
+cgm select 280
+wait 6
+cgm select 320
+wait 6
+cgm select 360
+wait 6
+cgm select 400
+wait 6
+cgm select 440
+wait 6
+cgm select 480
+wait 6
+cgm select 520
+wait 6
+cgm select 560
+wait 6
+cgm select 600
+wait 6
+cgm select 640
+wait 6
+cgm select 680
+wait 6
+cgm select 720
+wait 6
+cgm select 760
+wait 6
+cgm select 800
+wait 6
+cgm select 840
+wait 6
+cgm select 880
+wait 6
+cgm select 920
+wait 6
+cgm select 960
+wait 6
+cgm select 1000
+wait 6
+cgm select 1040
+wait 6
+cgm select 1080
+wait 6
+cgm select 1120
+wait 6
+cgm select 1160
+wait 6
+cgm select 1200
+wait 6
+cgm select 1240
+wait 6
+cgm select 1280
+wait 6
+cgm select 1320
+wait 6
+cgm select 1360
+wait 6
+cgm select 1400
+wait 6
+cgm select 1440
+wait 6
+cgm select 1480
+wait 6
+cgm select 1520
+wait 6
+capture C:/dev/hantei-chan/work/ab/shots/b87_01.png
+cgm status

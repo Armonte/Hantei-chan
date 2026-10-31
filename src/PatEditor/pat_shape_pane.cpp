@@ -1,4 +1,5 @@
 #include "pat_shape_pane.h"
+#include "pat_search.h"
 #include "../parts/parts.h"
 #include "../filedialog.h"
 #include "../main_frame.h"
@@ -115,8 +116,10 @@ void PatShapePane::DrawShape()
             if (ImGui::BeginCombo(LBL("Shape"), shapesDecoratedNames[curInstance->currState->partShape].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
 
+                patsearch::FilterBox();
                 auto count = curInstance->parts->shapes.size();
                 for (int n = 0; n < count; n++) {
+                    if (!patsearch::Matches(shapesDecoratedNames[n].c_str())) continue;
                     const bool is_selected = (curInstance->currState->partShape == n);
                     if (ImGui::Selectable(shapesDecoratedNames[n].c_str(), is_selected)) {
                         curInstance->currState->partShape = n;
