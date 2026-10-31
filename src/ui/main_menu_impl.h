@@ -3,6 +3,7 @@
 
 #include "ui_style.h"
 #include "../app_log.h"
+#include "../update_notice.h"
 
 // ============================================================================
 // Main Menu Implementation
@@ -21,7 +22,7 @@
 // - Stage  : stage files and stage display options
 // - Game   : Game Link, Authoring >, Game view, HUD preview, BGM preview, Legacy >
 // - Window : pane toggles, inspectors, reports, Notes, Vectors guide, Stage Browser, detached windows
-// - Help   : About
+// - Help   : About, Check for updates, Check for updates on startup
 // ============================================================================
 
 void MainFrame::addRecentFile(const std::string& path)
@@ -1123,6 +1124,8 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		if (ImGui::BeginMenu(LBL("Help")))
 		{
 			if (ImGui::MenuItem(LBL("About"))) aboutWindow.isVisible = !aboutWindow.isVisible;
+			ImGui::Separator();
+			updnotice::DrawMenuItems();
 			ImGui::EndMenu();
 		}
 
@@ -1182,6 +1185,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			ImGui::TextDisabled(TXT("No character loaded"));
 		}
 		DrawHotSaveStatus();   // where a UNI2 / MBTL save went (IM mod folder) and the fpan-im hot reload reply
+		updnotice::DrawMenuBadge();   // "Update <tag> available", right-aligned
 
 		ImGui::EndMenuBar();
 	}

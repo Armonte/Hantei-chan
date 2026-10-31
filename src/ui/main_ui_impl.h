@@ -453,6 +453,7 @@ void MainFrame::DrawUi()
 	}
 
 	aboutWindow.Draw();
+	updnotice::Draw();
 	vectors.Draw();
 	drawCommandEditor();
 	drawScriptPanel();
