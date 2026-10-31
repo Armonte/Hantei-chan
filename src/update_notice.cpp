@@ -57,6 +57,9 @@ bool g_launchHandled = false;
 updcheck::Release g_release;   // the release the popup shows (notes only when fetched this session)
 bool g_openPopup = false;
 
+bool g_popupShown = false;      // the popup was drawn last frame
+int g_scriptButton = 0;         // --ui-script: 1 Later, 2 Skip this version (pressed on the next popup frame)
+
 enum class Manual { none, checking, upToDate, devBuild, failed };
 Manual g_manual = Manual::none;
 std::string g_manualDetail;
@@ -242,7 +245,11 @@ void DrawPopup()
 	const ImGuiViewport *vp = ImGui::GetMainViewport();
 	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 	ImGui::SetNextWindowSize(ImVec2(560, 420), ImGuiCond_Appearing);
+	g_popupShown = false;
 	if (!ImGui::BeginPopupModal(title, nullptr, ImGuiWindowFlags_NoSavedSettings)) return;
+	g_popupShown = true;
+	const int scripted = g_scriptButton;
+	g_scriptButton = 0;
 	ImGui::TextUnformatted(TXT("A new version of Hantei-chan is available."));
 	ImGui::Text("%s", g_release.name.c_str());
 	ImGui::TextDisabled(TXT("Installed: %s    Latest: %s"), EffectiveLocal().c_str(), g_release.tag.c_str());
@@ -261,14 +268,14 @@ void DrawPopup()
 		ImGui::CloseCurrentPopup();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(LBL("Skip this version"))) {
+	if (ImGui::Button(LBL("Skip this version")) || scripted == 2) {
 		g_ini.skippedTag = g_release.tag;
 		ImGui::MarkIniSettingsDirty();
 		HC_LOG_INFO("update check: skipping {}", g_release.tag);
 		ImGui::CloseCurrentPopup();
 	}
 	ImGui::SameLine();
-	if (ImGui::Button(LBL("Later")) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+	if (ImGui::Button(LBL("Later")) || ImGui::IsKeyPressed(ImGuiKey_Escape) || scripted == 1) ImGui::CloseCurrentPopup();
 	ImGui::EndPopup();
 }
 
@@ -338,13 +345,16 @@ void RegisterSettings(ImGuiContext &context)
 
 const char *LocalVersion() { return HC_RELEASE_TAG; }
 
+static void CheckNow()
+{
+	g_manual = Manual::checking;
+	if (g_job) g_jobManual = true;   // the launch check is still running: report its result
+	else StartFetch(true);
+}
+
 void DrawMenuItems()
 {
-	if (ImGui::MenuItem(LBL("Check for updates"), nullptr, false, !g_job || !g_jobManual)) {
-		g_manual = Manual::checking;
-		if (g_job) g_jobManual = true;   // the launch check is still running: report its result
-		else StartFetch(true);
-	}
+	if (ImGui::MenuItem(LBL("Check for updates"), nullptr, false, !g_job || !g_jobManual)) CheckNow();
 	if (ImGui::MenuItem(LBL("Check for updates on startup"), nullptr, g_ini.autoCheck)) {
 		g_ini.autoCheck = !g_ini.autoCheck;
 		ImGui::MarkIniSettingsDirty();
@@ -361,7 +371,9 @@ void DrawMenuBadge()
 	const float x = ImGui::GetWindowContentRegionMax().x - w;
 	ImGui::SameLine();
 	if (x > ImGui::GetCursorPosX()) ImGui::SetCursorPosX(x);
-	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.78f, 0.25f, 1.0f));
+	const ImVec4 bar = style.Colors[ImGuiCol_MenuBarBg];   // amber on dark themes, burnt orange on the light ones
+	const bool lightBar = bar.x * 0.3f + bar.y * 0.59f + bar.z * 0.11f > 0.5f;
+	ImGui::PushStyleColor(ImGuiCol_Text, lightBar ? ImVec4(0.75f, 0.28f, 0.0f, 1.0f) : ImVec4(1.0f, 0.78f, 0.25f, 1.0f));
 	ImGui::PushID("update_badge");
 	const bool clicked = ImGui::MenuItem(label);
 	ImGui::PopID();
@@ -383,6 +395,23 @@ void Draw()
 	Poll();
 	DrawPopup();
 	DrawManualResult();
+}
+
+bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *msg)
+{
+	if (cmd != "update") return false;
+	if (arg == "check") CheckNow();
+	else if (arg == "later") g_scriptButton = 1;
+	else if (arg == "skip") g_scriptButton = 2;
+	else if (arg != "status") { if (msg) *msg = "usage: update check|later|skip|status"; return true; }
+	if (msg) {
+		static const char *const manual[] = {"none", "checking", "up to date", "dev build", "failed"};
+		*msg = "local=" + EffectiveLocal() + " latest=" + g_ini.latestTag + " skipped=" + g_ini.skippedTag + " notified=" +
+		       g_ini.notifiedTag + " badge=" + (updcheck::UpdateAvailable(EffectiveLocal(), g_ini.latestTag, g_ini.skippedTag) ? "1" : "0") +
+		       " popup=" + (g_popupShown ? "1" : "0") + " fetching=" + (g_job ? "1" : "0") + " manual=" + manual[(int)g_manual] +
+		       (g_manualDetail.empty() ? "" : " (" + g_manualDetail + ")");
+	}
+	return true;
 }
 
 } // namespace updnotice

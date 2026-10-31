@@ -36,6 +36,7 @@
 #include "paste_notice.h"
 #include "copy_data.h"
 #include "app_log.h"
+#include "update_notice.h"
 #include "render_target.h"
 #include <map>
 
@@ -311,6 +312,12 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			return;
 		}
 		if (stage3dview::ScriptCommand(cmd, arg, &msg)) {   // stage3d open|frame|cam|set|capture|status (stage3d/s3d_view.h)
+			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
+			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.c_str()); fclose(lf); }
+			waitFrames = 3;
+			return;
+		}
+		if (updnotice::ScriptCommand(cmd, arg, &msg)) {   // update check|later|skip|status (update_notice.h)
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
 			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.c_str()); fclose(lf); }
 			waitFrames = 3;

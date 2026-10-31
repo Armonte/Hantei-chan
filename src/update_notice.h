@@ -10,6 +10,8 @@
 // Dev builds (no HC_RELEASE_TAG) never check on their own. They honour two test overrides:
 //   HC_UPDATE_FAKE_LOCAL=0.0.1   pretend to be that release (auto check runs, ignoring the 24 h throttle)
 //   HC_UPDATE_URL=<url>          fetch this instead of the GitHub API (error / offline tests)
+#include <string>
+
 struct ImGuiContext;
 
 namespace updnotice {
@@ -20,6 +22,8 @@ const char *LocalVersion();                     // release tag of this build, or
 void DrawMenuItems();   // Help menu: Check for updates, automatic check toggle
 void DrawMenuBadge();   // last item of the main menu bar
 void Draw();            // once per frame, top level: starts the launch check, popup, manual check result
+// --ui-script: update check | update later | update skip | update status (state line in *msg). False: not an update command.
+bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *msg);
 
 } // namespace updnotice
 
