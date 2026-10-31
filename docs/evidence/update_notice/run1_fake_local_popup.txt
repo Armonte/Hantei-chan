@@ -1,0 +1,10 @@
+# HC_UPDATE_FAKE_LOCAL=0.0.1 (dev build): the launch check fetches releases/latest and shows the popup; Later keeps the badge
+wait 10
+waitms 6000
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_01_popup.png
+update later
+wait 5
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_02_badge_after_later.png
+quit

@@ -9,6 +9,11 @@ on:
     branches: [ main, master, develop ]
     paths-ignore: [ 'docs/**', '**/*.md' ]
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to stamp into the exe for the update notice (e.g. 0.1.3); empty = dev build'
+        required: false
+        type: string
 
 # A newer push to the same branch or PR cancels the run still in progress.
 concurrency:
@@ -37,8 +42,10 @@ jobs:
         key: windows-mingw
         max-size: 2G
 
+    # HC_RELEASE_TAG: a release build (dispatched with release_tag) reports that tag to the update notice; every other
+    # build is "dev" and never shows it on its own.
     - name: Configure CMake
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache "-DHC_RELEASE_TAG=${{ inputs.release_tag || 'dev' }}"
 
     - name: Build
       run: cmake --build build --config Release --parallel 4

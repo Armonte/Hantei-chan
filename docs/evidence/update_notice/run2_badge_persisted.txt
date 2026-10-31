@@ -1,0 +1,6 @@
+# ini already has LatestTag=0.1.2 NotifiedTag=0.1.2: next launch shows the badge, not the popup again
+wait 10
+waitms 6000
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_03_badge_next_launch.png
+quit
