@@ -1,0 +1,10 @@
+# HC_UPDATE_URL points at an unreachable host. With HC_UPDATE_FAKE_LOCAL the launch check fails silently (log only);
+# Help > Check for updates (update check) reports the error.
+wait 10
+waitms 7000
+update status
+update check
+waitms 7000
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_04_manual_error.png
+quit

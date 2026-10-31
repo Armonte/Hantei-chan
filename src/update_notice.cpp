@@ -93,8 +93,13 @@ std::string SourceUrl()
 
 std::string LastErrorText(const char *what)
 {
-	char buf[96];
-	snprintf(buf, sizeof buf, "%s failed (error %lu)", what, (unsigned long)GetLastError());
+	const DWORD e = GetLastError();
+	const char *why = e == ERROR_WINHTTP_NAME_NOT_RESOLVED ? ": host not found (offline?)"
+	                : e == ERROR_WINHTTP_TIMEOUT ? ": timed out"
+	                : e == ERROR_WINHTTP_CANNOT_CONNECT ? ": cannot connect"
+	                : e == ERROR_WINHTTP_SECURE_FAILURE ? ": TLS error" : "";
+	char buf[128];
+	snprintf(buf, sizeof buf, "%s failed (error %lu%s)", what, (unsigned long)e, why);
 	return buf;
 }
 
@@ -284,7 +289,7 @@ void DrawManualResult()
 	if (g_manual == Manual::none) return;
 	bool open = true;
 	const ImGuiViewport *vp = ImGui::GetMainViewport();
-	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+	ImGui::SetNextWindowPos(vp->GetCenter(), ImGuiCond_Always, ImVec2(0.5f, 0.5f));   // stays centred as the text changes
 	if (ImGui::Begin(LBL("Update check"), &open, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
 	                 ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoCollapse)) {
 		switch (g_manual) {

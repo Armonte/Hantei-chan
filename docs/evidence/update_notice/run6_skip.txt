@@ -1,0 +1,9 @@
+# Skip this version on the launch popup: the skipped tag is stored and the badge goes away
+wait 10
+waitms 6000
+update status
+update skip
+wait 5
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_06_after_skip.png
+quit
