@@ -1216,6 +1216,15 @@ target_link_libraries(cgmtool PRIVATE tinyalloc windowscodecs ole32 uuid)
 if(MINGW)
 	target_link_options(cgmtool PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
+# cg_bank_decode_test: every BMP Cutter image decodes to an uploadable size or not at all (blank-slot bounds, issue #87).
+add_executable(cg_bank_decode_test tests/cg_bank_decode_test.cpp ${CGM_CORE_SOURCES} src/app_log.cpp src/cg.cpp src/misc.cpp src/png_writer.cpp tinyalloc/tinyalloc.c)
+target_include_directories(cg_bank_decode_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(cg_bank_decode_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(cg_bank_decode_test PRIVATE tinyalloc windowscodecs ole32 uuid)
+if(MINGW)
+	target_link_options(cg_bank_decode_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME cg_bank_decode COMMAND cg_bank_decode_test)
 
 # cgmtex: the CG manager's unified CG + .pat texture layer (src/cgm/cgm_texsrc.h): unit tests, corpus checks, in-game proof edits.
 add_executable(cgmtex src/cgm/cgmtex.cpp src/cgm/cgm_texsrc.cpp src/squirrel/fpanim_link.cpp ${CGM_CORE_SOURCES} src/cgm/cgm_usage.cpp src/framedata.cpp src/framedata_load.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
