@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project(hanteichan VERSION 1.1.21 LANGUAGES C CXX)
+project(hanteichan VERSION 0.1.3 LANGUAGES C CXX)
 
 # Single-config generators default to an empty build type, which leaves
 # assert()/IM_ASSERT live: CI's "MinGW Makefiles" build shipped that way, and a
@@ -213,6 +213,14 @@ if(NOT DEFINED HC_RELEASE_TAG)
 		set(HC_RELEASE_TAG_DEFAULT "$ENV{HC_RELEASE_TAG}")
 	endif()
 	set(HC_RELEASE_TAG "${HC_RELEASE_TAG_DEFAULT}" CACHE STRING "GitHub release tag of this build (update notice); dev = not a release")
+endif()
+# One version number: a release build's tag must be the project version (a leading "v" is allowed), so the exe, the
+# About box and the GitHub release all say the same thing. Bump project(VERSION) before tagging a release.
+if(NOT HC_RELEASE_TAG STREQUAL "dev")
+	string(REGEX REPLACE "^v" "" HC_RELEASE_TAG_BARE "${HC_RELEASE_TAG}")
+	if(NOT HC_RELEASE_TAG_BARE STREQUAL PROJECT_VERSION)
+		message(FATAL_ERROR "HC_RELEASE_TAG ${HC_RELEASE_TAG} does not match project(VERSION ${PROJECT_VERSION}); bump the version in CMakeLists.txt first")
+	endif()
 endif()
 set_source_files_properties(src/update_notice.cpp PROPERTIES COMPILE_DEFINITIONS "HC_RELEASE_TAG=\"${HC_RELEASE_TAG}\"")
 message(STATUS "Release tag (update notice): ${HC_RELEASE_TAG}")
