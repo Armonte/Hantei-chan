@@ -62,6 +62,9 @@ jobs:
         if (Test-Path config) { cp -r config release/$archiveName/ }
         if (Test-Path res) { cp -r res release/$archiveName/ }
         if (Test-Path README.md) { cp README.md release/$archiveName/ }
+        # Script panel API files (same as build.yml's package)
+        New-Item -ItemType Directory -Force release/$archiveName/res/squirrel | Out-Null
+        cp docs/squirrel/api/*_api.json release/$archiveName/res/squirrel/
 
         cd release
         Compress-Archive -Path $archiveName -DestinationPath "$archiveName.zip"
@@ -92,7 +95,5 @@ jobs:
           1. Extract the ZIP file
           2. Run `gonptechan.exe`
 
-          ---
-          🤖 Built automatically by GitHub Actions
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
