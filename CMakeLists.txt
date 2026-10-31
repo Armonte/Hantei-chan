@@ -180,6 +180,9 @@ add_executable(${EXE}
 	src/tag_tuning/tag_ini.cpp
 	src/tag_tuning/tag_assist.cpp
 	src/tag_panel.cpp
+	# Update notice (Help > Check for updates, menu-bar badge): GitHub releases/latest over WinHTTP
+	src/update_check.cpp
+	src/update_notice.cpp
 	imsearch/imsearch.cpp
 	res/res.rc
 )
@@ -202,11 +205,23 @@ add_custom_target(update_version ALL
 )
 add_dependencies(${EXE} update_version)
 
+# Release tag this build reports to the update notice (src/update_notice.h): the release workflows pass the GitHub tag
+# (-DHC_RELEASE_TAG=0.1.3, or the HC_RELEASE_TAG environment variable); local and PR builds stay "dev" and never show it.
+if(NOT DEFINED HC_RELEASE_TAG)
+	set(HC_RELEASE_TAG_DEFAULT "dev")
+	if(DEFINED ENV{HC_RELEASE_TAG})
+		set(HC_RELEASE_TAG_DEFAULT "$ENV{HC_RELEASE_TAG}")
+	endif()
+	set(HC_RELEASE_TAG "${HC_RELEASE_TAG_DEFAULT}" CACHE STRING "GitHub release tag of this build (update notice); dev = not a release")
+endif()
+set_source_files_properties(src/update_notice.cpp PROPERTIES COMPILE_DEFINITIONS "HC_RELEASE_TAG=\"${HC_RELEASE_TAG}\"")
+message(STATUS "Release tag (update notice): ${HC_RELEASE_TAG}")
+
 find_package(OpenGL REQUIRED)
 target_link_libraries(${EXE} PRIVATE imgui glad OpenGL::GL glm tinyalloc)
 if(WIN32)
 	# WIC PNG export, folder picker, detached-window subclassing; winmm for BGM preview (waveOut).
-	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm version)
+	target_link_libraries(${EXE} PRIVATE windowscodecs ole32 uuid comctl32 winmm version winhttp)
 endif()
 
 if(MINGW)
@@ -946,6 +961,12 @@ if(MINGW)
 	target_link_options(shortcut_router_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME shortcut_router COMMAND shortcut_router_test)
+add_executable(update_check_test tests/update_check_test.cpp src/update_check.cpp)
+target_include_directories(update_check_test PRIVATE "src")
+if(MINGW)
+	target_link_options(update_check_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME update_check COMMAND update_check_test)
 add_executable(live_reload_test tests/live_reload_test.cpp src/live_reload.cpp src/misc.cpp tinyalloc/tinyalloc.c)
 target_include_directories(live_reload_test PRIVATE "." "src" "third_party")
 target_compile_definitions(live_reload_test PRIVATE WIN32_LEAN_AND_MEAN)

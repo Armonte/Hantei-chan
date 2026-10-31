@@ -3,6 +3,7 @@
 #include "parts/parts.h"
 #include "misc.h"
 #include "extension_profile.h"
+#include "update_notice.h"
 #include "app_log.h"
 #include "stage3d/s3d_blender.h"
 #include <sstream>
@@ -245,6 +246,7 @@ void InitIni()
 	ini_handler.WriteAllFn = Write;
 	context.SettingsHandlers.push_back(ini_handler);
 	RegisterExtensionProfileSettings(context);
+	updnotice::RegisterSettings(context);
 	ImGui::LoadIniSettingsFromDisk(context.IO.IniFilename);
 }
 
