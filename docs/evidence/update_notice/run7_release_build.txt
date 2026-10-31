@@ -1,0 +1,6 @@
+# Build configured with -DHC_RELEASE_TAG=0.1.1, no overrides: the real launch path (throttle, popup)
+wait 10
+waitms 6000
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_07_release_build_launch.png
+quit

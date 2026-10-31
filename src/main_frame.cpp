@@ -13,6 +13,7 @@
 #include "project_manager.h"
 #include "preset_effects.h"
 #include "version.h"
+#include "update_notice.h"
 #include "framestate.h"
 #include "misc.h"
 #include "background/bg_inspector.h"

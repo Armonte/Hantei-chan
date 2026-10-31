@@ -1,0 +1,5 @@
+# ini has SkippedTag=0.1.2: neither popup nor badge for that release
+wait 10
+waitms 6000
+update status
+quit

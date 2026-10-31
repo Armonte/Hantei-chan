@@ -1,0 +1,8 @@
+# Help > Check for updates against the real API (no auto check in a plain dev build)
+wait 10
+update status
+update check
+waitms 6000
+update status
+capture C:/dev/hantei-chan/work/ab/shots/update_05_manual_result.png
+quit
