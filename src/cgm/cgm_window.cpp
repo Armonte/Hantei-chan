@@ -1360,7 +1360,7 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 			dl->AddText(ImVec2(a.x, b.y + 2), ImGui::GetColorU32(ImGuiCol_Text), lab);
 			if (hov) {
 				int bpp, ty, x1, y1, x2, y2; ch->cg.image_info(id, bpp, ty, x1, y1, x2, y2);
-				ImGui::SetTooltip("%s\n%dx%d  %s\n%s %d", ch->cg.get_filename(id) ? ch->cg.get_filename(id) : "", x2 - x1 + 1, y2 - y1 + 1, TypeName(ty), TXT("used by layers:"), usage.count(id));
+				ImGui::SetTooltip("%s\n%dx%d  %s\n%s %d", ch->cg.get_filename(id) ? ch->cg.get_filename(id) : "", std::max(0, x2 - x1 + 1), std::max(0, y2 - y1 + 1), TypeName(ty), TXT("used by layers:"), usage.count(id));
 			}
 			ImGui::PopID();
 		}
@@ -1373,7 +1373,8 @@ void Window::draw(CharacterInstance *ch, const WindowHost &host) {
 	ImGui::BeginChild("##cgminfo", ImVec2(0, paneH));
 	if (selected >= 0 && selected < count) {
 		int bpp = 0, ty = 0, x1 = 0, y1 = 0, x2 = 0, y2 = 0;
-		const bool ok = ch->cg.image_info(selected, bpp, ty, x1, y1, x2, y2);
+		// BMP Cutter3 stores a blank slot with inverted bounds (x1,y1 = canvas size, x2,y2 = 32): no pixels, not a -223 x -223 image
+		const bool ok = ch->cg.image_info(selected, bpp, ty, x1, y1, x2, y2) && x2 >= x1 && y2 >= y1;
 		ImGui::Text(TXT("Image %d: %s"), selected, ch->cg.get_filename(selected) ? ch->cg.get_filename(selected) : "");
 		if (ok) {
 			ImGui::Text(TXT("%d x %d, %d-bit, canvas (%d,%d)-(%d,%d)"), x2 - x1 + 1, y2 - y1 + 1, bpp, x1, y1, x2, y2);
@@ -1699,7 +1700,7 @@ void Window::drawTextures(CharacterInstance &ch, const WindowHost &host) {
 		while (clip.Step()) for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++) {
 			const int i = ids[r]; int bpp, ty, x1, y1, x2, y2; ch.cg.image_info(i, bpp, ty, x1, y1, x2, y2);
 			const char *nm = ch.cg.get_filename(i);
-			char l[128]; snprintf(l, sizeof(l), "%4d  %-24s %4dx%-4d  x%d##cgi%d", i, nm ? nm : "", x2 - x1 + 1, y2 - y1 + 1, usage.count(i), i);
+			char l[128]; snprintf(l, sizeof(l), "%4d  %-24s %4dx%-4d  x%d##cgi%d", i, nm ? nm : "", std::max(0, x2 - x1 + 1), std::max(0, y2 - y1 + 1), usage.count(i), i);
 			if (ImGui::Selectable(l, tb.kind == 0 && tb.sel == i)) { tb.kind = 0; tb.sel = i; }
 		}
 	}
