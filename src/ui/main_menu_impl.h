@@ -3,7 +3,6 @@
 
 #include "ui_style.h"
 #include "../app_log.h"
-#include "../update_notice.h"
 
 // ============================================================================
 // Main Menu Implementation
