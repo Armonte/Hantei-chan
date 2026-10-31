@@ -48,7 +48,8 @@ HotDone RunJob(HotJob j)
 	HotDone d;
 	d.job = j;
 	// Engine rebuild: fpan-im waits up to 120 s for the training battle; live: up to 30 s (as the Script panel).
-	d.reply = sqedit::FpanimRequest(j.pipe, j.request, j.request.find(" live") != std::string::npos ? 35000 : 130000);
+	if (j.request == "reloadsyseff") d.reply = sqedit::FpanimRequestSysEffectReload(j.pipe, 35000);
+	else d.reply = sqedit::FpanimRequest(j.pipe, j.request, j.request.find(" live") != std::string::npos ? 35000 : 130000);
 	d.ms = (long)std::chrono::duration_cast<std::chrono::milliseconds>(Clock::now() - t0).count();
 	return d;
 }
@@ -74,6 +75,11 @@ std::string Summarise(const HotDone& d, bool* ok)
 	*ok = d.reply.ok;
 	if (!d.reply.connected) { *ok = false; return TXT("Hot reload: game not running (no fpan-im pipe)"); }
 	if (info.refused) { *ok = false; return TXT("Hot reload refused: no training battle is running. Start a training battle in the game, then save again."); }
+	if (d.reply.ok && info.sysReload) return std::string(TXT("Hot reload: ")) + d.reply.text.substr(3);
+	if (d.reply.ok && info.sysEffect) {
+		snprintf(line, sizeof line, TXT("Hot reload: system effects reloaded in place (%ld ms)"), d.ms);
+		return line;
+	}
 	if (d.reply.ok && info.stdReload) {
 		if (info.engine) snprintf(line, sizeof line, TXT("Hot reload: shared scripts reloaded, battle rebuilt in %ld ms"), info.ms);
 		else snprintf(line, sizeof line, TXT("Hot reload: shared scripts and every character reloaded in place (%ld ms)"), d.ms);
@@ -186,7 +192,7 @@ void MainFrame::onFileSaved(CharacterInstance* ch, const std::string& u8path)
 		g_hot.saved = std::string(TXT("Saved ")) + (plan.alreadyInMods ? plan.modsDst : u8path);
 	}
 	if (plan.request.empty()) {
-		g_hot.reload = gSettings.sqHotReload ? TXT("Hot reload: not a character file (data/<character>/<character>...) or shared file, not reloaded") : "";
+		g_hot.reload = gSettings.sqHotReload ? TXT("Hot reload: not a character file (data/<character>/<character>...), shared file or system effect file, not reloaded") : "";
 		return;
 	}
 	if (plan.modsDst.empty()) {   // the game reads its archives: a reload without the mod-folder copy would load the old file
@@ -222,7 +228,7 @@ void MainFrame::DrawHotSavePrefsItems()
 		if (ImGui::InputText(std::string(g) == "mbtl" ? LBL("MBTL game folder") : LBL("UNI2 game folder"), buf, sizeof buf)) { s = buf; ImGui::MarkIniSettingsDirty(); }
 	}
 	if (ImGui::Checkbox(LBL("Hot reload"), &gSettings.sqHotReload)) ImGui::MarkIniSettingsDirty();
-	ImGui::SetItemTooltip("%s", TXT("After a save of a UNI2 / MBTL file, reload it in the running game through fpan-im: data/chrNNN files reload that character, shared files (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) reload the shared battle scripts. The same switch as the Script panel's."));
+	ImGui::SetItemTooltip("%s", TXT("After a save of a UNI2 / MBTL file, reload it in the running game through fpan-im: data/chrNNN files reload that character, shared files (script/*.txt, data/_combase, VectorTable, BattleInfo, BoundEff) reload the shared battle scripts, and the system effects (data/effect.ha6 / .cg / .txt, sys_effect.pat) reload in place. The same switch as the Script panel's."));
 	const char* modes[] = {TXT("Rebuild (engine)"), TXT("Live (keep state)")};
 	int mode = gSettings.sqHotReloadMode == 1 ? 1 : 0;
 	ImGui::SetNextItemWidth(ui::Px(180));

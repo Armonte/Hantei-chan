@@ -20,3 +20,6 @@ __pycache__/
 
 # Optional fpan-im bundle (tools/fpanim/bundle.sh; private binaries, never committed)
 /res/fpan-im/
+
+# local Claude Code settings
+.claude/

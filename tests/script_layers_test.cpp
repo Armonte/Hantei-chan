@@ -43,6 +43,10 @@ int main(int argc, char** argv)
 	Put(g / "script/VanillaPlusConfig.txt", sq);
 	Put(g / "data/chr001/chr001_mv_0.txt", sq);
 	Put(g / "data/chr001/chr001.txt", "chr001.ha6\n");   // not Squirrel
+	// System/: training command lists are Squirrel, the replay header is ini-style (BootySama #112)
+	Put(g / "System/cmd_chr001.txt", "Training_cmdList <- { list = [] };\n");
+	Put(g / "System/HeaderReplayVS.txt", "[Header]\nName = x\n");
+	Put(g / "UNI2-IM/Packs/___UniTM/System/cmd_chr001.txt", "Training_cmdList <- { list = [] };\n");
 	// UNI2-IM: Mods + two packs, ___UniTM first by the ini Order, zzOff disabled
 	Put(g / "UNI2-IM/UNI2_IM.ini", "[Mods]\nOrder=___UniTM|aaPack\nOff=zzOff\n");
 	Put(g / "UNI2-IM/Mods/data/chr001/chr001_mv_0.txt", sq);
@@ -75,7 +79,8 @@ int main(int argc, char** argv)
 		CHECK(tags[6] == "pack zzOff (off)");
 	}
 	const std::vector<std::string> archive = {"data/chr001/chr001_mv_0.txt", "data/chr001/chr001_sc_0.txt", "data/VectorTable.txt",
-		"data/BoundEff.txt", "data/chr001/chr001.ha6", "script/Battle_Init.txt"};
+		"data/BoundEff.txt", "data/chr001/chr001.ha6", "script/Battle_Init.txt", "System/BtlCharaTbl.txt",
+		"System/str_jp/CharaData.csv", "System/HeaderRepDummy.txt"};
 	const std::vector<ScriptFile> files = ListScriptFiles(L, archive);
 	CHECK(L.back().tag == "archive");
 
@@ -86,6 +91,11 @@ int main(int argc, char** argv)
 	CHECK(WinTag(Find(files, "data/chr002/chr002_newthing.txt"), L) == "fpan-im mods");
 	CHECK(WinTag(Find(files, "script/btl_New.txt"), L) == "fpan-im pack fp1");
 	CHECK(!Find(files, "data/chr001/chr001.txt") && !Find(files, "data/notes.txt") && !Find(files, "data/chr001/chr001.ha6"));
+	// System/ scripts: the pack copy wins over the loose one; ini-style and csv files are left out
+	CHECK(WinTag(Find(files, "system/cmd_chr001.txt"), L) == "pack ___UniTM");
+	CHECK(Find(files, "system/cmd_chr001.txt") && Find(files, "system/cmd_chr001.txt")->copies.size() == 2);
+	CHECK(WinTag(Find(files, "system/BtlCharaTbl.txt"), L) == "archive");
+	CHECK(!Find(files, "system/HeaderReplayVS.txt") && !Find(files, "system/HeaderRepDummy.txt") && !Find(files, "system/str_jp/CharaData.csv"));
 	// archive-only entries
 	CHECK(WinTag(Find(files, "data/chr001/chr001_sc_0.txt"), L) == "archive");
 	CHECK(WinTag(Find(files, "script/Battle_Init.txt"), L) == "archive");
@@ -127,6 +137,8 @@ int main(int argc, char** argv)
 	CHECK(IsSquirrelScriptRel("data/VectorTable.txt") && IsSquirrelScriptRel("data/BattleInfo.txt"));
 	CHECK(IsSquirrelScriptRel("data/BoundEff.txt") && IsSquirrelScriptRel("data/_combase.txt"));
 	CHECK(IsSquirrelScriptRel("script/anything.txt") && !IsSquirrelScriptRel("data/effect.txt"));
+	CHECK(IsSquirrelScriptRel("System/cmd__common.txt") && IsSquirrelScriptRel("system\\PlayBonusTbl.txt"));
+	CHECK(!IsSquirrelScriptRel("System/HeaderReplayVS.txt") && !IsSquirrelScriptRel("System/str_jp/a.txt"));
 	const std::string ini = "name=foo\n";
 	CHECK(!IsSquirrelScriptRel("data/chr009/foo.txt", &ini) && IsSquirrelScriptRel("data/chr009/foo.txt", &sq));
 
