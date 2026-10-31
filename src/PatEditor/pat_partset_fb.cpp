@@ -1,4 +1,5 @@
 // PAT editor, poses and parts of a French-Bread (RBO / GOF2 / GOF1) character: the PACNyx+ DATView pose / body-part controls
+#include "pat_search.h"
 // (pose index, named add, rename, reorder, base point, save as image; part add from a sheet rectangle, nudge, rotate, flip, layer
 // commands, colour, source rect / origin). Reimplemented from the behaviour of PACNyx+ (2010) and icaroffa's 2026 build.
 // Model operations live in han2_parts_edit.cpp; undo / the tab '*' come from the character's undo history (parts/parts_undo.h).
@@ -62,7 +63,9 @@ void PatPartSetPane::DrawFbPoses()
     ImGui::SameLine();
     ImGui::TextDisabled(TXT("of %d (this PAT holds %d)"), nSets, maxPoses);
     if (nSets > 0 && partSetDecoratedNames && ImGui::BeginCombo(LBL("Part Set"), partSetDecoratedNames[st.partSet].c_str(), ImGuiComboFlags_HeightLargest)) {
+        patsearch::FilterBox();
         for (int n = 0; n < nSets; n++) {
+            if (!patsearch::Matches(partSetDecoratedNames[n].c_str())) continue;
             if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), st.partSet == n)) { UpdateRenderFrame(n); RegeneratePartPropNames(); }
             if (st.partSet == n) ImGui::SetItemDefaultFocus();
         }

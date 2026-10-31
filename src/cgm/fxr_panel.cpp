@@ -2,6 +2,7 @@
 #include "../ui/ui_layout2.h"
 #include "fxr_panel.h"
 #include "../cg.h"
+#include "../app_log.h"
 #include "../character_instance.h"
 #include "../i18n.h"
 #include "../game_table.h"
@@ -221,11 +222,23 @@ FxPanel::Tex &FxPanel::preview(CharacterInstance &ch, const Bank &bank, int imag
 	if (tex.size() > 400) freeTex();
 	Tex &t = tex[key];
 	Rgba px;
+	GLint maxTex = 0; glGetIntegerv(GL_MAX_TEXTURE_SIZE, &maxTex);
 	if (RecolorImage(bank, image, rule, slot, slotPal(ch, slot), px) && px.w > 0 && px.h > 0) {
+		// the same guards as Window::upload (issue #87): a bad size made glTexImage2D fail with GL_INVALID_VALUE
+		if (px.px.size() < (size_t)px.w * px.h * 4 || (maxTex > 0 && std::max(px.w, px.h) > maxTex)) {
+			HC_LOG_WARN("Effect recolour: preview of image {} has an unusable size {}x{} ({} bytes); shown empty", image, px.w, px.h, px.px.size());
+			return t;
+		}
 		glGenTextures(1, &t.id);
 		glBindTexture(GL_TEXTURE_2D, t.id);
 		glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+		while (glGetError() != GL_NO_ERROR) {}
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, px.w, px.h, 0, GL_RGBA, GL_UNSIGNED_BYTE, px.px.data());
+		if (const GLenum e = glGetError(); e != GL_NO_ERROR) {
+			HC_LOG_WARN("Effect recolour: preview upload {}x{} failed (GL 0x{:x}); shown empty", px.w, px.h, (unsigned)e);
+			glDeleteTextures(1, &t.id); t.id = 0;
+			return t;
+		}
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		t.w = px.w; t.h = px.h;

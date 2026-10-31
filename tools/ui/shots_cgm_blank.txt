@@ -1,0 +1,15 @@
+# Issue #87: CG manager on BOF shermie (BMP Cutter3 bank with hundreds of blank slots stored as bounds (256,256)-(32,32)).
+# Before the fix those slots decoded as -223 x -223 and every thumbnail upload failed with GL_INVALID_VALUE (0x501).
+# Run: AB_ARGS='--open <...>\shermie_0.txt' tools/ui/ab_shot.sh tools/ui/shots_cgm_blank.txt, then read hanteichan.log in the work folder.
+wait 120
+cgm open
+wait 30
+cgm tab Browser
+wait 60
+cgm select 26
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgm_blank_grid.png
+cgm select 34
+wait 30
+capture C:/dev/hantei-chan/work/ab/cgm_blank_sel34.png
+quit

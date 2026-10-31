@@ -1,0 +1,15 @@
+# #111: texture and UV views of a UNI2 .pat whose texture ids start at 1 (slot 0 empty). Scratch copy:
+#   mkdir -p work/ab_booty-issues/s111b && cp gamedata/uni2/data/chr021/chr021.pat work/ab_booty-issues/s111b/u_chr021.pat
+patopen C:/dev/hantei-chan/work/ab/s111b/u_chr021.pat
+wait 120
+zoomview 0.25
+panview 0 -400
+patsel 0 -1 5
+patinfo
+patmode texture
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/b111_01_texture.png
+patmode uv
+wait 30
+capture C:/dev/hantei-chan/work/ab/shots/b111_02_uv.png
+patinfo

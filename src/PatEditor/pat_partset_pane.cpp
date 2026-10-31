@@ -1,4 +1,6 @@
+#include "../parts/pat_limits.h"
 #include "pat_partset_pane.h"
+#include "pat_search.h"
 #include "../ui/ui_layout2.h"
 #include "../ui/ui_style.h"
 #include "../parts/parts.h"
@@ -252,7 +254,12 @@ void PatPartSetPane::DrawPartSet()
 {
 
         auto nPartSet = curInstance->parts->partSets.size();
-        if(ImGui::Button(LBL("Add Part Set"))){
+        // HA6 frames reach part set ids 0..65535 (parts/pat_limits.h)
+        const bool setsFull = (curInstance->parts->fbMaxPoses == 0 && !curInstance->parts->useMBAACCFormat) && nPartSet > (size_t)patlimits::kMaxPartSetId;
+        ImGui::BeginDisabled(setsFull);
+        const bool addSet = ImGui::Button(LBL("Add Part Set"));
+        ImGui::EndDisabled();
+        if(addSet){
             auto item = &curInstance->parts->partSets.emplace_back();
             item->partId = curInstance->parts->partSets.size() - 1;
             RegeneratePartSetNames();
@@ -277,8 +284,10 @@ void PatPartSetPane::DrawPartSet()
             if (ImGui::BeginCombo(LBL("Part Set"), partSetDecoratedNames[curInstance->currState->partSet].c_str(),
                                   ImGuiComboFlags_HeightLargest)) {
 
+                patsearch::FilterBox();
                 auto count = curInstance->parts->partSets.size();
                 for (int n = 0; n < count; n++) {
+                    if (!patsearch::Matches(partSetDecoratedNames[n].c_str())) continue;
                     const bool is_selected = (curInstance->currState->partSet == n);
                     if (ImGui::Selectable(partSetDecoratedNames[n].c_str(), is_selected)) {
                         UpdateRenderFrame(n);
@@ -340,7 +349,13 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
     ImGui::Separator();
     ImGui::Text(TXT("Parts Property Data"));
     int nparts = partSet->groups.size() - 1;
-    if(ImGui::Button(LBL("Add Prop"))){
+    // UNI2 / MBTL hold 80 parts per part set (parts/pat_limits.h)
+    const bool propsFull = (curInstance->parts->fbMaxPoses == 0 && !curInstance->parts->useMBAACCFormat) && partSet->groups.size() >= (size_t)patlimits::kMaxPartsPerSet;
+    ImGui::BeginDisabled(propsFull);
+    const bool addProp = ImGui::Button(LBL("Add Prop"));
+    ImGui::EndDisabled();
+    if (propsFull && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", TXT("UNI2 / MBTL hold 80 parts per part set."));
+    if(addProp){
         auto item = &partSet->groups.emplace_back();
         item->propId = partSet->groups.size() - 1;
         curInstance->currState->partProp = (int)partSet->groups.size() - 1;
@@ -378,8 +393,10 @@ void PatPartSetPane::DrawPartProperty(PartSet<>* partSet)
                               partPropsDecoratedNames[curInstance->currState->partProp].c_str(),
                               ImGuiComboFlags_HeightLargest)) {
 
+            patsearch::FilterBox();
             auto count = partSet->groups.size();
             for (int n = 0; n < count; n++) {
+                if (!patsearch::Matches(partPropsDecoratedNames[n].c_str())) continue;
                 const bool is_selected = (curInstance->currState->partProp == n);
                 if (ImGui::Selectable(partPropsDecoratedNames[n].c_str(), is_selected)) {
                     curInstance->currState->partProp = n;
