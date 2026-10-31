@@ -1,0 +1,6 @@
+note: iori.cg: bank model: size field in the tail does not match the file size
+note: angel.cg: bank model: size field in the tail does not match the file size
+note: kyo_lo.cg: bank model: size field in the tail does not match the file size
+note: shermie.cg: bank model: size field in the tail does not match the file size
+4 banks, 6127 images decoded, 4673 empty / undrawable
+cg_bank_decode_test: ok
