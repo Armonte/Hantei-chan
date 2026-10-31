@@ -4,10 +4,11 @@ on:
   push:
     tags:
       - 'v*.*.*'
+      - '[0-9]*.[0-9]*'   # the release tags in use: 0.1, 0.1.2
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version tag (e.g., v1.1.21)'
+        description: 'Version tag (e.g., 0.1.3)'
         required: true
         type: string
 
@@ -29,8 +30,12 @@ jobs:
       with:
         cmake-version: '3.27.x'
 
+    # The tag is stamped into the exe (HC_RELEASE_TAG): the in-app update notice compares it with releases/latest.
     - name: Configure CMake
-      run: cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release
+      run: |
+        $tag = if ($env:GITHUB_REF -match 'refs/tags/(.*)') { $matches[1] } else { "${{ inputs.version }}" }
+        cmake -B build -G "MinGW Makefiles" -DCMAKE_BUILD_TYPE=Release "-DHC_RELEASE_TAG=$tag"
+      shell: pwsh
 
     - name: Build
       run: cmake --build build --config Release
