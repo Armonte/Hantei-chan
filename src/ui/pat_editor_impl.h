@@ -16,6 +16,7 @@
 #include "../bof_authoring_contract.h"
 #include "../mbaacc_typed_hitgrab.h"
 #include "../parts/pat_renumber.h"
+#include "../parts/pat_limits.h"
 #include "../app_log.h"
 #include "../png_writer.h"
 
@@ -176,6 +177,22 @@ bool MainFrame::savePatOf(CharacterInstance* character, const std::string& path)
 			return false;
 		}
 	}
+	{   // UNI2 / MBTL load these without checks and corrupt their heap past them (parts/pat_limits.h).
+		const auto& pp = character->parts;
+		const Ha6Game g = character->frameData.game();
+		if (pp.fbMaxPoses == 0 && !pp.useMBAACCFormat && g != Ha6Game::MBAACC) {
+			std::vector<size_t> perSet;
+			perSet.reserve(pp.partSets.size());
+			for (const auto& ps : pp.partSets) perSet.push_back(ps.groups.size());
+			const auto over = patlimits::Check(pp.partSets.size(), pp.cutOuts.size(), perSet);
+			if (!over.empty()) {
+				std::string msg = TXT("Not saved: the .pat is past what UNI2 / MBTL can load:");
+				for (auto& o : over) msg += "\n" + o;
+				requestErrorPopup("Save Error", msg);
+				return false;
+			}
+		}
+	}
 	backupBeforeSave(target, true);
 	if (!character->savePATAs(target)) {
 		requestErrorPopup("Save Error", std::string(TXT("Could not write the .pat (it may be locked by another program, or the PAT has no data yet): ")) + target);
@@ -332,6 +349,7 @@ void MainFrame::TogglePatRenderMode(CharacterView* view, RenderMode mode)
 	if (!ch || !view->isPatEditor() || !ch->parts.loaded) return;
 	auto& st = view->getState();
 	st.renderMode = st.renderMode == mode ? RenderMode::DEFAULT : mode;
+	if (st.renderMode == RenderMode::TEXTURE_VIEW) st.partGraph = ch->parts.ShownTextureSlot(st.partGraph);
 	// The placeholder frame of a PAT document shows the part set in the default view (the pane buttons do the same).
 	if (ch->isPatDocument() && !st.animating) {
 		if (auto* seq = ch->frameData.get_sequence(0)) {
@@ -414,12 +432,14 @@ void MainFrame::DrawPatSelectionOutline(CharacterView* view, ImDrawList* dl, ImV
 	if (!ch || !view->isPatEditor() || !ch->parts.loaded || !dl) return;
 	const auto& st = view->getState();
 	if (st.animating) return;
-	if (st.renderMode == RenderMode::UV_SETTING_VIEW) {
+	if (st.renderMode == RenderMode::UV_SETTING_VIEW || st.renderMode == RenderMode::TEXTURE_VIEW) {
 		// The selected cut-out's UV rectangle on its sheet (drawn from the view origin, 1/256 of the sheet per UV unit).
 		// Render::GenerateUVRectangleVertices fills the old box buffer, which the layered renderer no longer draws.
+		// The texture view shows the selected texture, so the rectangle appears there only when the cut-out uses it (#111).
 		const auto* cut = ch->parts.GetCutOut(st.partCutOut);
 		const auto* g = cut ? ch->parts.GetPartGfx(cut->texture) : nullptr;
 		if (!g || g->w <= 0 || g->h <= 0) return;
+		if (st.renderMode == RenderMode::TEXTURE_VIEW && cut->texture != st.partGraph) return;
 		const float sx = g->w / 256.f * zoom, sy = g->h / 256.f * zoom;
 		const ImVec2 a(origin.x + cut->uv[0] * sx, origin.y + cut->uv[1] * sy);
 		const ImVec2 b(a.x + cut->uv[2] * sx, a.y + cut->uv[3] * sy);
