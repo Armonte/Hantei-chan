@@ -1,4 +1,4 @@
-Hantei-chan 0.1: the 2026-10 update, merged as #84 (`a615b56`). The full change list, evidence and per-issue status are in #84.
+Hantei-chan 0.1: the 2026-10 update, merged as #84 (`d5bdc75`). The full change list, evidence and per-issue status are in #84.
 
 ## Download
 
@@ -44,4 +44,4 @@ Hantei-chan 0.1: the 2026-10 update, merged as #84 (`a615b56`). The full change 
 7cffeec6c774e25d27ca6859040423ace15315c9ef1d301f2a5d9308dd923c6a  gonptechan_0.1.exe
 ```
 
-Built by CI run 38997623352 on `a615b56`.
+Built by CI run 38997623352 on `d5bdc75`.

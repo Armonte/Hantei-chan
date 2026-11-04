@@ -1,4 +1,4 @@
-Hantei-chan 0.1.1: fixes for issues reported by UNI2 modders after 0.1. Built from `main` at `48fe6b3` (CI run 39093535402).
+Hantei-chan 0.1.1: fixes for issues reported by UNI2 modders after 0.1. Built from `main` at `340a6d0` (CI run 39093535402).
 
 ## Fixes
 

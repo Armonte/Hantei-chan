@@ -1,4 +1,4 @@
-Changes after Hantei-chan 0.1 (`a615b56`), for the next release.
+Changes after Hantei-chan 0.1 (`d5bdc75`), for the next release.
 
 ## Hot reload from every save (UNI2 / MBTL, fpan-im)
 
