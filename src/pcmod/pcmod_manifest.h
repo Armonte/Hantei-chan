@@ -7,7 +7,8 @@
 // (tests/fixtures/pcmod pins the four digests its fixture produces). No filesystem and no Win32 here: the CLI, the GUI
 // and the unit test all link this.
 //
-// The writer never emits the schema-2 RESERVED keys (inject, palettes, exe_layers); the reader refuses them.
+// Schema 2 (PovertyCaster docs/design/pcmod-manifest.md S2.1/S2.3, branch mods/pcmod-schema2): exe_patches/features/rules
+// file refs and the pcmod-pkg-2/sim-2/set-2 digests. The writer never emits exe_layers/inject/ha6_patches/palettes.
 #include "pcmod_sha256.h"
 
 #include <cstdint>
@@ -27,6 +28,14 @@ struct FileEntry {
 	std::string key() const;   // normalised '\' + ASCII lowercase (empty if the path is refused)
 };
 struct Requirement { std::string id, version; };
+// Schema 2 (PC docs "Schema 2" S2.1): a package-relative data file (patches.toml / features.toml / rules.toml). Not in files[].
+struct AuxFile {
+	bool present = false;
+	std::string path;     // bare lowercase "<id>.toml"
+	std::string sha256;   // 64 lowercase hex of the file bytes
+	uint64_t size = 0;
+};
+bool ValidAuxPath(const std::string& p);   // [a-z0-9][a-z0-9._-]{0,63}\.toml
 
 struct Manifest {
 	int schema = 1;
@@ -40,6 +49,11 @@ struct Manifest {
 	// digest: it only decides which per-mode sets the package joins.
 	std::vector<std::string> modes;
 	std::vector<FileEntry> files;
+	// ---- schema 2 only ----
+	AuxFile exePatches, features, rules;
+	// pcmod_schema2.h Canonical() of the PARSED three files: enters the pcmod-sim-2 digest. Not serialised.
+	std::string s2Canon;
+	bool HasAux() const { return exePatches.present || features.present || rules.present; }
 };
 
 // ---- field rules (§2) ----
@@ -94,6 +108,7 @@ struct SessionEntry {
 	std::string id, version;
 	int priority = 0;
 	std::string simDigestHex;   // PackageSimDigestHex
+	int schema = 1;             // any schema-2 entry switches the set to pcmod-set-2
 };
 // §6 per-mode set: does a package with these `modes` join the set of a session in `mode`? "" = no mode filter (always).
 bool CountsForMode(const std::vector<std::string>& modes, const std::string& mode);
@@ -102,7 +117,8 @@ std::vector<std::string> SplitModes(const std::string& text);
 std::string JoinModes(const std::vector<std::string>& modes);   // "tag,team"
 
 // Enabled, non-broken SIM packages only (callers drop cosmetic ones). Ordered priority desc, then id.
-std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs);
+// pcmod-set-1, or pcmod-set-2 (+ "abi:<primitiveAbiId>\n") when any entry has schema >= 2.
+std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs, const std::string& primitiveAbiId = "");
 
 } // namespace pcmod
 #endif

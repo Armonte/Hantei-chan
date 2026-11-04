@@ -68,6 +68,11 @@ int CompareVersion(const std::string& a, const std::string& b)
 	return 0;
 }
 
+bool ValidAuxPath(const std::string& p)
+{
+	return p.size() >= 6 && p.size() <= 69 && p.compare(p.size() - 5, 5, ".toml") == 0 && ValidId(p.substr(0, p.size() - 5));
+}
+
 bool IsLowerHex64(const std::string& s)
 {
 	if (s.size() != 64) return false;
@@ -180,7 +185,21 @@ const char* PathClassName(PathClass c)
 // ---------------------------------------------------------------------------------------------------------------------
 std::string Validate(const Manifest& m)
 {
-	if (m.schema != 1) return "schema: only schema 1 is written or understood";
+	if (m.schema != 1 && m.schema != 2) return "schema: only schema 1 and 2 are understood";
+	if (m.schema < 2 && m.HasAux()) return "exe_patches/features/rules need schema 2";
+	if (m.HasAux()) {
+		const AuxFile* a[3] = { &m.exePatches, &m.features, &m.rules };
+		const char* n[3] = { "exe_patches", "features", "rules" };
+		for (int i = 0; i < 3; ++i) {
+			if (!a[i]->present) continue;
+			if (!ValidAuxPath(a[i]->path)) return std::string(n[i]) + ".path: a bare lowercase file name ending in .toml";
+			if (!IsLowerHex64(a[i]->sha256)) return std::string(n[i]) + ": needs path, 64-hex sha256 and size";
+			if (a[i]->size > (1ull << 20)) return std::string(n[i]) + ".size: 0..1 MiB";
+			for (int j = i + 1; j < 3; ++j)
+				if (a[j]->present && a[j]->path == a[i]->path) return "exe_patches/features/rules must be three distinct files";
+		}
+		if (m.cls != PackageClass::Sim) return "class: exe_patches/features/rules change the simulation, so the package must be \"sim\"";
+	}
 	if (!ValidId(m.id)) return "id: must match [a-z0-9][a-z0-9._-]{0,63}";
 	if (!ValidVersion(m.version)) return "version: must be MAJOR.MINOR.PATCH (digits, 0..65535, no leading zeros)";
 	if (m.name.size() > kMaxName) return "name: longer than 128 bytes";
@@ -217,7 +236,7 @@ std::string Validate(const Manifest& m)
 		if (f.size > kMaxFileSize) return at + ": larger than 64 MiB";
 		if (!seen.insert(norm).second) return at + ": listed twice (paths compare case-insensitively)";
 	}
-	if (m.cls == PackageClass::Sim && !anySim) return "class: \"sim\" but no file is a sim path (make it \"cosmetic\")";
+	if (m.cls == PackageClass::Sim && !anySim && !m.HasAux()) return "class: \"sim\" but no file is a sim path (make it \"cosmetic\")";
 	return {};
 }
 
@@ -279,15 +298,42 @@ bool ParseManifest(const std::string& text, Manifest& out, std::string& error)
 	if (duplicate) { error = "duplicate key '" + dupKey + "'"; return false; }
 	if (!root.is_object()) { error = "top level is not an object"; return false; }
 
+	// The schema decides which keys exist; nlohmann iterates keys sorted, so read it first.
+	int declaredSchema = 0;
+	if (root.contains("schema") && root["schema"].is_number_integer()) declaredSchema = root["schema"].get<int>();
 	try {
 		bool haveSchema = false, haveId = false, haveVersion = false, haveGame = false, haveClass = false, haveFiles = false;
 		for (auto it = root.begin(); it != root.end(); ++it) {
 			const std::string& k = it.key();
 			const json& v = it.value();
-			if (k == "inject" || k == "palettes" || k == "exe_layers") throw Refuse{"'" + k + "' is reserved for schema 2"};
+			if (k == "palettes" || (declaredSchema < 2 && (k == "inject" || k == "exe_layers"))) throw Refuse{"'" + k + "' is reserved for schema 2"};
+			if (declaredSchema >= 2 && k == "inject") throw Refuse{"inject: reserved, lands with its consumer"};
+			if (declaredSchema >= 2 && k == "ha6_patches") throw Refuse{"ha6_patches: reserved, lands with its consumer"};
+			if (declaredSchema < 2 && (k == "exe_patches" || k == "features" || k == "rules")) throw Refuse{"'" + k + "' needs schema 2"};
 			if (k == "schema") {
-				if (NeedInt(v, "schema") != 1) throw Refuse{"schema: only schema 1 is understood"};
+				const long long sc = NeedInt(v, "schema");
+				if (sc != 1 && sc != 2) throw Refuse{"schema: only schema 1 and 2 are understood"};
+				out.schema = (int)sc;
 				haveSchema = true;
+			} else if (k == "exe_patches" || k == "features" || k == "rules") {
+				if (!v.is_object() || v.size() != 3) throw Refuse{k + ": {path, sha256, size}"};
+				AuxFile& a = k == "exe_patches" ? out.exePatches : k == "features" ? out.features : out.rules;
+				bool hp = false, hh = false, hs = false;
+				for (auto f = v.begin(); f != v.end(); ++f) {
+					if (f.key() == "path" && f.value().is_string()) { a.path = f.value().get<std::string>(); hp = true; }
+					else if (f.key() == "sha256" && f.value().is_string()) { a.sha256 = f.value().get<std::string>(); hh = true; }
+					else if (f.key() == "size" && f.value().is_number_integer()) {
+						const long long sz = NeedInt(f.value(), "size");
+						if (sz < 0 || sz > (1ll << 20)) throw Refuse{k + ".size: 0..1 MiB"};
+						a.size = (uint64_t)sz; hs = true;
+					} else throw Refuse{k + ": unknown or mistyped key '" + f.key() + "'"};
+				}
+				if (!hp || !hh || !hs || !IsLowerHex64(a.sha256)) throw Refuse{k + ": needs path, 64-hex sha256 and size"};
+				if (!ValidAuxPath(a.path)) throw Refuse{k + ".path: a bare lowercase file name ending in .toml"};
+				a.present = true;
+			} else if (k == "exe_layers") {
+				if (!v.is_array()) throw Refuse{"exe_layers: array"};
+				if (!v.empty()) throw Refuse{"exe_layers: not supported yet (data-only packages run on the vanilla exe)"};
 			} else if (k == "id") { out.id = NeedString(v, "id"); haveId = true; }
 			else if (k == "version") { out.version = NeedString(v, "version"); haveVersion = true; }
 			else if (k == "name") out.name = NeedString(v, "name");
@@ -375,7 +421,7 @@ static std::string Quote(const std::string& s)
 std::string WriteManifest(const Manifest& m)
 {
 	std::string o = "{\n";
-	o += "  \"schema\": 1,\n";
+	o += "  \"schema\": " + std::to_string(m.schema == 2 ? 2 : 1) + ",\n";
 	o += "  \"id\": " + Quote(m.id) + ",\n";
 	o += "  \"version\": " + Quote(m.version) + ",\n";
 	o += "  \"name\": " + Quote(m.name) + ",\n";
@@ -397,6 +443,11 @@ std::string WriteManifest(const Manifest& m)
 	o += "  \"conflicts\": " + list(m.conflicts) + ",\n";
 	o += "  \"overrides\": " + list(m.overrides) + ",\n";
 	if (!m.modes.empty()) o += "  \"modes\": " + list(m.modes) + ",\n";
+	auto aux = [&](const char* key, const AuxFile& a) {
+		if (a.present)
+			o += std::string("  \"") + key + "\": { \"path\": " + Quote(a.path) + ", \"sha256\": " + Quote(a.sha256) + ", \"size\": " + std::to_string(a.size) + " },\n";
+	};
+	if (m.schema == 2) { aux("exe_patches", m.exePatches); aux("features", m.features); aux("rules", m.rules); }
 	o += "  \"files\": [\n";
 	// Files are written in digest order so two exports of the same content are byte-identical.
 	std::vector<const FileEntry*> fs;
@@ -415,7 +466,7 @@ std::string WriteManifest(const Manifest& m)
 // ---------------------------------------------------------------------------------------------------------------------
 // §5 digests
 // ---------------------------------------------------------------------------------------------------------------------
-static Digest DigestFiles(const std::string& head, const Manifest& m, bool simOnly)
+static Digest DigestFiles(const std::string& head, const Manifest& m, bool simOnly, const std::string& tail = "")
 {
 	std::vector<std::pair<std::string, const FileEntry*>> fs;
 	for (const FileEntry& f : m.files) {
@@ -435,17 +486,29 @@ static Digest DigestFiles(const std::string& head, const Manifest& m, bool simOn
 		line += '\n';
 		h.update(line.data(), line.size());
 	}
+	h.update(tail.data(), tail.size());
 	return h.finish();
 }
 
 Digest PackageDigest(const Manifest& m)
 {
-	return DigestFiles("pcmod-pkg-1\n" + m.id + "\n" + m.version + "\n" + ClassName(m.cls) + "\n", m, false);
+	// S2.3: schema 2 appends "toml:<key>\0<sha256>\0<size>\n" for exe_patches, features, rules (present ones, that order).
+	std::string tail;
+	if (m.schema >= 2) {
+		auto aux = [&](const char* key, const AuxFile& a) {
+			if (!a.present) return;
+			tail += std::string("toml:") + key; tail += '\0'; tail += a.sha256; tail += '\0'; tail += std::to_string(a.size); tail += '\n';
+		};
+		aux("exe_patches", m.exePatches); aux("features", m.features); aux("rules", m.rules);
+	}
+	return DigestFiles(std::string(m.schema >= 2 ? "pcmod-pkg-2\n" : "pcmod-pkg-1\n") + m.id + "\n" + m.version + "\n" + ClassName(m.cls) + "\n", m, false, tail);
 }
 std::string PackageDigestHex(const Manifest& m) { return ToHex(PackageDigest(m)); }
 
 Digest PackageSimDigest(const Manifest& m)
 {
+	// S2.3: schema 2 appends the canonical text of the PARSED files (pcmod_schema2.h Canonical; set by the exporter/loader).
+	if (m.schema >= 2) return DigestFiles("pcmod-sim-2\n" + m.id + "\n" + m.version + "\n", m, true, m.s2Canon);
 	return DigestFiles("pcmod-sim-1\n" + m.id + "\n" + m.version + "\n", m, true);
 }
 std::string PackageSimDigestHex(const Manifest& m) { return ToHex(PackageSimDigest(m)); }
@@ -478,14 +541,16 @@ std::string JoinModes(const std::vector<std::string>& modes)
 	return s;
 }
 
-std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs)
+std::string SessionDigestHex(const std::string& exeSha256Hex, std::vector<SessionEntry> pkgs, const std::string& primitiveAbiId)
 {
 	std::sort(pkgs.begin(), pkgs.end(), [](const SessionEntry& a, const SessionEntry& b) {
 		if (a.priority != b.priority) return a.priority > b.priority;
 		return a.id < b.id;
 	});
 	Sha256 h;
-	const std::string head = "pcmod-set-1\n" + exeSha256Hex + "\n";
+	const bool v2 = std::any_of(pkgs.begin(), pkgs.end(), [](const SessionEntry& e) { return e.schema >= 2; });
+	std::string head = std::string(v2 ? "pcmod-set-2\n" : "pcmod-set-1\n") + exeSha256Hex + "\n";
+	if (v2) head += "abi:" + primitiveAbiId + "\n";
 	h.update(head.data(), head.size());
 	for (const SessionEntry& e : pkgs) {
 		std::string line = e.id;
