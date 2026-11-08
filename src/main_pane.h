@@ -19,6 +19,10 @@ public:
 	void DrawPatternListBody();
 
 	void RegenerateNames();
+	// "Hide empty patterns" (gSettings.hideEmptyPatterns/hideFramelessPatterns): the two checkboxes, drawn in the
+	// Pattern combo and above the pattern list; PatternHidden is the filter every pattern list applies.
+	void DrawHideEmptyToggles();
+	bool PatternHidden(int n);
 
 	// Pattern name search
 	bool showPatternSearch = false;  // Popup window visibility

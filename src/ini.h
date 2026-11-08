@@ -25,6 +25,8 @@ extern struct Settings
 	bool timelineDurationLane = false;  // timeline Duration row; keyframe cells drawn without outlines
 	int scrubHoldDelayMs=250, scrubRepeatMs=17;
 	bool compactUi = false; // Global presentation only; never part of a project/document.
+	bool hideEmptyPatterns = false;     // pattern lists hide unused slots (no frames, no name); display only
+	bool hideFramelessPatterns = false; // with hideEmptyPatterns: also hide named patterns that have no frames
 	float fontSize = 18.f;
 	short posX = 100;
 	short posY = 100;

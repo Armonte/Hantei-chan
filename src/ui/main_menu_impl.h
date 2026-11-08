@@ -1044,6 +1044,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 					if (ImGui::MenuItem(searchLabel.c_str())) {
 						view->getMainPane()->showPatternSearchBar = !view->getMainPane()->showPatternSearchBar;
 					}
+					if (ImGui::MenuItem(TXT("Hide Empty Patterns"), nullptr, &gSettings.hideEmptyPatterns)) ImGui::MarkIniSettingsDirty();
+					if (ImGui::MenuItem(TXT("Also Hide Named Patterns With No Frames"), nullptr, &gSettings.hideFramelessPatterns, gSettings.hideEmptyPatterns))
+						ImGui::MarkIniSettingsDirty();
 				}
 				if (view->getRightPane()) {
 					std::string label = view->getRightPane()->isVisible ? TXT("Hide Attack Panel") : TXT("Show Attack Panel");
