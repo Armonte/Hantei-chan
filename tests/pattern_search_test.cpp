@@ -165,8 +165,38 @@ std::vector<std::string> Tokens(const std::string& s)
 
 } // namespace
 
+// Hide-empty filter (VisiblePatterns / PatternHiddenByFilter) on real Sequences: an unused slot, a named
+// pattern with no frames, a pattern with frames and an unnamed pattern with frames.
+static int CheckHideEmptyFilter()
+{
+	struct FD {
+		std::vector<Sequence> seqs;
+		int get_sequence_count() { return (int)seqs.size(); }
+		Sequence* get_sequence(int n) { return &seqs[n]; }
+	} fd;
+	fd.seqs.resize(5);
+	fd.seqs[1].name = "PLACEHOLDER";             // named, no frames
+	fd.seqs[2].frames.resize(1);                  // unnamed, has frames
+	fd.seqs[3].name = "STAND"; fd.seqs[3].frames.resize(2);
+	// 0 and 4: unused slots
+	int fails = 0;
+	auto expect = [&](const char* what, std::vector<int> got, std::vector<int> want) {
+		if (got != want) { std::printf("hide-empty FAIL: %s\n", what); ++fails; }
+	};
+	expect("off lists all", VisiblePatterns(fd, false, true, -1), {0, 1, 2, 3, 4});
+	expect("hide unused slots", VisiblePatterns(fd, true, false, -1), {1, 2, 3});
+	expect("also hide named frameless", VisiblePatterns(fd, true, true, -1), {2, 3});
+	expect("selected unused slot stays", VisiblePatterns(fd, true, true, 4), {2, 3, 4});
+	expect("selected named frameless stays", VisiblePatterns(fd, true, true, 1), {1, 2, 3});
+	fd.seqs[0].codeName = "CODE";                 // a code name alone counts as named
+	expect("code name counts as named", VisiblePatterns(fd, true, false, -1), {0, 1, 2, 3});
+	if (!fails) std::printf("hide-empty filter: ok\n");
+	return fails;
+}
+
 int main(int argc, char** argv)
 {
+	if (CheckHideEmptyFilter()) return 1;
 	std::string font;
 	int queriesPerFile = 60;
 	std::vector<std::string> files;

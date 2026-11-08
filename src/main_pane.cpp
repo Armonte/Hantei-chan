@@ -87,7 +87,7 @@ void MainPane::Draw()
 					for(int n = 0; n < count; n++)
 					{
 						auto patternSeq = frameData->get_sequence(n);
-						if(!patternSeq) continue;
+						if(!patternSeq || PatternHidden(n)) continue;
 
 						std::string displayName = frameData->GetDecoratedName(n);
 						ImSearch::SearchableItem(displayName.c_str(),
@@ -120,9 +120,12 @@ void MainPane::Draw()
 		if (im::BeginCombo(LBL("Pattern"), decoratedNames[currState.pattern].c_str(), ImGuiComboFlags_HeightLargest))
 		{
 			auto count = frameData->get_sequence_count();
+			DrawHideEmptyToggles();
+			im::Separator();
 			// Regenerate all names when dropdown is open to show current modified status
 			for (int n = 0; n < count; n++)
 			{
+				if (PatternHidden(n)) continue;
 				decoratedNames[n] = frameData->GetDecoratedName(n);
 				const bool is_selected = (currState.pattern == n);
 				if (im::Selectable(decoratedNames[n].c_str(), is_selected))
@@ -607,7 +610,7 @@ void MainPane::Draw()
 						for(int n = 0; n < count; n++)
 						{
 							auto patternSeq = frameData->get_sequence(n);
-							if(!patternSeq) continue;
+							if(!patternSeq || PatternHidden(n)) continue;
 
 							std::string displayName = frameData->GetDecoratedName(n);
 							ImSearch::SearchableItem(displayName.c_str(),
@@ -729,6 +732,10 @@ void MainPane::DrawPatternListBody()
 	{
 		{
 				const int count = frameData->get_sequence_count();
+				DrawHideEmptyToggles();
+				// Rows = the pattern IDs left after the hide-empty filter (all of them when it is off).
+				const std::vector<int> rows = VisiblePatterns(*frameData, gSettings.hideEmptyPatterns,
+					gSettings.hideFramelessPatterns, currState.pattern);
 				// The selection follows currState.pattern both ways: a click here sets it, and a change anywhere else (combo,
 				// ID field, search, shortcuts) moves the selection and scrolls the row into view once. The scroll is held
 				// back while a popup is open (the Pattern combo's own keyboard navigation) and while this list has the
@@ -740,11 +747,15 @@ void MainPane::DrawPatternListBody()
 					const bool follow = patternListShown != currState.pattern && !popupOpen && !listNav
 						&& currState.pattern >= 0 && currState.pattern < count;
 					ImGuiListClipper clip;
-					clip.Begin(count);
-					if (follow) clip.IncludeItemByIndex(currState.pattern);
+					clip.Begin((int)rows.size());
+					if (follow) {
+						const auto it = std::lower_bound(rows.begin(), rows.end(), currState.pattern);
+						if (it != rows.end() && *it == currState.pattern) clip.IncludeItemByIndex((int)(it - rows.begin()));
+					}
 					while (clip.Step())
-						for (int n = clip.DisplayStart; n < clip.DisplayEnd; n++)
+						for (int r = clip.DisplayStart; r < clip.DisplayEnd; r++)
 						{
+							const int n = rows[r];
 							const bool sel = currState.pattern == n;
 							im::PushID(n);
 							if (im::Selectable(frameData->GetDecoratedName(n).c_str(), sel))
@@ -783,3 +794,25 @@ void MainPane::PopCopies()
 	patCopyStack.clear();
 }
 
+bool MainPane::PatternHidden(int n)
+{
+	return n != currState.pattern
+		&& PatternHiddenByFilter(frameData->get_sequence(n), gSettings.hideEmptyPatterns, gSettings.hideFramelessPatterns);
+}
+
+void MainPane::DrawHideEmptyToggles()
+{
+	namespace im=ImGui;
+	if (im::Checkbox(LBL("Hide empty patterns"), &gSettings.hideEmptyPatterns)) im::MarkIniSettingsDirty();
+	if (im::IsItemHovered())
+		im::SetTooltip(TXT("Hide pattern slots with no frames and no name. The selected pattern stays listed, and the ID field still opens any slot."));
+	if (!gSettings.hideEmptyPatterns) return;
+	int hidden = 0;
+	const int count = frameData->get_sequence_count();
+	for (int n = 0; n < count; ++n) hidden += PatternHidden(n) ? 1 : 0;
+	im::SameLine();
+	im::TextDisabled(TXT("(%d hidden)"), hidden);
+	im::Indent();
+	if (im::Checkbox(LBL("Also hide named patterns with no frames"), &gSettings.hideFramelessPatterns)) im::MarkIniSettingsDirty();
+	im::Unindent();
+}

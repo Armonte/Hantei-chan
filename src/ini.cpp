@@ -57,6 +57,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.scrubRepeatMs=std::clamp(i,1,1000);
 	} else if (sscanf(line, "CompactUi=%i", &i) == 1){
 		gSettings.compactUi = i != 0;
+	} else if (sscanf(line, "HideEmptyPatterns=%i", &i) == 1){
+		gSettings.hideEmptyPatterns = i != 0;
+	} else if (sscanf(line, "HideFramelessPatterns=%i", &i) == 1){
+		gSettings.hideFramelessPatterns = i != 0;
 	} else if (sscanf(line, "FontSize=%f", &x) == 1){
 		gSettings.fontSize = x;
 	} else if (sscanf(line, "posX=%i", &i) == 1){
@@ -180,6 +184,8 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	if (gSettings.patternListWindow) buf->appendf("PatternListWindow=1\n");
 	if (gSettings.timelineDurationLane) buf->appendf("TimelineDurationLane=1\n");
 	if (gSettings.compactUi != defaults.compactUi) buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);
+	if (gSettings.hideEmptyPatterns) buf->appendf("HideEmptyPatterns=1\n");
+	if (gSettings.hideFramelessPatterns) buf->appendf("HideFramelessPatterns=1\n");
 	buf->appendf("FontSize=%f\n", gSettings.fontSize);
 	buf->appendf("posX=%hi\n", gSettings.posX);
 	buf->appendf("posY=%hi\n", gSettings.posY);
