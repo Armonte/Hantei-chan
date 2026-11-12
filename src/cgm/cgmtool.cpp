@@ -42,6 +42,7 @@ static int CmdCheck(int argc, char **argv) {
 		if (o != b) { size_t d = 0; while (d < o.size() && d < b.size() && o[d] == b[d]) d++; printf("FAIL %s: serialize differs (first diff 0x%zx, sizes %zu vs %zu)\n", argv[i], d, o.size(), b.size()); fail++; continue; }
 		CG cg; cg.loadFromMemory(b.data(), (unsigned)b.size());
 		int bad = 0;
+		{ std::string why; const int po = cgm::PageOrderProblems(bk, &why); if (po) { printf("FAIL %s: page order: %d block(s); %s\n", argv[i], po, why.c_str()); bad++; } }
 		for (size_t n = 0; n < bk.images.size(); n++) {
 			const cgm::Image &im = bk.images[n];
 			if (!im.present || (int)n >= (int)bk.images.size() - bk.hidden) continue;
@@ -380,9 +381,43 @@ static int CmdStructCheck(int argc, char **argv) {
 				if (!cgm::DuplicateImage(dup, plain, plain + 1, remap, &nid, &err)) F("DuplicateImage: " + err); else { if (!SameDecoded(dup, nid, bk, plain)) F("duplicate renders differently"); if (!AtlasUnique(dup)) F("duplicate shares atlas cells"); std::string w2; if (!EngineAgrees(dup, w2)) F("engine disagrees after duplicate: " + w2); }
 			}
 		}
+		// 4. page order (MBAACC: 8-bit pages before 32-bit pages): the bank as given, then 8-bit and 32-bit images added in
+		//    alternation (8-bit ones past full 8-bit pages insert a page and renumber the 32-bit pages)
+		if (!bad) {
+			std::string po; if (cgm::PageOrderProblems(bk, &po)) F("page order of the input bank: " + po);
+			cgm::Bank w = bk; std::vector<int> back = cgm::IdentityRemap((size_t)N);
+			for (int k = 0; k < 8 && !bad && !bk.cutter2; k++) {
+				const bool narrow = k % 2 == 0; const int sw = 120 + k * 7, sh = 150 - k * 5;
+				auto spr = narrow ? PalSprite(bk, sw, sh) : Sprite(sw, sh, k % 3); ops++;
+				cgm::NewImageSpec sp; sp.name = "order_" + std::to_string(k) + ".bmp"; sp.type = narrow ? 0 : -99;
+				std::vector<int> remap; int id = -1;
+				if (!cgm::AddImage(w, -1, sp, spr.data(), sw, sh, remap, &id, &err)) { F("AddImage (page order): " + err); break; }
+				if ((w.images[id].type == 0) != narrow) { F("page order: AddImage chose type " + std::to_string(w.images[id].type)); break; }
+				if (cgm::PageOrderProblems(w, &po)) { F("page order after adding image " + std::to_string(k) + ": " + po); break; }
+				if (!AtlasUnique(w)) { F("page order: atlas cells overlap after add " + std::to_string(k)); break; }
+				if (!rt(w)) { F("page order: bank does not re-parse after add " + std::to_string(k)); break; }
+				std::string w3; if (!EngineAgrees(w, w3)) { F("page order: engine disagrees after add " + std::to_string(k) + ": " + w3); break; }
+			}
+			// keep adding 8-bit images until the 8-bit pages are full and a page is inserted in front of the 32-bit ones
+			auto firstWide = [](const cgm::Bank &x) { int f = INT32_MAX; for (const cgm::Image &im : x.images) if (im.present && im.type >= 1) for (const cgm::Block &bl : im.blocks) f = std::min<int>(f, bl.page); return f; };
+			const int fw0 = firstWide(w); bool inserted = false;
+			for (int k = 0; k < 200 && !bad && !bk.cutter2 && fw0 != INT32_MAX && !inserted; k++) {
+				auto spr = PalSprite(bk, 240, 240); cgm::NewImageSpec sp; sp.name = "fill_" + std::to_string(k) + ".bmp"; sp.type = 0; std::vector<int> remap; int id = -1; ops++;
+				if (!cgm::AddImage(w, -1, sp, spr.data(), 240, 240, remap, &id, &err)) { F("AddImage (8-bit fill): " + err); break; }
+				inserted = firstWide(w) > fw0;
+			}
+			if (!bad && !bk.cutter2 && fw0 != INT32_MAX) {
+				if (!inserted) F("page order: 200 8-bit images never pushed the 32-bit pages up");
+				else if (cgm::PageOrderProblems(w, &po)) F("page order after inserting an 8-bit page: " + po);
+				else if (!AtlasUnique(w)) F("page order: atlas cells overlap after inserting a page");
+				else if (!rt(w)) F("page order: bank does not re-parse after inserting a page");
+				else { std::string w4; if (!EngineAgrees(w, w4)) F("page order: engine disagrees after inserting a page: " + w4); }
+			}
+			for (int k = 0; k < N && !bad && !bk.cutter2; k += std::max(1, N / 50)) if (!SameDecoded(bk, k, w, back[k])) F("image " + std::to_string(k) + " changed by the page-order adds");
+		}
 		if (bad) fail++; else pass++;
 	}
-	printf("SECTION cgm-struct: pass %d fail %d | structural operations proven %d (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate; engine loader agrees)\n", pass, fail, ops);
+	printf("SECTION cgm-struct: pass %d fail %d | structural operations proven %d (add/insert/delete round trip byte-identical, permute + inverse, move, unshare, delete owner, clear, duplicate, 8-bit / 32-bit page order; engine loader agrees)\n", pass, fail, ops);
 	return fail ? 1 : 0;
 }
 

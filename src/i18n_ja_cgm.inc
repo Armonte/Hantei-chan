@@ -186,6 +186,7 @@
 {"Save bank, its projects and this character", "バンク・関連プロジェクト・このキャラクターを保存"},
 {"Writes the .cg, rewrites the image ids of every other project file that draws it (other moons, b_ files, MBTL variants) and saves this character, so nothing ships with ids the bank does not have.", ".cgを書き込み、これを描画する他の全プロジェクトファイル(他のムーン、b_ファイル、MBTLのバリエーション)の画像IDを書き換え、このキャラクターを保存します。バンクにないIDのまま出荷されることはありません。"},
 {"New bank from PNG folder...", "PNGフォルダから新規バンク..."},
+{"Page order: %d block(s) of 8-bit images sit on 32-bit atlas pages, so MBAACC draws those sprites with blocks missing. Export the images as PNGs and rebuild the bank with New bank from PNG folder...", "ページ順: 8bit画像のブロック %d 個が32bitアトラスページ上にあるため、MBAACCではそのスプライトのブロックが欠けて表示されます。画像をPNGで書き出し、「PNGフォルダから新規バンク...」でバンクを作り直してください。"},
 {"Built %s: %d image(s), %d of them 8-bit on the bank palette, %d empty placeholder(s).", "%s を作成しました: 画像%d個(うちバンクパレットの8bitが%d個)、空のプレースホルダ%d個。"},
 {"cgtool's \"make a bank\": every PNG of the folder becomes an image (ids from _ID_<n> or a leading number, else the file order). The first indexed PNG gives the bank palette; indexed PNGs on that palette are stored 8-bit with their exact indices.", "cgtoolの「バンク作成」: フォルダ内のPNGがそれぞれ画像になります(IDは_ID_<n>か先頭の番号、なければファイル順)。最初のインデックスPNGがバンクパレットになり、そのパレットのインデックスPNGは正確なインデックスのまま8bitで保存されます。"},
 {"Drawn by %d project(s), %d HA6 file(s)%s", "%d個のプロジェクト、HA6ファイル%d個が描画%s"},
