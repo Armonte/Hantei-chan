@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.13...3.19)
-project(hanteichan VERSION 0.1.4 LANGUAGES C CXX)
+project(hanteichan VERSION 0.1.5 LANGUAGES C CXX)
 
 # Single-config generators default to an empty build type, which leaves
 # assert()/IM_ASSERT live: CI's "MinGW Makefiles" build shipped that way, and a
