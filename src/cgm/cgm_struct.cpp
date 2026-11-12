@@ -1,6 +1,7 @@
 #include "cgm_struct.h"
 #include "cgm_ops.h"
 #include <algorithm>
+#include <climits>
 #include <cstring>
 #include <set>
 
@@ -8,19 +9,34 @@ namespace cgm {
 
 namespace {
 
-struct Grid {   // free/used atlas cells
+// Free/used atlas cells, kept in the page order MBAACC needs. When the engine loads a bank
+// (CG_BmpCutter_ParseSpriteData 0x402970), the lowest page holding a block of a type 1-5 image becomes the first 32-bit
+// page, and every page from there on is created as a 32-bit texture (SpriteBank_UploadTextures 0x4020E0: pages below it
+// are D3D format 25, the 8-bit path; the rest are format 21). A type 0 block on or after that page is drawn from the wrong
+// texture: whole blocks of the sprite go missing. So type 0 ("narrow") blocks must all sit on pages below every block of
+// the other types ("wide"). alloc() keeps that order: narrow blocks go below the first wide page (one is inserted there
+// when they are full, renumbering the wide pages up), wide ones go above the last narrow page.
+struct Grid {
+	Bank &bank;
 	int cu, cpr, pages;
 	std::vector<std::vector<uint8_t>> used;
-	explicit Grid(const Bank &b) : cu(b.cellUnit()), cpr(256 / b.cellUnit()), pages(b.pages() - 1) {
+	std::vector<int8_t> kind;   // per page: -1 empty, 0 narrow, 1 wide
+	explicit Grid(Bank &b) : bank(b), cu(b.cellUnit()), cpr(256 / b.cellUnit()), pages(b.pages() - 1) {
 		int maxPage = -1;
 		for (const Image &im : b.images) for (const Block &bl : im.blocks) maxPage = std::max<int>(maxPage, bl.page);
 		pages = std::max(maxPage + 1, (int)b.H[0]);
 		used.assign((size_t)pages, std::vector<uint8_t>((size_t)cpr * cpr, 0));
-		for (const Image &im : b.images) for (const Block &bl : im.blocks) if (!bl.copy) mark(bl.page, bl.sx / cu, bl.sy / cu, bl.w / cu, bl.h / cu, 1);
+		kind.assign((size_t)pages, -1);
+		for (const Image &im : b.images) for (const Block &bl : im.blocks) {
+			if (!bl.copy) mark(bl.page, bl.sx / cu, bl.sy / cu, bl.w / cu, bl.h / cu, 1);
+			if (bl.page >= 0 && im.type >= 0) note(bl.page, im.type != 0);
+		}
 	}
+	void grow(int page) { while (page >= (int)used.size()) { used.emplace_back((size_t)cpr * cpr, 0); kind.push_back(-1); pages = (int)used.size(); } }
+	void note(int page, bool wide) { grow(page); if (kind[page] < 0) kind[page] = wide ? 1 : 0; }
 	void mark(int page, int cx, int cy, int w, int h, uint8_t v) {
 		if (page < 0) return;
-		while (page >= (int)used.size()) { used.emplace_back((size_t)cpr * cpr, 0); pages = (int)used.size(); }
+		grow(page);
 		for (int y = cy; y < cy + h && y < cpr; y++) for (int x = cx; x < cx + w && x < cpr; x++) used[page][(size_t)y * cpr + x] = v;
 	}
 	bool free(int page, int cx, int cy, int w, int h) const {
@@ -28,10 +44,25 @@ struct Grid {   // free/used atlas cells
 		for (int y = cy; y < cy + h; y++) for (int x = cx; x < cx + w; x++) if (used[page][(size_t)y * cpr + x]) return false;
 		return true;
 	}
-	// first fit over the existing pages, then a new page
-	void alloc(int w, int h, int &page, int &cx, int &cy) {
-		for (int p = 0; p < (int)used.size(); p++) for (int y = 0; y + h <= cpr; y++) for (int x = 0; x + w <= cpr; x++) if (free(p, x, y, w, h)) { page = p; cx = x; cy = y; mark(p, x, y, w, h, 1); return; }
-		page = (int)used.size(); cx = cy = 0; mark(page, 0, 0, w, h, 1);
+	bool fit(int p, int w, int h, int &cx, int &cy) const {
+		for (int y = 0; y + h <= cpr; y++) for (int x = 0; x + w <= cpr; x++) if (free(p, x, y, w, h)) { cx = x; cy = y; return true; }
+		return false;
+	}
+	void insertPage(int at) {   // a fresh page at `at`; every block on a page >= at moves up one (pixel data lives in the blobs)
+		for (Image &im : bank.images) for (Block &bl : im.blocks) if (bl.page >= at) bl.page++;
+		used.insert(used.begin() + at, std::vector<uint8_t>((size_t)cpr * cpr, 0)); kind.insert(kind.begin() + at, (int8_t)-1);
+		pages = (int)used.size();
+	}
+	// first fit over the pages of the block's kind, then a new page in the right place
+	void alloc(int w, int h, int &page, int &cx, int &cy, bool wide = false) {
+		int firstWide = (int)used.size(), lastNarrow = -1;
+		for (int p = 0; p < (int)used.size(); p++) { if (kind[p] == 1 && firstWide == (int)used.size()) firstWide = p; if (kind[p] == 0) lastNarrow = p; }
+		if (bank.cutter2) { firstWide = (int)used.size(); lastNarrow = -1; wide = false; }   // pre-baked 8-bit pages only
+		const int lo = wide ? lastNarrow + 1 : 0, hi = wide ? (int)used.size() : firstWide;
+		for (int p = lo; p < hi; p++) if (kind[p] != (wide ? 0 : 1) && fit(p, w, h, cx, cy)) { page = p; note(p, wide); mark(p, cx, cy, w, h, 1); return; }
+		if (wide || firstWide == (int)used.size()) page = (int)used.size();
+		else { page = firstWide; insertPage(page); }
+		cx = cy = 0; note(page, wide); mark(page, 0, 0, w, h, 1);
 	}
 };
 
@@ -86,7 +117,7 @@ bool AddImage(Bank &bank, int at, const NewImageSpec &spec, const uint8_t *rgba,
 		if (cellEmpty(cx, cy)) { cx++; continue; }
 		int run = 1; while (cx + run < cw && run < grid.cpr && !cellEmpty(cx + run, cy)) run++;
 		Block b; b.x = x1 + cx * cu; b.y = y1 + cy * cu; b.w = run * cu; b.h = cu;
-		int page, sx, sy; grid.alloc(run, 1, page, sx, sy);
+		int page, sx, sy; grid.alloc(run, 1, page, sx, sy, type != 0);
 		b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu);
 		im.blocks.push_back(b); cx += run;
 	}
@@ -129,7 +160,7 @@ bool UnshareImage(Bank &bank, int n, std::string *err) {
 	std::vector<char> wasCopy; std::vector<uint32_t> oldOff;
 	for (const Block &b : im.blocks) { wasCopy.push_back(b.copy != 0); oldOff.push_back(b.dataOff); }
 	for (Block &b : im.blocks) if (b.copy) {
-		int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy);
+		int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy, type != 0);
 		b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu); b.copy = 0;
 	}
 	size_t off = Prefix(type, im.bpp); std::vector<size_t> offs;
@@ -196,7 +227,7 @@ bool DuplicateImage(Bank &bank, int n, int at, std::vector<int> &remap, int *new
 	Image c = bank.images[n]; c.uid = NewImageUid();
 	for (Block &b : c.blocks) if (!b.copy) {
 		const Block from = b;
-		int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy); b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu);
+		int page, sx, sy; grid.alloc(b.w / cu, b.h / cu, page, sx, sy, c.type != 0); b.page = (int16_t)page; b.sx = (int16_t)(sx * cu); b.sy = (int16_t)(sy * cu);
 		if (bank.cutter2 && from.page >= 0 && from.page < (int)bank.bakedPages.size()) {   // the copy's pixels go on its own page cells
 			while ((int)bank.bakedPages.size() <= page) bank.bakedPages.push_back(std::make_shared<const std::vector<uint8_t>>(65536, (uint8_t)0));
 			std::vector<uint8_t> dst(*bank.bakedPages[page]); const std::vector<uint8_t> &src = *bank.bakedPages[from.page];
@@ -209,6 +240,22 @@ bool DuplicateImage(Bank &bank, int n, int at, std::vector<int> &remap, int *new
 	SetPages(bank, grid); Finish(bank);
 	if (newId) *newId = at;
 	return true;
+}
+
+int PageOrderProblems(const Bank &bank, std::string *why) {
+	if (bank.cutter2) return 0;
+	int firstWide = INT32_MAX;
+	for (const Image &im : bank.images) if (im.present && im.type >= 1) for (const Block &b : im.blocks) firstWide = std::min<int>(firstWide, b.page);
+	int n = 0;
+	for (size_t k = 0; k < bank.images.size(); k++) {
+		const Image &im = bank.images[k];
+		if (!im.present || im.type != 0) continue;
+		for (const Block &b : im.blocks) if (b.page >= firstWide) {
+			if (!n && why) *why = "image " + std::to_string(k) + " (8-bit) has a block on page " + std::to_string(b.page) + ", at or past the first 32-bit page " + std::to_string(firstWide) + ": MBAACC uploads it as a 32-bit texture and the sprite loses blocks";
+			n++;
+		}
+	}
+	return n;
 }
 
 bool TrimPages(Bank &bank) {

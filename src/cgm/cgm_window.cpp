@@ -862,6 +862,10 @@ void Window::drawPalettes(CharacterInstance &ch, const WindowHost &host) {
 void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 	const int count = (int)bank->images.size();
 	const bool have = selected >= 0 && selected < count;
+	{   // banks built before 0.1.5 can hold 8-bit blocks on pages MBAACC uploads as 32-bit textures (PageOrderProblems)
+		const int po = PageOrderProblems(*bank);
+		if (po) ImGui::TextColored(ImVec4(1.f, 0.6f, 0.2f, 1.f), TXT("Page order: %d block(s) of 8-bit images sit on 32-bit atlas pages, so MBAACC draws those sprites with blocks missing. Export the images as PNGs and rebuild the bank with New bank from PNG folder..."), po);
+	}
 	if (!g_scriptPress.empty()) ImGui::SetNextItemOpen(true);   // a scripted press opens the section
 	if (!ImGui::TreeNode(LBL("Add / remove / reorder"))) return;
 	// add

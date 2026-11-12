@@ -39,6 +39,10 @@ bool ReplaceImageResized(Bank &bank, int n, const uint8_t *rgba, int w, int h, i
 bool TrimToContent(const uint8_t *rgba, int w, int h, int &x0, int &y0, int &x1, int &y1);
 // Drop atlas pages nobody uses at the end (H0 = used pages).
 bool TrimPages(Bank &bank);
+// MBAACC page order (see Grid in cgm_struct.cpp): every block of a type 0 image must sit on a page below every block of a
+// type 1-5 image. Returns how many type 0 blocks sit on or past the first such page (0 = the engine draws the bank right);
+// why (optional) names the first offender.
+int PageOrderProblems(const Bank &bank, std::string *why = nullptr);
 // ---- PACNyx "effect" edits (an effect = one image of the bank) ----
 // Stored name (<= 31 bytes, as written in the image header).
 bool RenameImage(Bank &bank, int n, const std::string &name, std::string *err);

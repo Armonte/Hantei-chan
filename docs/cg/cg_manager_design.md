@@ -25,6 +25,15 @@ Measured on akiha.cg: 2137 copy blocks, each pointing into exactly one owner ima
 Consequence: **pixels of image A can be drawn by image B**; replace/delete must know about it.
 The "atlas" is the (page, 16px cell) grid: pages 256x256, `pages = H0+1`; `CG::build_image_table` mirrors it.
 
+**Page order (MBAACC).** No header word says which pages are 8-bit. The loader (`CG_BmpCutter_ParseSpriteData` 0x402970)
+takes the lowest page that holds a block of a type 1-5 image, and `SpriteBank_UploadTextures` (0x4020E0) creates every page
+from there on as a 32-bit texture (D3D format 21); the pages below it are 8-bit (format 25). A type 0 block on or past that
+page is drawn from the wrong texture: the sprite loses whole blocks. The shipped banks all keep type 0 blocks below every
+other type. The atlas allocator (`Grid` in `cgm_struct.cpp`) keeps that order: type 0 blocks go below the first 32-bit page
+(inserting a page there when they are full), the other types go above the last 8-bit page. `PageOrderProblems` checks it;
+`cgmtool check` fails a bank that breaks it and the Structure section of the CG window warns. Banks built before 0.1.5
+could break it whenever 8-bit and 32-bit images were mixed.
+
 ## 2. Architecture (all new code in `src/cgm/`, no GL/ImGui in the core so the CLI and tests link it)
 
 | unit | job |
