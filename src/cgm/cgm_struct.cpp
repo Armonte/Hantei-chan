@@ -70,7 +70,7 @@ size_t PerPixel(int type) { return type == 1 ? 4 : (type == 4 || type == 5) ? 2 
 size_t Prefix(int type, int bpp) { return bpp == 32 ? (type == 2 || type == 4 ? 1024 : type == 3 ? 4 : 0) : 0; }
 
 void Finish(Bank &bank) { bank.recomputeLayout(); }
-void SetPages(Bank &bank, const Grid &g) { int mp = -1; for (const Image &im : bank.images) for (const Block &b : im.blocks) mp = std::max<int>(mp, b.page); bank.H[0] = (uint32_t)std::max<int>((int)bank.H[0], mp + 1); (void)g; }
+void SetPages(Bank &bank, const Grid &g) { int mp = -1; for (const Image &im : bank.images) for (const Block &b : im.blocks) mp = std::max<int>(mp, b.page); bank.H[0] = (uint32_t)std::max<int>((int)bank.H[0], mp); (void)g; }   // H0 = last page index (the engine creates H0 + 1 pages)
 
 // remap for an insertion / removal: ids >= at shift
 std::vector<int> ShiftRemap(size_t n, int at, int delta) { std::vector<int> r(n); for (size_t i = 0; i < n; i++) r[i] = (int)i >= at ? (int)i + delta : (int)i; return r; }
