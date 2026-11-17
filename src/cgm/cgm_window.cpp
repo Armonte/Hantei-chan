@@ -946,7 +946,7 @@ void Window::drawStructure(CharacterInstance &ch, const WindowHost &host) {
 void Window::drawEffect(CharacterInstance &ch, const WindowHost &host) {
 	if (!bank || selected < 0 || selected >= (int)bank->images.size()) return;
 	Image &im = bank->images[selected];
-	ImGui::SeparatorText(TXT("Effect (PACNyx)"));
+	ImGui::SeparatorText(TXT("Image: name, position, blocks"));   // per-image edits for every bank (the feature set comes from PACNyx's effect editor, the data is not PACNyx-specific)
 	// rename
 	if (renameFor != selected) { renameFor = selected; memset(renameBuf, 0, sizeof renameBuf); memcpy(renameBuf, im.name, strnlen(im.name, 31)); }
 	ImGui::SetNextItemWidth(std::min(ui::Px(180), std::max(ui::FieldW(), ImGui::GetContentRegionAvail().x - i18n::ButtonWidth(LBL("Rename")) - ui::LabelTextW(LBL("Name##eff")) - ImGui::GetStyle().ItemSpacing.x * 3)));

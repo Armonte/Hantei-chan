@@ -907,9 +907,17 @@ std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool
 		if (fs::exists(out, ec) && fs::file_size(out, ec) == e.size) return true;
 		std::vector<uint8_t> b; std::string er;
 		if (!ReadItem(*o, e, b, &er)) { if (err) *err = er; return false; }
-		std::ofstream f(out, std::ios::binary);
-		if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
-		return (bool)f;
+		// Write beside it and rename into place: a thumbnail job and an open can stage the same character at once, and a reader must
+		// never parse a file the other side has just truncated (an intermittent std::length_error in the HA6 loader).
+		fs::path tmp = out; tmp += ".part" + std::to_string(GetCurrentThreadId());
+		{
+			std::ofstream f(tmp, std::ios::binary);
+			if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
+			if (!f) { fs::remove(tmp, ec); return false; }
+		}
+		fs::rename(tmp, out, ec);
+		if (ec) { fs::remove(tmp, ec); return fs::exists(out, ec) && fs::file_size(out, ec) == e.size; }   // the other writer won with the same bytes
+		return true;
 	};
 	if (!txtName.empty()) {   // parse the txt first (copy it, then read its [DataFile] etc. with the INI API)
 		auto f = byName.find(Lower(txtName)); want.insert(f->second);
@@ -920,6 +928,15 @@ std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool
 		for (int i = 0; i < 40; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("DataFile", k); snprintf(k, sizeof k, "File%03d", i); ref("DataFile", k); }
 		ref("DataFile", "File");
 		for (int i = 0; i < 8; i++) { char k[16]; snprintf(k, sizeof k, "File%02d", i); ref("BmpcutFile", k); ref("PAniFile", k); }
+		// The palettes are not in the txt: the loader takes <cg>.pal and <cg>_p1.._p7.pal next to the CG (CG::loadPupsPalettes). A moon file's
+		// stem (ryougi_1) does not prefix ryougi.pal, so without this a moon opened on its own got no .pal and stayed on palette 0 (only after
+		// ryougi.ha6 had been opened once did the shared staging folder hold it).
+		GetPrivateProfileStringA("BmpcutFile", "File00", "", b, sizeof b, tp.c_str());
+		if (b[0]) {
+			const std::string cg = (DirOf(txtName).empty() ? "" : DirOf(txtName) + "/") + b, cgStem = cg.substr(0, cg.find_last_of('.'));
+			addNamed(cgStem + ".pal");
+			for (int p = 1; p < 8; p++) addNamed(cgStem + "_p" + std::to_string(p) + ".pal");
+		}
 		if (cgIndex) { GetPrivateProfileStringA("BmpcutFile", "File00", "", b, sizeof b, tp.c_str()); *cgIndex = -1; if (b[0]) { auto f2 = byName.find(Lower(NormRel((DirOf(txtName).empty() ? "" : DirOf(txtName) + "/") + b))); if (f2 != byName.end()) *cgIndex = (int)f2->second; } }
 	}
 	if (light) for (auto itw = want.begin(); itw != want.end();) { const std::string x = ExtOf(o->items[*itw].name); if (x == ".ha6" || x == ".pal" || o->items[*itw].name == txtName) ++itw; else itw = want.erase(itw); }
@@ -1290,6 +1307,19 @@ static std::string ManagedCopy(const Source &o, const Item &it, std::string *err
 	if (!b.empty()) f.write((const char *)b.data(), (std::streamsize)b.size());
 	if (!f) { if (err) *err = "could not write " + out.u8string(); return {}; }
 	f.close();
+	// A character file brings its same-stem palette along: an ActCadenza <CHAR>.DAT reads <CHAR>.PAL next to itself (AttachCharacterResources).
+	// Copied alone it opened with only the CG's own palette, stuck at palette 0 in View > Palette number.
+	if (const std::string ext = ExtOf(it.name); ext == ".dat" || ext == ".ha6") {
+		const std::string want = Lower(DirOf(it.name)), stem = Lower(StemOf(it.name));
+		for (const Item &e : o.items) {
+			if (ExtOf(e.name) != ".pal" || Lower(DirOf(e.name)) != want || Lower(StemOf(e.name)) != stem) continue;
+			std::vector<uint8_t> pb; std::string er;
+			if (!ReadItem(o, e, pb, &er)) { tlog::Log("archive browser: palette %s not copied: %s", e.name.c_str(), er.c_str()); break; }
+			std::ofstream pf(dir / P8(e.name), std::ios::binary);
+			if (!pb.empty()) pf.write((const char *)pb.data(), (std::streamsize)pb.size());
+			break;
+		}
+	}
 	// remember the origin so Save writes back into the archive (fbarc understands every archive kind of this browser)
 	if (!(o.fb && (o.fb->kind() == fbarc::Kind::Uni2D || o.fb->kind() == fbarc::Kind::MbtlBin))) fbarc::SetOrigin(out.u8string(), fbarc::Origin{ o.path, it.name });   // those archives are read-only: Save keeps the copy
 	return out.u8string();

@@ -1,0 +1,18 @@
+# Discord report 2026-11-17: on the packed Steam MBAACC, a moon .ha6 opened from the game view (All archives) is stuck at palette 0,
+# the same file opened from 0002.p has its palettes. Run headless:
+#   gonptechan.exe --headless --ui-script tests\ui_scripts\mbaacc_packed_moon_palettes.txt   (result lines in <script>.log)
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source All archives
+waitidle
+select data/ryougi_1.ha6
+open
+waitidle
+palinfo
+source 0002.p
+waitidle
+select data/ryougi_1.ha6
+open
+waitidle
+palinfo
+quit

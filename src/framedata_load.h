@@ -31,7 +31,7 @@ struct TestInfo{
 
 };
 
-extern TestInfo test;
+extern thread_local TestInfo test;   // load diagnostics (file, pattern name); per thread, loads run on worker threads too
 
 unsigned int *fd_frame_AT_load(unsigned int *data, const unsigned int *data_end, Frame_AT *AT, TempInfo *info, Ha6FrameEnc *enc = nullptr);
 unsigned int *fd_frame_AS_load(unsigned int *data, const unsigned int *data_end, Frame_AS *AS, Ha6FrameEnc *enc = nullptr);

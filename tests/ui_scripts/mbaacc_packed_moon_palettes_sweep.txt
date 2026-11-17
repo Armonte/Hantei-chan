@@ -1,0 +1,430 @@
+# Every MBAACC moon / variant .ha6 in 0002.p, opened from the game view (cold %TEMP%\hantei_archive): palinfo must show palettes=64.
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source All archives
+waitidle
+select data/akaakiha_0.HA6
+open
+waitidle
+palinfo
+select data/akaakiha_1.HA6
+open
+waitidle
+palinfo
+select data/akaakiha_2.HA6
+open
+waitidle
+palinfo
+select data/akiha_0.HA6
+open
+waitidle
+palinfo
+select data/akiha_1.HA6
+open
+waitidle
+palinfo
+select data/akiha_2.HA6
+open
+waitidle
+palinfo
+select data/aoko_0.HA6
+open
+waitidle
+palinfo
+select data/aoko_1.HA6
+open
+waitidle
+palinfo
+select data/aoko_2.HA6
+open
+waitidle
+palinfo
+select data/arc_0.HA6
+open
+waitidle
+palinfo
+select data/arc_1.HA6
+open
+waitidle
+palinfo
+select data/arc_2.HA6
+open
+waitidle
+palinfo
+select data/b_arc_0.HA6
+open
+waitidle
+palinfo
+select data/b_arc_1.HA6
+open
+waitidle
+palinfo
+select data/b_arc_2.HA6
+open
+waitidle
+palinfo
+select data/b_arc_9.HA6
+open
+waitidle
+palinfo
+select data/b_ryougi_9.HA6
+open
+waitidle
+palinfo
+select data/ciel_0.HA6
+open
+waitidle
+palinfo
+select data/ciel_1.HA6
+open
+waitidle
+palinfo
+select data/ciel_2.HA6
+open
+waitidle
+palinfo
+select data/hisui_0.HA6
+open
+waitidle
+palinfo
+select data/hisui_1.HA6
+open
+waitidle
+palinfo
+select data/hisui_2.HA6
+open
+waitidle
+palinfo
+select data/kishima_0.HA6
+open
+waitidle
+palinfo
+select data/kishima_1.HA6
+open
+waitidle
+palinfo
+select data/kishima_2.HA6
+open
+waitidle
+palinfo
+select data/kohaku_0.HA6
+open
+waitidle
+palinfo
+select data/kohaku_1.HA6
+open
+waitidle
+palinfo
+select data/kohaku_2.HA6
+open
+waitidle
+palinfo
+select data/kohaku_m_0.HA6
+open
+waitidle
+palinfo
+select data/kohaku_m_1.HA6
+open
+waitidle
+palinfo
+select data/kohaku_m_2.HA6
+open
+waitidle
+palinfo
+select data/len_0.HA6
+open
+waitidle
+palinfo
+select data/len_1.HA6
+open
+waitidle
+palinfo
+select data/len_2.HA6
+open
+waitidle
+palinfo
+select data/miyako_0.HA6
+open
+waitidle
+palinfo
+select data/miyako_1.HA6
+open
+waitidle
+palinfo
+select data/miyako_2.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_0.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_1.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_2.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_m_0.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_m_1.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_m_2.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_m_9.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_p_0.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_p_1.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_p_2.HA6
+open
+waitidle
+palinfo
+select data/m_hisui_p_9.HA6
+open
+waitidle
+palinfo
+select data/nanaya_0.HA6
+open
+waitidle
+palinfo
+select data/nanaya_1.HA6
+open
+waitidle
+palinfo
+select data/nanaya_2.HA6
+open
+waitidle
+palinfo
+select data/nechaos_0.HA6
+open
+waitidle
+palinfo
+select data/nechaos_1.HA6
+open
+waitidle
+palinfo
+select data/nechaos_2.HA6
+open
+waitidle
+palinfo
+select data/neco_0.HA6
+open
+waitidle
+palinfo
+select data/neco_1.HA6
+open
+waitidle
+palinfo
+select data/neco_2.HA6
+open
+waitidle
+palinfo
+select data/neco_p_0.HA6
+open
+waitidle
+palinfo
+select data/neco_p_1.HA6
+open
+waitidle
+palinfo
+select data/neco_p_2.HA6
+open
+waitidle
+palinfo
+select data/nero_0.HA6
+open
+waitidle
+palinfo
+select data/nero_1.HA6
+open
+waitidle
+palinfo
+select data/nero_2.HA6
+open
+waitidle
+palinfo
+select data/p_arc_0.HA6
+open
+waitidle
+palinfo
+select data/p_arc_1.HA6
+open
+waitidle
+palinfo
+select data/p_arc_2.HA6
+open
+waitidle
+palinfo
+select data/p_arc_9.HA6
+open
+waitidle
+palinfo
+select data/p_arc_D_0.HA6
+open
+waitidle
+palinfo
+select data/p_ciel_0.HA6
+open
+waitidle
+palinfo
+select data/p_ciel_1.HA6
+open
+waitidle
+palinfo
+select data/p_ciel_2.HA6
+open
+waitidle
+palinfo
+select data/ries_0.HA6
+open
+waitidle
+palinfo
+select data/ries_1.HA6
+open
+waitidle
+palinfo
+select data/ries_2.HA6
+open
+waitidle
+palinfo
+select data/ries_9.HA6
+open
+waitidle
+palinfo
+select data/roa_0.HA6
+open
+waitidle
+palinfo
+select data/roa_1.HA6
+open
+waitidle
+palinfo
+select data/roa_2.HA6
+open
+waitidle
+palinfo
+select data/ryougi_0.ha6
+open
+waitidle
+palinfo
+select data/ryougi_1.ha6
+open
+waitidle
+palinfo
+select data/ryougi_2.ha6
+open
+waitidle
+palinfo
+select data/satsuki_0.HA6
+open
+waitidle
+palinfo
+select data/satsuki_1.HA6
+open
+waitidle
+palinfo
+select data/satsuki_2.HA6
+open
+waitidle
+palinfo
+select data/shiki_0.HA6
+open
+waitidle
+palinfo
+select data/shiki_1.HA6
+open
+waitidle
+palinfo
+select data/shiki_2.HA6
+open
+waitidle
+palinfo
+select data/sion_0.HA6
+open
+waitidle
+palinfo
+select data/sion_1.HA6
+open
+waitidle
+palinfo
+select data/sion_2.HA6
+open
+waitidle
+palinfo
+select data/s_akiha_0.HA6
+open
+waitidle
+palinfo
+select data/s_akiha_1.HA6
+open
+waitidle
+palinfo
+select data/s_akiha_2.HA6
+open
+waitidle
+palinfo
+select data/v_sion_0.HA6
+open
+waitidle
+palinfo
+select data/v_sion_1.HA6
+open
+waitidle
+palinfo
+select data/v_sion_2.HA6
+open
+waitidle
+palinfo
+select data/warakia_0.HA6
+open
+waitidle
+palinfo
+select data/warakia_1.HA6
+open
+waitidle
+palinfo
+select data/warakia_2.HA6
+open
+waitidle
+palinfo
+select data/warc_0.HA6
+open
+waitidle
+palinfo
+select data/warc_1.HA6
+open
+waitidle
+palinfo
+select data/warc_2.HA6
+open
+waitidle
+palinfo
+select data/wlen_0.HA6
+open
+waitidle
+palinfo
+select data/wlen_1.HA6
+open
+waitidle
+palinfo
+select data/wlen_2.HA6
+open
+waitidle
+palinfo
+quit
