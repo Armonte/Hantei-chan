@@ -9,7 +9,9 @@
 #include "misc.h"
 #include "app_log.h"
 
-TestInfo test;
+// Per thread: the archive browser loads thumbnails on worker threads while the UI opens a character, and the shared
+// seqName string raced (std::length_error out of fd_sequence_load on a corrupted std::string).
+thread_local TestInfo test;
 
 // "file seq id:frame (offset N)" prefix for loader warnings.
 std::string TestInfo::Where(const void *data, const void *data_end) const
