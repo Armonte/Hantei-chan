@@ -24,7 +24,7 @@
 	{"Create part", "パーツを作成"},
 	{"Disable all", "すべて無効"},
 	{"Draw blocks", "ブロックを表示"},
-	{"Effect (PACNyx)", "エフェクト (PACNyx)"},
+	{"Image: name, position, blocks", "画像: 名前・位置・ブロック"},
 	{"Enable all", "すべて有効"},
 	{"Export RBO / GOF2 as JSON + PNG (icaroffa / PACNyx 2026 layout)...", "RBO / GOF2 を JSON + PNG で書き出し (icaroffa / PACNyx 2026 形式)..."},
 	{"Export image...", "画像を書き出し..."},
