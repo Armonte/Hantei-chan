@@ -281,7 +281,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
 		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1/anim | tint R G B
 		if (cmd == "captureview") { if (!editCmd(cmd, arg)) gStartup.exitCode = 1; continue; }   // the active view's FBO (works under --headless)
-		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint") {
+		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint" || cmd == "palinfo") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
 		}
@@ -360,6 +360,11 @@ void MainFrame::ProcessStartupArgs()
 				FrameState &st = vw->getState();
 				FrameData &fd = ch->frameData;
 				if (cmd == "layer") { st.selectedLayer = atoi(arg.c_str()); return true; }
+				if (cmd == "palinfo") {   // palinfo: the active character's palette state (palette count, .pal path, txt / CG) for headless checks
+					char b[1024]; snprintf(b, sizeof b, "palinfo -> name=%s txt=%s cg=%s pal=%s palettes=%d", ch->getName().c_str(), ch->getTxtPath().c_str(), ch->getCGPath().c_str(),
+					         ch->cg.palettePath(0).c_str(), ch->cg.getPalNumber());
+					LogLine(b); return true;
+				}
 				if (cmd == "opentrees") { st.scriptOpenTrees = arg == "anim" ? 2 : arg != "0" ? 1 : 0; return true; }
 				if (cmd == "tint") {
 					// tint R G B (0..1): AFRG of every layer with a sprite in the current pattern

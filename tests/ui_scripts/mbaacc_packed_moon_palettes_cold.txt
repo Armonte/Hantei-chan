@@ -1,0 +1,14 @@
+# Same as mbaacc_packed_moon_palettes.txt, game view only, for a cold %TEMP%\hantei_archive (delete the MBAACC folders there first).
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source All archives
+waitidle
+select data/ryougi_1.ha6
+open
+waitidle
+palinfo
+select data/satsuki_2.ha6
+open
+waitidle
+palinfo
+quit

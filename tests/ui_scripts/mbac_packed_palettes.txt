@@ -1,0 +1,8 @@
+# ActCadenza (MBAC PC, PKFileInfo .p): a character .DAT opened from the archive browser has to bring its <stem>.PAL along.
+browse C:\games\MB\AC
+waitidle
+select SHIKI.DAT
+open
+waitidle
+palinfo
+quit
