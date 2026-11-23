@@ -162,7 +162,11 @@ struct FrameState
 	void SelectPath(FrameData* data,FrameData* effects,int start);
 	bool AdvanceRoute(FrameData* data,FrameData* effects);
 	int AuthoredTick(FrameData* data) const;
-	int PreviewTick(FrameData* data) const { return absoluteScrub && authoredInspection?AuthoredTick(data):currentTick; }
+	// The simulated tick the viewport (spawned actors, preset markers, position tool) shows. Playback / timeline
+	// scrub: currentTick. An inspected state (frame stepping, keyframe click): its authored tick in absolute scrub,
+	// else InspectedRuntimeTick, so the effects alive in that state are drawn (#123).
+	int PreviewTick(FrameData* data) const;
+	int InspectedRuntimeTick(FrameData* data) const;
 	void ScrubTimeline(FrameData* data,FrameData* effects,int tick);
 	void InspectState(FrameData* data,int state,int offset=0);
 	void SeekTimelineTick(FrameData* data,FrameData* effects,int tick,const char* origin);

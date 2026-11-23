@@ -1094,6 +1094,48 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		st.pattern=keep; st.BindPreviewSim(&ch->frameData,fx);
 		if(msg) *msg=cmd+": "+line; return true;
 	}
+	// #123: what frame stepping shows. stepscan: step through the pattern with the keyboard path (AdvanceFrame) from
+	// frame 0 and log per frame "frame:tick/sprites/markers" (preview tick, spawned actors drawn as sprites, preset
+	// markers); previewinfo [N]: the same for the current state (N: select frame N first, as the frame slider does).
+	if((cmd=="stepscan" || cmd=="previewinfo") && view && ch && gStartup.headless) {
+		auto& st=view->getState(); FrameData* fx=ch->effectCharacter?&ch->effectCharacter->frameData:nullptr;
+		auto* seq=ch->frameData.get_sequence(st.pattern); if(!seq || seq->frames.empty()) { if(msg) *msg=cmd+": no frames"; return true; }
+		auto sample=[&]() {
+			auto& sim=st.BindPreviewSim(&ch->frameData,fx); const int tick=st.PreviewTick(&ch->frameData);
+			preview::TickState ts; sim.getStateAt(tick,ts); int sprites=0;
+			for(const auto& a:ts.actors) if(!a.isRoot && !a.isPreset) ++sprites;
+			std::vector<viewrender::PresetMarker> markers; viewrender::CollectPresetMarkers(st,ch,markers);
+			const int simFrame=ts.root()?ts.root()->frame:-1;   // differs from the state when the flow never reaches it
+			return std::to_string(st.frame)+":"+std::to_string(tick)+(simFrame!=st.frame?"(sim "+std::to_string(simFrame)+")":"")+"/"+std::to_string(sprites)+"/"+std::to_string(markers.size());
+		};
+		std::string line=cmd+": pattern="+std::to_string(st.pattern)+" allframes="+std::to_string(st.vizSettings.presetEffectsAllFrames)+" playhead="+std::to_string(st.currentTick)+(cmd=="previewinfo"?" authored="+std::to_string(st.authoredInspection):"")+" frame:tick/sprites/markers";
+		if(cmd=="previewinfo") {
+			if(!arg.empty()) { st.animating=false; st.InspectState(&ch->frameData,atoi(arg.c_str())); }
+			line+=" "+sample()+" effect.ha6="+std::string(fx?"loaded":"none")+" actors:";
+			preview::TickState ts; st.BindPreviewSim(&ch->frameData,fx).getStateAt(st.PreviewTick(&ch->frameData),ts);
+			for(const auto& a:ts.actors) if(!a.isRoot) line+=std::string(" ")+(a.isPreset?"preset":a.effectHa6?"e":"p")+std::to_string(a.pattern)+"/"+std::to_string(a.frame);
+		}
+		else {
+			st.animating=false; st.frame=0; st.InspectState(&ch->frameData,0); line+=" "+sample();
+			for(size_t f=1;f<seq->frames.size();++f) { AdvanceFrame(view,1); line+=" "+sample(); }
+		}
+		if(msg) *msg=line; return true;
+	}
+	if(cmd=="presetscan" && view && ch && gStartup.headless) {   // patterns whose playback fires preset effects (EF3), for stepscan
+		auto& st=view->getState(); FrameData* fx=ch->effectCharacter?&ch->effectCharacter->frameData:nullptr; const int keep=st.pattern;
+		std::string line="presetscan:"; int found=0;
+		for(int p=0;p<ch->frameData.get_sequence_count() && found<16;++p) {
+			auto* seq=ch->frameData.get_sequence(p); if(!seq || seq->frames.empty()) continue;
+			st.pattern=p; auto& sim=st.BindPreviewSim(&ch->frameData,fx); const int end=PlaybackEndTick(sim,&ch->frameData,p);
+			int n=0; for(const auto& r:sim.spawnRecords()) if(r.isPreset && r.spawnTick<=end) ++n;
+			if(n) { line+=" p"+std::to_string(p)+"("+std::to_string(n)+")"; ++found; }
+		}
+		st.pattern=keep; st.BindPreviewSim(&ch->frameData,fx); if(msg) *msg=line; return true;
+	}
+	if(cmd=="seektick" && view && ch && gStartup.headless) {   // the playback / simulated-scrub position (compare with a stepped state)
+		view->getState().animating=false; view->getState().SeekTimelineTick(&ch->frameData,ch->effectCharacter?&ch->effectCharacter->frameData:nullptr,atoi(arg.c_str()),"script"); return true;
+	}
+	if(cmd=="presetallframes" && view && gStartup.headless) { view->getState().vizSettings.presetEffectsAllFrames=arg!="off"; return true; }
 	if(cmd=="previewloop" && view && ch && gStartup.headless) {
 		auto& st=view->getState(); const int steps=std::max(1,atoi(arg.c_str()));
 		st.SeekTimelineTick(&ch->frameData,ch->effectCharacter?&ch->effectCharacter->frameData:nullptr,0,"previewloop");
