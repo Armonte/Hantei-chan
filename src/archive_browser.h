@@ -69,8 +69,9 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 bool SaveEntryBytesIntoArchive(const std::string &loosePath, std::string *err, bool *hadOrigin);
 bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebuiltPath, std::string *err);
 
-// Character diff (issue #131): finds the character file `fileName` (its .txt or .ha6 name, e.g. "ryougi_0.txt") in an archive (.p ...) or a game folder (loose
-// files first, then the game's archives, a later archive winning as the game loads them) and unpacks it with its stack into stageRoot (always rewritten).
+// Character diff (issue #131): finds the character file `fileName` (its .txt or .ha6 name, e.g. "ryougi_0.txt") in an archive (.p ...) or a game folder (the
+// game's archives in its own search order, MBAACC 0008, 0003, 0005, 0002, 0007, 0000, 0004, 0006, 0001 with the first one that has it winning; a loose file
+// only when no archive has it) and unpacks it with its stack into stageRoot (always rewritten).
 // Returns the file to load (a loose file is returned in place); '' and *err when not found. *foundIn = the archive or file it came from.
 // Loads one character file of any family the editor reads, by content (as File > Open routes it). *fmt = what it was recognised as.
 bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);

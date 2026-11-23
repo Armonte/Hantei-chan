@@ -1568,21 +1568,32 @@ std::string StageCharacterByName(const std::string &archiveOrFolder, const std::
 		if (err && err->empty()) *err = fileName + " is not in " + archiveOrFolder;
 		return {};
 	}
-	// a folder: loose files first (an extracted / unpacked game, or the data folder itself), then the archives, the last one that has it winning
+	// A folder: the game's archives first, in the order the game searches them, and a loose file only when no archive has the name. MBAA.exe
+	// (MBAACC) mounts 0008, 0003, 0005, 0002, 0007, 0000, 0004, 0006, 0001 into a list (FilePac_MountGameArchives 0x41E470) and FilePac_FindEntry
+	// (0x4DB8E0) returns the FIRST mounted archive that has the path; the loose file is only opened when none has it. Other games: the browser's
+	// override order (a later archive wins). .p.orig and other unmounted files are never archives here.
 	const GameInfo gi = DetectGame(archiveOrFolder);
+	std::vector<std::string> order(gi.archives.rbegin(), gi.archives.rend());
+	if (gi.game == Game::MBAACC) {
+		static const char *kMount[] = { "0008.p", "0003.p", "0005.p", "0002.p", "0007.p", "0000.p", "0004.p", "0006.p", "0001.p" };
+		auto rank = [](const std::string &path) { const std::string b = Lower(BaseName(path)); for (int i = 0; i < 9; i++) if (b == kMount[i]) return i; return 9; };
+		order = gi.archives;
+		std::stable_sort(order.begin(), order.end(), [&](const std::string &a, const std::string &b) { return rank(a) < rank(b); });
+		order.erase(std::remove_if(order.begin(), order.end(), [&](const std::string &a) { return rank(a) == 9; }), order.end());   // the game mounts only these
+	}
+	std::string lastErr;
+	for (const auto &a : order) {
+		std::string e;
+		if (StageFromArchive(a, want, stageRoot, out, &e)) { if (foundIn) *foundIn = a; return out; }
+		if (!e.empty()) lastErr = e;   // an unreadable archive: keep looking in the next ones
+	}
 	std::vector<fs::path> dirs = { P8(archiveOrFolder), P8(archiveOrFolder) / "data" };
 	if (!gi.dataDir.empty()) dirs.push_back(P8(gi.dataDir));
 	for (const auto &d : dirs)
 		for (const auto &e : fs::directory_iterator(d, ec))
 			if (e.is_regular_file(ec) && Lower(e.path().filename().u8string()) == want) { if (foundIn) *foundIn = e.path().u8string(); return e.path().u8string(); }
-	std::string lastErr;
-	for (auto a = gi.archives.rbegin(); a != gi.archives.rend(); ++a) {
-		std::string e;
-		if (StageFromArchive(*a, want, stageRoot, out, &e)) { if (foundIn) *foundIn = *a; return out; }
-		if (!e.empty()) lastErr = e;   // an unreadable archive: keep looking in the earlier ones
-	}
 	if (err && !lastErr.empty()) { *err = lastErr; return {}; }
-	if (err) *err = fileName + " was not found in " + archiveOrFolder + (gi.archives.empty() ? std::string(" (no game archives there)") : " or its " + std::to_string(gi.archives.size()) + " archives");
+	if (err) *err = fileName + " was not found in " + archiveOrFolder + (order.empty() ? std::string(" (no game archives there)") : " or its " + std::to_string(order.size()) + " archives");
 	return {};
 }
 
