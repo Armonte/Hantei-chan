@@ -24,10 +24,11 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 		case 7: // System effect
 		{
 			const char* const sysEffects[] = {
-				"253: Round-call banner",
+				// Names: gonp's HA6 doc, 2026-11 ("?" = unknown there).
+				"253: FIGHT (round-call banner)",
 				"254: System fx 1002",
-				"255: System fx 1000",
-				"256: KO banner",
+				"255: KO",
+				"256: Final Round ... FIGHT",
 				"258: System fx 1004",
 				"1000: Particles (1502)",
 				"1001: Particles (1504)",
@@ -37,13 +38,14 @@ static inline void DrawEffectUnknown(Frame_EF& effect, FrameData* frameData, int
 				markModified();
 			}
 			im::SameLine(); im::TextDisabled("(?)");
-			if(im::IsItemHovered()) Tooltip("Spawned into the system effect pool (SysEffect_SpawnById).\nConfidence: medium.");
+			if(im::IsItemHovered()) Tooltip("Spawned into the system effect pool (SysEffect_SpawnById).\nConfidence: medium.\n"
+				"Earlier labels (SysEffect_SpawnById reading): 255 = system fx 1000, 256 = KO banner");
 
 			if(im::InputInt(EfRow(LBL("Position X")), &p[0], 0, 0)) markModified();
 			if(im::InputInt(EfRow(LBL("Position Y")), &p[1], 0, 0)) markModified();
 
 			if(no == 256) {
-				if(im::InputInt(EfRow(LBL("KO variant (p3 % 10)")), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Banner variant (p3 % 10)")), &p[2], 0, 0)) markModified();
 			}
 			break;
 		}

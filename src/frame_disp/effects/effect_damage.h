@@ -80,6 +80,8 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 				if(i18n::Combo(EfRow(LBL("Add to hit count")), &p[1], "0\0001\0002\000")) {
 					markModified();
 				}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("0 = no hit, otherwise adds a hit");
 
 				im::DragInt(EfRow(LBL("Hitstop")), &p[2]);
 				if(im::IsItemEdited()) {
@@ -104,20 +106,25 @@ static inline void DrawEffectDamage_Type5(Frame_EF& effect, FrameData* frameData
 				if(i18n::Combo(EfRow(LBL("Hit scaling")), &p[4], "0\0001\000")) {
 					markModified();
 				}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("0 = no scaling, otherwise scaled");
 
-				im::DragInt(EfRow(LBL("Red damage")), &p[5]);
+				// gonp's HA6 doc, 2026-11: param6 = VS damage (red health damage, as in AT data)
+				im::DragInt(EfRow(LBL("VS damage")), &p[5]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Red health damage");
 			} else if(no == 2) { // Flip victim facing
 				im::TextDisabled(TXT("No parameters"));
 			} else if(no == 3) { // Victim meter
 				if(im::InputInt(EfRow(LBL("Meter change")), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Victim meter += value, clamped 0..30000");
+				if(im::IsItemHovered()) Tooltip("Victim meter += value, clamped 0..30000\nCan exceed 200% meter on H-Moon; doesn't initiate MAX");
 			} else if(no == 4) { // Not handled by MBAA
 				im::DragInt(EfRow(LBL("Unknown")), &p[0]);
 				if(im::IsItemEdited()) {
