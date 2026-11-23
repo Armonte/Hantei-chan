@@ -131,6 +131,7 @@ private:
 	float imageVertex[6*4];
 	std::vector<float> clientQuads;
 	int quadsToDraw;
+	int fillFirst = 0, fillCount = 0;   // box fills: quads [fillFirst, fillFirst+fillCount) of the BOXES buffer (same-type overlaps merged, #128)
 	bool gridLinesHaveOverlay = false;
 
 	int lProjectionS, lProjectionT, lProjectionParts;

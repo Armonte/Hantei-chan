@@ -1,0 +1,23 @@
+# gonp's 0.1.7 issues, headless captures into tests\ui_scripts\out (git-ignored outputs; inspect by eye):
+#   #120 browser list scrolled to the end, #128 box fills union vs additive on a frame with overlapping hurtboxes
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source 0002.p
+waitidle
+key End
+wait 10
+capture C:\dev\Hantei-chan\Hantei-chan\tests\ui_scripts\out\i120_browser_end.png
+info
+select data/ryougi_0.ha6
+open
+waitidle
+pattern 0
+viewframe 0
+boxfills union
+wait 5
+captureview C:\dev\Hantei-chan\Hantei-chan\tests\ui_scripts\out\i128_union.png
+capture C:\dev\Hantei-chan\Hantei-chan\tests\ui_scripts\out\i128_union_full.png
+boxfills additive
+wait 5
+captureview C:\dev\Hantei-chan\Hantei-chan\tests\ui_scripts\out\i128_additive.png
+quit

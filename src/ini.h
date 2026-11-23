@@ -21,6 +21,8 @@ extern struct Settings
 	bool absoluteScrubDefault = false;  // new views scrub authored (absolute) time instead of the simulated timeline
 	bool jlFrameStep = false;           // J/L step one tick with hold repeat, Shift+J/L play (0.1.2: J/L play)
 	bool pageKeysStepStates = false;    // PgUp/PgDn step states in a character view
+	bool boxFillsAdditive = false;      // old look: each box fill blended on its own, same-type overlaps darker (#128)
+	bool inlinePatternList = true;      // pattern list under the trees in the pattern pane (View > Pattern list under the trees, #129)
 	bool patternListWindow = false;     // pattern list in its own window instead of inline in the pattern pane
 	bool timelineDurationLane = false;  // timeline Duration row; keyframe cells drawn without outlines
 	int scrubHoldDelayMs=250, scrubRepeatMs=17;

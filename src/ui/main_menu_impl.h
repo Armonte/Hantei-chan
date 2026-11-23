@@ -730,6 +730,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Arrange related properties in responsive grids. Applies to all views; font size is unchanged.");
 			if(ImGui::MenuItem(LBL("Pattern list"),nullptr,&gSettings.showPatternList,gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
+			// The inline list repeats the Pattern dropdown; people who navigate with the dropdown can hide it (#129)
+			if(ImGui::MenuItem(LBL("Box fills add up where boxes overlap"),nullptr,&gSettings.boxFillsAdditive)) ImGui::MarkIniSettingsDirty();
+			if(ImGui::MenuItem(LBL("Pattern list under the trees"),nullptr,&gSettings.inlinePatternList,!gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
 			ImGui::Separator();
 			auto* active = getActiveCharacter();
 			if (ImGui::BeginMenu(LBL("Zoom level")))

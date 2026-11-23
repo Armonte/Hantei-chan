@@ -381,7 +381,7 @@ const char* AniFlagBitLabel(Ha6Game g, int bit)
 	if (bit < 0 || bit > 31 || !(AniFlagBitsRead(g) & (1u << bit))) return nullptr;
 	switch (bit) {
 	case 0: return "Landing frame: Land to pattern";
-	case 1: return "Loop: Decrement loops and go to end if 0";
+	case 1: return "Loop: Go to end if 0";   // the loop count is decremented by every Go to frame jump, not by this flag (gonp, #132)
 	case 2: return "Go to: Use relative offset";
 	case 3: return "End of loop: Use relative offset";
 	case 7: return "Interpolation: draw blend mode 3 instead of 1 (AFHK frames)";

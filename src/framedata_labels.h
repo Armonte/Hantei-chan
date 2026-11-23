@@ -358,8 +358,8 @@ static const char* const counterList[] = {
 // hantei4 g_invincibility_strings (HANTEI4_EF_IF_LABELS.md section 3)
 static const char* const invulList[] = {
 	"None",
-	"Evade highs",
-	"Evade lows",
+	"Evade stand blockable",
+	"Evade crouch blockable",
 	"Strike invincible",
 	"Throw invincible"
 };
