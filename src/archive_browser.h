@@ -69,6 +69,20 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 bool SaveEntryBytesIntoArchive(const std::string &loosePath, std::string *err, bool *hadOrigin);
 bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebuiltPath, std::string *err);
 
+// ---- MBAACC game archives (archive_gamepack.cpp) --------------------------------------------------------------------------------------------------------
+// MBAA.exe reads a file from the mounted .p archives first and only falls back to the loose file when no archive holds it, so "unpack" writes every
+// file into the game folder and then moves 0000.p ... 0008.p into <game>\_packed_backup. dir "" = the MBAACC folder open in the browser / the found install.
+void UnpackGameDialog(const std::string &dir = std::string());     // confirm (N files, folder, backup, undo) -> background job with progress
+void RestorePackedDialog(const std::string &dir = std::string());  // moves the backed-up .p files back into the game folder
+void PackArchivesDialog(const std::string &dir = std::string());   // rebuilds .p files with the changed loose files (keeps <name>.p.bak)
+void DrawGamePackDialogs();                                         // every frame (called from Draw)
+bool GamePackBusy();
+std::string GamePackResult(bool *ok = nullptr);
+bool HasPackedBackup(const std::string &dir);
+bool HasGameArchives(const std::string &dir);
+// Script commands without dialogs: unpackgame <dir> | restorepacked <dir> | packgame [+add] [+force] <dir|archive.p>. false = not one of them or failed (*msg).
+bool GamePackScript(const std::string &cmd, const std::string &arg, std::string *msg);
+
 // ---- scripted UI (tests / screenshots without the real mouse) ----------------------------------------------------------------------------------------
 // Commands (MainFrame's --ui-script runner forwards them): browse <path> | source <substring> | filter <text> | type <name|all> | select <substring> | next | prev
 //   | open | key <Up|Down|Enter|Home|End|PageDown|PageUp> | frame <n> | palette <n> | zoom <fit|1|2|4> | thumbs <on|off>

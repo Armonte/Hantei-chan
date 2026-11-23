@@ -1371,7 +1371,7 @@ void StartExtract(int sourceIdx, std::vector<uint32_t> items, const std::string 
 	SourceP s = FindSource(sourceIdx);
 	if (!s || st.prog.running) return;
 	if (items.empty()) for (uint32_t i = 0; i < s->items.size(); i++) items.push_back(i);
-	st.prog.done = 0; st.prog.failed = 0; st.prog.total = (int)items.size(); st.prog.running = true; st.prog.cancel = false; st.prog.dest = dir; st.prog.what = s->label;
+	st.prog.done = 0; st.prog.failed = 0; st.prog.total = (int)items.size(); st.prog.running = true; st.prog.cancel = false; st.prog.dest = dir; st.prog.what = s->label; st.prog.op.clear();
 	PostJob([s, items, dir] {
 		State &st = S();
 		for (uint32_t i : items) {

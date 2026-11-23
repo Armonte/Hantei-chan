@@ -1,0 +1,5 @@
+# MBAACC .p unpack / pack / restore round trip, step 1 of 3 (run tests/ui_scripts/p_unpack_roundtrip.sh, which prepares the folder and checks the results).
+# Machine-specific: C:\dev\Hantei-chan\work\p_unpack_test\game is a THROWAWAY copy of the Steam folder's 000?.p + MBAA.exe (never a real install).
+#   gonptechan.exe --headless --ui-script tests\ui_scripts\p_unpack_1_unpack.txt   (result lines in <script>.log)
+unpackgame C:\dev\Hantei-chan\work\p_unpack_test\game
+quit

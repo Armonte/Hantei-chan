@@ -1,0 +1,41 @@
+copy matches the Steam archives
+archive entries total: 12083
+unique paths: 12083
+exit 0
+unpackgame C:\dev\Hantei-chan\work\p_unpack_test\game -> ok: [9 archives, 12083 entries, 12083 unique paths, 0 shadowed duplicates, 0 already existed] Unpacked 12083 files into C:\dev\Hantei-chan\work\p_unpack_test\game (0 skipped because they already existed, 0 failed). Moved 9 .p files into C:\dev\Hantei-chan\work\p_unpack_test\game\_packed_backup.
+PASS no .p left in the game folder
+PASS 9 .p in _packed_backup
+loose files written: 12083
+PASS loose file count == unique archive paths
+PASS sampled entries byte-identical to the loose files
+modified entry: data/akaakiha.txt
+exit 0
+packgame C:\dev\Hantei-chan\work\p_unpack_test\game -> ok: 0008.p: 0 replaced, 0 added, 378 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0003.p: 0 replaced, 0 added, 2426 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0005.p: 0 replaced, 0 added, 6721 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0002.p: 1 replaced, 0 added, 1529 unchanged, 0 without a loose file. Wrote C:\dev\Hantei-chan\work\p_unpack_test\game\_packed_backup\0002.p. Previous archive kept as 0002.p.bak. It is in the backup folder: Restore packed archives puts it back in use.
+0007.p: 0 replaced, 0 added, 848 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0000.p: 0 replaced, 0 added, 69 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0004.p: 0 replaced, 0 added, 28 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0006.p: 0 replaced, 0 added, 9 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+0001.p: 0 replaced, 0 added, 74 unchanged, 0 without a loose file. Nothing changed: the archive was left as it is.
+packgame +force C:\dev\Hantei-chan\work\p_unpack_test\game\_packed_backup\0004.p -> ok: 0004.p: 0 replaced, 0 added, 28 unchanged, 0 without a loose file. Wrote C:\dev\Hantei-chan\work\p_unpack_test\game\_packed_backup\0004.p. Previous archive kept as 0004.p.bak. It is in the backup folder: Restore packed archives puts it back in use.
+PASS 0002.p.bak = the original 0002.p
+DIFF   data/akaakiha.txt (218 -> 248 bytes)
+entries: a 1530, b 1530; identical 1529, different 1, only in a 0, only in b 0
+PASS rebuilt 0002.p: exactly one entry differs
+PASS the changed entry holds the new bytes
+PASS 0000.p sha256 unchanged (4 = forced rebuild)
+PASS 0001.p sha256 unchanged (4 = forced rebuild)
+PASS 0003.p sha256 unchanged (4 = forced rebuild)
+PASS 0004.p sha256 unchanged (4 = forced rebuild)
+PASS 0005.p sha256 unchanged (4 = forced rebuild)
+PASS 0006.p sha256 unchanged (4 = forced rebuild)
+PASS 0007.p sha256 unchanged (4 = forced rebuild)
+PASS 0008.p sha256 unchanged (4 = forced rebuild)
+PASS forced rebuild of 0004.p kept 0004.p.bak
+exit 0
+restorepacked C:\dev\Hantei-chan\work\p_unpack_test\game -> ok: Moved 9 .p files back into C:\dev\Hantei-chan\work\p_unpack_test\game. Packed files win over loose files again: the game ignores loose files that an archive also holds (the loose files were left on disk).
+PASS 9 .p back in the game folder
+PASS only 0002.p differs from the original
+ROUND TRIP OK
