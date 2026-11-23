@@ -257,6 +257,16 @@ static bool SniffArchive(const fs::path &p, const std::string &ext)
 	return fbarc::Detect(head, n, ext) != fbarc::Kind::Unknown;
 }
 
+int MbaaccMountRank(const std::string &fileName)
+{
+	// MBAA.exe FilePac_MountGameArchives_InPriorityOrder (0x41E470) mounts these in this order and FilePac_FindEntry (0x4DB8E0) returns the
+	// first archive that holds the path (the Steam build's FilePac_LoadAllGameArchives / FilePac_FindFileInArchive do the same).
+	static const char *const order[] = { "0008.p", "0003.p", "0005.p", "0002.p", "0007.p", "0000.p", "0004.p", "0006.p", "0001.p" };
+	const std::string l = Lower(BaseName(fileName));
+	for (int i = 0; i < (int)(sizeof order / sizeof *order); i++) if (l == order[i]) return i;
+	return 100;
+}
+
 static int ArchiveRank(const std::string &lowerName)
 {
 	if (lowerName.rfind("data0", 0) == 0 || lowerName.rfind("data1", 0) == 0) return 0;
@@ -355,6 +365,8 @@ GameInfo DetectGame(const std::string &dir)
 	gi.game = g;
 	std::sort(allArchives.begin(), allArchives.end(), [](const auto &a, const auto &b) { int ra = ArchiveRank(a.first), rb = ArchiveRank(b.first); return ra != rb ? ra < rb : a.first < b.first; });
 	std::set<std::string> seen;
+	// MBAACC: the browser's "later wins" list is the game's mount order reversed (0001 first ... 0008 last); archives the game does not mount come first
+	if (g == Game::MBAACC) std::stable_sort(allArchives.begin(), allArchives.end(), [](const auto &a, const auto &b) { return MbaaccMountRank(a.first) > MbaaccMountRank(b.first); });
 	for (auto &a : allArchives) if (seen.insert(Lower(a.second.generic_u8string())).second) gi.archives.push_back(a.second.u8string());
 	if (g == Game::MBTL) gi.archives = { mbtlExe.u8string() };
 	if (g == Game::UNI2) gi.archives = { (P8(dir) / "d").u8string() };

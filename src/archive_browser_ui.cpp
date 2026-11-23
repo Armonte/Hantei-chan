@@ -895,6 +895,12 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 		              show ? 1 : 0, dockTarget, dockTarget && ImGui::DockBuilderGetNode(dockTarget) ? 1 : 0, w ? w->DockId : 0u, w ? w->Size.x : 0.f, w ? w->Size.y : 0.f, st.status.c_str());
 		say(b); return false;
 	}
+	if (cmd == "owner") {   // owner <entry path>: which archive the selected (merged) source takes that path from; like info, the answer goes to the log
+		SourceP s = FindSource(st.selSource);
+		if (!s) { say("no source"); return false; }
+		for (auto &it : s->items) if (Lower(it.name) == Lower(arg)) { uint32_t oi = 0; const Source &o = Owner(*s, it, oi); say("owner " + arg + " = " + o.label); return false; }
+		say("owner " + arg + " = (not listed)"); return false;
+	}
 	if (cmd == "typeahead") { g_injType += arg; return true; }
 	if (cmd == "frame") { st.bankFrame = atoi(arg.c_str()); return true; }
 	if (cmd == "palette") { st.bankPalette = std::clamp(atoi(arg.c_str()), 0, 7); return true; }

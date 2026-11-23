@@ -28,18 +28,11 @@ namespace abrowser {
 
 namespace {
 const char *const kBackupDir = "_packed_backup";
-// Mount order of MBAA.exe: index 0 has the highest priority.
-const char *const kGameOrder[] = { "0008.p", "0003.p", "0005.p", "0002.p", "0007.p", "0000.p", "0004.p", "0006.p", "0001.p" };
 
 std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 fs::path P8(const std::string &u8) { return fs::u8path(u8); }
 bool IsDigitP(const std::string &n) { return n.size() == 6 && isdigit((unsigned char)n[0]) && isdigit((unsigned char)n[1]) && isdigit((unsigned char)n[2]) && isdigit((unsigned char)n[3]) && Lower(n.substr(4)) == ".p"; }
-int Rank(const std::string &fileName)
-{
-	const std::string l = Lower(fileName);
-	for (int i = 0; i < (int)(sizeof kGameOrder / sizeof *kGameOrder); i++) if (l == kGameOrder[i]) return i;
-	return 100;
-}
+int Rank(const std::string &fileName) { return MbaaccMountRank(fileName); }   // 0 = highest priority (archive_browser.cpp)
 std::string Fmt(const char *fmt, ...)
 {
 	char b[1024]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap); return b;
@@ -438,8 +431,10 @@ void FillPackList()
 {
 	g_packList.clear();
 	if (g_dir.empty()) return;
+	// ticked by default: the backed-up archives when there are any (the unpacked case), else the ones in the game folder
 	for (auto &a : ListArchives(P8(g_dir) / kBackupDir)) g_packList.push_back({ a.path, true });
-	for (auto &a : ListArchives(P8(g_dir))) g_packList.push_back({ a.path, true });
+	const bool haveBackup = !g_packList.empty();
+	for (auto &a : ListArchives(P8(g_dir))) g_packList.push_back({ a.path, !haveBackup });
 }
 
 void Open(Dlg d, const std::string &dir)
