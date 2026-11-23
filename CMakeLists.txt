@@ -42,6 +42,7 @@ add_executable(${EXE}
 	src/main.cpp
 	src/main_frame.cpp
 	src/main_pane.cpp
+	src/char_diff.cpp
 	src/right_pane.cpp
 	src/box_pane.cpp
 	src/render.cpp
@@ -1005,6 +1006,17 @@ if(MINGW)
     target_link_options(state_transfer_test PRIVATE -static-libgcc -static-libstdc++ -static)
 endif()
 add_test(NAME state_transfer COMMAND state_transfer_test)
+# char_diff_test: character diff model (issue #131).
+add_executable(char_diff_test tests/char_diff_test.cpp src/char_diff.cpp
+	src/ha6_notes.cpp src/framedata.cpp src/framedata_load.cpp src/app_log.cpp src/framedata_save.cpp src/framedata_ha4.cpp ${HAN2_MODEL_SOURCES}
+	src/misc.cpp tinyalloc/tinyalloc.c)
+target_include_directories(char_diff_test PRIVATE "." "src" "third_party" "${CMAKE_BINARY_DIR}/generated")
+target_compile_definitions(char_diff_test PRIVATE WIN32_LEAN_AND_MEAN HA6GUIVERSION="${CMAKE_PROJECT_VERSION}")
+target_link_libraries(char_diff_test PRIVATE tinyalloc)
+if(MINGW)
+	target_link_options(char_diff_test PRIVATE -static-libgcc -static-libstdc++ -static)
+endif()
+add_test(NAME char_diff COMMAND char_diff_test)
 # pat_safety_test: PAT editor file safety (S2): auto-backup rotation, atomic .pat save, the PAT document's dirty flag
 # and undo through the parts undo channel (src/parts/parts_undo.h). Uses a gamedata .pat when one is passed.
 add_executable(pat_safety_test

@@ -146,6 +146,8 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		if (!gSettings.blenderPathFromNewKey && !s3d::BlenderPathIsPre5(line + 12)) gSettings.blenderPath = line + 12;
 	} else if (strncmp(line, "StageGameDir=", 13) == 0){
 		gSettings.stageGameDir = line + 13;
+	} else if (strncmp(line, "DiffSource=", 11) == 0){
+		gSettings.diffSource = line + 11;
 	} else if (sscanf(line,"GrabPoolInitialized=%i",&i)==1) {
   gSettings.grabPoolInitialized=i!=0;
  } else if (strncmp(line,"GrabPoolPath=",13)==0) {
@@ -196,6 +198,7 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 
 	buf->appendf("InvertWheelZoom=%i\n", gSettings.invertWheelZoom ? 1 : 0);
 	if (!gSettings.stageGameDir.empty()) buf->appendf("StageGameDir=%s\n", gSettings.stageGameDir.c_str());
+	if (!gSettings.diffSource.empty()) buf->appendf("DiffSource=%s\n", gSettings.diffSource.c_str());
 	buf->appendf("StageGame=%i\n", gSettings.stageGame);
 	buf->appendf("StagePatAuthoring=%i\n", gSettings.stagePatAuthoring ? 1 : 0);
 	buf->appendf("StageClampCamera=%i\n", gSettings.stageClampCamera ? 1 : 0);

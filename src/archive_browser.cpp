@@ -877,7 +877,7 @@ static std::string NormRel(std::string p)
 	std::string o; for (size_t k = 0; k < parts.size(); k++) o += (k ? "/" : "") + parts[k];
 	return o;
 }
-std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool light, int *cgIndex)
+std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool light, int *cgIndex, const std::string *stageRoot)
 {
 	if (!o || o->kind != Source::Fb || !o->fb) { if (err) *err = "not an archive entry"; return {}; }
 	std::unordered_map<std::string, size_t> byName;
@@ -900,11 +900,12 @@ std::string Materialize(const SourceP &o, const Item &it, std::string *err, bool
 	const std::string game = std::string(GameName(o->game)) + "_" + Lower(o->label);
 	fs::path root = fs::temp_directory_path(ec) / "hantei_archive";
 	{ std::string g2; for (char c : game) g2 += (isalnum((unsigned char)c) ? c : '_'); root /= g2; }
+	if (stageRoot) root = P8(*stageRoot);   // a private copy (character diff): always rewritten, so an edited working copy never stands in for the archive
 	auto copyOne = [&](size_t i) -> bool {
 		const Item &e = o->items[i];
 		const fs::path out = root / P8(e.name);
 		fs::create_directories(out.parent_path(), ec);
-		if (fs::exists(out, ec) && fs::file_size(out, ec) == e.size) return true;
+		if (!stageRoot && fs::exists(out, ec) && fs::file_size(out, ec) == e.size) return true;
 		std::vector<uint8_t> b; std::string er;
 		if (!ReadItem(*o, e, b, &er)) { if (err) *err = er; return false; }
 		// Write beside it and rename into place: a thumbnail job and an open can stage the same character at once, and a reader must
@@ -1526,6 +1527,63 @@ bool SaveEntryBytesIntoArchive(const std::string &loosePath, std::string *err, b
 	if (!f) { if (err) *err = "cannot read " + loosePath; return false; }
 	std::vector<uint8_t> b((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
 	return ReplaceEntries(o.archive, { EntryEdit{ fbarc::NameFromUtf8(o.entry), std::move(b) } }, err);
+}
+
+// ---- character diff (issue #131): the counterpart of an open character in an archive or a game folder ---------------------------------------------------
+static bool StageFromArchive(const std::string &archive, const std::string &want, const std::string &stageRoot, std::string &out, std::string *err)
+{
+	std::string e;
+	std::shared_ptr<fbarc::Archive> fa = fbarc::Open(archive, &e);
+	if (!fa) { if (err) *err = archive + ": " + e; return false; }
+	auto src = std::make_shared<Source>();
+	src->kind = Source::Fb; src->fb = fa; src->path = archive; src->label = BaseName(archive);
+	src->items.reserve(fa->entries().size());
+	int hit = -1;
+	size_t hitDepth = SIZE_MAX;
+	for (size_t i = 0; i < fa->entries().size(); i++) {
+		Item it; it.key = fa->relativePath(i); it.name = fbarc::NameToUtf8(it.key); it.size = fa->entries()[i].size; it.index = (uint32_t)i;
+		// the same file name anywhere in the archive; the shallowest one wins (MBAACC 0002.p has data/ryougi_0.txt and an older data/old/ryougi_0.txt)
+		if (Lower(BaseName(it.name)) == want) {
+			const size_t depth = (size_t)std::count(it.name.begin(), it.name.end(), '/');
+			if (depth < hitDepth) { hit = (int)src->items.size(); hitDepth = depth; }
+		}
+		src->items.push_back(std::move(it));
+	}
+	if (hit < 0) return false;
+	src->state = Source::Ready;
+	const Item &it = src->items[hit];
+	if (Materialize(src, it, &e, false, nullptr, &stageRoot).empty()) { if (err) *err = "could not unpack " + it.name + " from " + archive + ": " + e; return false; }
+	out = (P8(stageRoot) / P8(it.name)).make_preferred().u8string();
+	return true;
+}
+
+std::string StageCharacterByName(const std::string &archiveOrFolder, const std::string &fileName, const std::string &stageRoot, std::string *foundIn, std::string *err)
+{
+	std::error_code ec;
+	const std::string want = Lower(BaseName(fileName));
+	if (want.empty()) { if (err) *err = "the character has no file name to look for"; return {}; }
+	std::string out;
+	if (!fs::is_directory(P8(archiveOrFolder), ec)) {
+		if (StageFromArchive(archiveOrFolder, want, stageRoot, out, err)) { if (foundIn) *foundIn = archiveOrFolder; return out; }
+		if (err && err->empty()) *err = fileName + " is not in " + archiveOrFolder;
+		return {};
+	}
+	// a folder: loose files first (an extracted / unpacked game, or the data folder itself), then the archives, the last one that has it winning
+	const GameInfo gi = DetectGame(archiveOrFolder);
+	std::vector<fs::path> dirs = { P8(archiveOrFolder), P8(archiveOrFolder) / "data" };
+	if (!gi.dataDir.empty()) dirs.push_back(P8(gi.dataDir));
+	for (const auto &d : dirs)
+		for (const auto &e : fs::directory_iterator(d, ec))
+			if (e.is_regular_file(ec) && Lower(e.path().filename().u8string()) == want) { if (foundIn) *foundIn = e.path().u8string(); return e.path().u8string(); }
+	std::string lastErr;
+	for (auto a = gi.archives.rbegin(); a != gi.archives.rend(); ++a) {
+		std::string e;
+		if (StageFromArchive(*a, want, stageRoot, out, &e)) { if (foundIn) *foundIn = *a; return out; }
+		if (!e.empty()) lastErr = e;   // an unreadable archive: keep looking in the earlier ones
+	}
+	if (err && !lastErr.empty()) { *err = lastErr; return {}; }
+	if (err) *err = fileName + " was not found in " + archiveOrFolder + (gi.archives.empty() ? std::string(" (no game archives there)") : " or its " + std::to_string(gi.archives.size()) + " archives");
+	return {};
 }
 
 } // namespace abrowser

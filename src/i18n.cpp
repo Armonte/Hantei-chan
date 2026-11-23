@@ -30,6 +30,7 @@ const Row kRows[] = {
 #include "i18n_ja_sysconst.inc"
 #include "i18n_ja_fpanim.inc"
 #include "i18n_ja_update.inc"
+#include "i18n_ja_chardiff.inc"
 };
 std::unordered_map<std::string, const char *> &Table()
 {

@@ -69,6 +69,13 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 bool SaveEntryBytesIntoArchive(const std::string &loosePath, std::string *err, bool *hadOrigin);
 bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebuiltPath, std::string *err);
 
+// Character diff (issue #131): finds the character file `fileName` (its .txt or .ha6 name, e.g. "ryougi_0.txt") in an archive (.p ...) or a game folder (loose
+// files first, then the game's archives, a later archive winning as the game loads them) and unpacks it with its stack into stageRoot (always rewritten).
+// Returns the file to load (a loose file is returned in place); '' and *err when not found. *foundIn = the archive or file it came from.
+// Loads one character file of any family the editor reads, by content (as File > Open routes it). *fmt = what it was recognised as.
+bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);
+std::string StageCharacterByName(const std::string &archiveOrFolder, const std::string &fileName, const std::string &stageRoot, std::string *foundIn, std::string *err);
+
 // ---- scripted UI (tests / screenshots without the real mouse) ----------------------------------------------------------------------------------------
 // Commands (MainFrame's --ui-script runner forwards them): browse <path> | source <substring> | filter <text> | type <name|all> | select <substring> | next | prev
 //   | open | key <Up|Down|Enter|Home|End|PageDown|PageUp> | frame <n> | palette <n> | zoom <fit|1|2|4> | thumbs <on|off>

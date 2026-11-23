@@ -1,0 +1,36 @@
+# Character diff (issue #131), step 2: the edited copy (char_diff_modify.txt) against the packed Steam MBAACC 0002.p.
+# Expected: changed 4 and 10, added 950, nothing else. Then the side-by-side tab follows the navigation, an unsaved edit
+# is picked up by the auto refresh (also its undo / redo), and the "only changed patterns" filter is toggled. Machine-specific paths.
+openany C:\Users\teo\AppData\Local\Temp\hantei_diff_mod\data\ryougi_0.txt
+wait 5
+diffwith C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code\0002.p
+difffields 10 0
+difffields 4 0
+difffields 950 0
+diffside
+pattern 4
+viewframe 2
+wait 5
+diffstatus
+switchview 1
+pattern 10
+viewframe 1
+wait 5
+switchview 0
+wait 5
+diffstatus
+pattern 11
+tint 0.2 0.2 1
+waitms 600
+diffstatus
+undo
+waitms 600
+diffstatus
+redo
+waitms 600
+diffstatus
+diffonly on
+pattern 10
+wait 10
+capture C:\Users\teo\AppData\Local\Temp\hantei_diff_mod\diff_ui.png
+quit

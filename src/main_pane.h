@@ -23,6 +23,9 @@ public:
 	// Pattern combo and above the pattern list; PatternHidden is the filter every pattern list applies.
 	void DrawHideEmptyToggles();
 	bool PatternHidden(int n);
+	// Character diff (char_diff.h Marks): "show only changed patterns" filter and the row colour of a differing pattern.
+	bool HiddenByDiff(int n) const;
+	bool PushDiffColor(int n) const;
 
 	// Pattern name search
 	bool showPatternSearch = false;  // Popup window visibility

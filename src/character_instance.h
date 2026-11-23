@@ -98,6 +98,9 @@ public:
 	// Archive this character was opened from in the archive browser (PAC / GOF1 .p path): Save writes back into it (see abrowser::SaveCharacterIntoArchive).
 	std::string archiveHome;
 
+	// The other side of a character diff opened in a tab (issue #131): a reference copy, so Save refuses to write it.
+	bool compareCopy = false;
+
 	// Undo/Redo manager
 	UndoManager undoManager;
 	// PAT-editor edits of a French-Bread character join undoManager's history through this channel (parts/parts_undo.h).
