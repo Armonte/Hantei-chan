@@ -1069,6 +1069,40 @@ bool MainFrame::PatScriptCommand(const std::string& command, const std::string& 
 		seq->frames.assign(3,sample);seq->frames[0].AF.duration=2;seq->frames[1].AF.duration=3;seq->frames[2].AF.duration=4;
 		ch->frameData.mark_modified(st.pattern);st.absoluteScrub=true;st.InspectState(&ch->frameData,0);return true;
 	}
+	// #124: where looping playback wraps. playbackend: the active pattern; playbackscan: every pattern of the active
+	// character (old wrap = settled tick or the horizon); previewloop N: run N playback steps from tick 0, log the wraps.
+	if((cmd=="playbackend" || cmd=="playbackscan") && view && ch && gStartup.headless) {
+		auto& st=view->getState(); FrameData* fx=ch->effectCharacter?&ch->effectCharacter->frameData:nullptr;
+		const int keep=st.pattern; int scanned=0,changed=0; std::string worst;
+		std::vector<std::tuple<int,int,int>> diffs;   // (old - new, pattern, ...)
+		auto one=[&](int p,std::string* line) {
+			st.pattern=p; auto* seq=ch->frameData.get_sequence(p); if(!seq || seq->frames.empty()) return;
+			auto& sim=st.BindPreviewSim(&ch->frameData,fx);
+			const int settled=sim.settledTick(),rootEnd=sim.rootEndTick(),oldWrap=settled>=0?settled:sim.horizon();
+			const int end=PlaybackEndTick(sim,&ch->frameData,p); ++scanned;
+			if(oldWrap!=end) { ++changed; diffs.emplace_back(oldWrap-end,p,end); }
+			if(line) *line="pattern="+std::to_string(p)+" rootEnd="+std::to_string(rootEnd)+" settled="+std::to_string(settled)+" oldWrap="+std::to_string(oldWrap)+" newWrap="+std::to_string(end);
+		};
+		std::string line;
+		if(cmd=="playbackend") one(keep,&line);
+		else {
+			for(int p=0;p<ch->frameData.get_sequence_count();++p) one(p,nullptr);
+			std::sort(diffs.begin(),diffs.end(),[](auto& a,auto& b){return std::get<0>(a)>std::get<0>(b);});
+			line="scanned="+std::to_string(scanned)+" changed="+std::to_string(changed)+" largest:";
+			for(size_t i=0;i<diffs.size() && i<12;++i) line+=" p"+std::to_string(std::get<1>(diffs[i]))+"("+std::to_string(std::get<2>(diffs[i])+std::get<0>(diffs[i]))+"->"+std::to_string(std::get<2>(diffs[i]))+")";
+		}
+		st.pattern=keep; st.BindPreviewSim(&ch->frameData,fx);
+		if(msg) *msg=cmd+": "+line; return true;
+	}
+	if(cmd=="previewloop" && view && ch && gStartup.headless) {
+		auto& st=view->getState(); const int steps=std::max(1,atoi(arg.c_str()));
+		st.SeekTimelineTick(&ch->frameData,ch->effectCharacter?&ch->effectCharacter->frameData:nullptr,0,"previewloop");
+		st.playbackLoop=true; st.playbackFinished=false; st.animating=true; std::string wraps; int prev=st.currentTick;
+		for(int i=0;i<steps;++i) { AdvanceViewPlayback(view); if(st.currentTick<prev) wraps+=" "+std::to_string(prev); prev=st.currentTick; }
+		st.animating=false;
+		if(msg) *msg="previewloop: steps="+std::to_string(steps)+" tick="+std::to_string(st.currentTick)+" wrapped after tick:"+(wraps.empty()?std::string(" none"):wraps);
+		return true;
+	}
 	if(cmd=="timelineinspect" && view) {
 		const auto& st=view->getState(); if(msg) *msg="timelineinspect: loop="+std::to_string(st.playbackLoop)+" authored="+std::to_string(st.authoredInspection)+" tick="+std::to_string(st.currentTick)+" route="+std::to_string(st.routeStart); return true;
 	}

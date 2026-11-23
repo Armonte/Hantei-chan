@@ -1,0 +1,24 @@
+# Issue #124: looping playback waited for the 1800-tick preview horizon (or a long-lived spawned actor) before restarting.
+# playbackscan lists, for every pattern of the opened character, where playback used to wrap (settled tick or horizon)
+# and where it wraps now (PlaybackEndTick). Machine-specific path: packed Steam MBAACC (read only). Run headless:
+#   gonptechan.exe --headless --ui-script tests\ui_scripts\issue124_playback_wrap.txt   (result lines in <script>.log)
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source All archives
+waitidle
+select data/ryougi_1.ha6
+open
+waitidle
+playbackscan
+# idle (root loops): wrapped at 1800, now at three root loops
+pattern 0
+playbackend
+previewloop 600
+# a root that ends while a spawned actor lives on
+pattern 446
+playbackend
+previewloop 400
+pattern 740
+playbackend
+previewloop 400
+quit

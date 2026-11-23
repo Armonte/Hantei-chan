@@ -240,6 +240,15 @@ int CalculateTickFromFrame(class FrameData* frameData, int patternId, int frameN
 // Find loop period by detecting cycles (returns to previously seen frames)
 int FindLoopPeriod(class FrameData* frameData, int patternId, int maxTicks = 10000);
 
+// Ticks a spawned actor may keep the preview going after the root pattern ended (1 s at 60 fps).
+constexpr int kPlaybackTailTicks = 60;
+// Last tick of the preview playback / simulated timeline (looping playback wraps after it, issue #124):
+// - the root ends: when every spawned actor is gone, but at most kPlaybackTailTicks after the root's end (an effect
+//   that lives for seconds or loops forever no longer keeps the replay waiting until the 1800-tick horizon);
+// - the root loops: three root loops (at least 240 ticks), the span the timeline shows.
+// Clamped to the simulator's horizon.
+int PlaybackEndTick(preview::PreviewSim& sim, class FrameData* frameData, int patternId);
+
 // Recursive function to build full spawn tree
 void BuildSpawnTreeRecursive(
 	class FrameData* mainFrameData,

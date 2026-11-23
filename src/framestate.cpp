@@ -352,6 +352,20 @@ int CalculateTickFromFrame(FrameData* frameData, int patternId, int frameNum)
 	return tick;
 }
 
+int PlaybackEndTick(preview::PreviewSim& sim, FrameData* frameData, int patternId)
+{
+	const int horizon = std::max(0, sim.horizon());
+	const int rootEnd = sim.rootEndTick();
+	if (rootEnd >= 0) {
+		int end = rootEnd + kPlaybackTailTicks;
+		const int settled = sim.settledTick();
+		if (settled >= 0) end = std::min(end, settled);
+		return std::clamp(end, 0, horizon);
+	}
+	const int period = FindLoopPeriod(frameData, patternId);
+	return std::min(std::max(period * 3, 240), horizon);
+}
+
 // Find loop period by simulating animation flow and detecting when we return to frame 0
 // Uses the actual Hantei animation logic (aniType/aniFlag/jump) to properly detect loops
 int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)

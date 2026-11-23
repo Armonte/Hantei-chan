@@ -492,14 +492,9 @@ void BoxPane::DrawSpawnTimeline()
 	std::vector<int> kfStart(mainFrameCount + 1, 0);
 	for (int i = 0; i < mainFrameCount; ++i)
 		kfStart[i + 1] = kfStart[i] + std::max(1,durationDrag.active && durationDrag.state==i?durationDrag.preview:mainSeq->frames[i].AF.duration);
-	int maxTimelineTick;
-	if (settled >= 0) {
-		maxTimelineTick = std::max(settled + 1, 60);
-	} else {
-		// Something loops forever (root or a child): show a few root loops.
-		int period = FindLoopPeriod(frameData, currState.pattern);
-		maxTimelineTick = std::clamp(period * 3, 240, sim.horizon());
-	}
+	// The span playback loops over (PlaybackEndTick): until every spawned actor is gone, at most a short tail
+	// after the root's end; a few root loops when the root loops.
+	int maxTimelineTick = std::max(PlaybackEndTick(sim, frameData, currState.pattern) + 1, 60);
 	maxTimelineTick = std::max(maxTimelineTick, kfStart[mainFrameCount]);
 	if(currState.absoluteScrub) maxTimelineTick=std::max(1,kfStart[mainFrameCount]);
 	sim.ensureSimulatedTo(maxTimelineTick);
