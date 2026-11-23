@@ -1,6 +1,7 @@
 // Mod projects (src/modproject): hmod.json round trip and validation, HA6 canonical slot hashing, change tracking against a
 // vanilla index, the conflict check (same file / same HA6 slot / same charaselect cell) and both exporters (pcmod for
 // MBAACC, the UNI2-IM / MBTL-IM Packs layout). Everything runs on synthetic folders under <outdir>.
+#include "fbarc/fb_archive.h"
 #include "modproject/hmod_conflict.h"
 #include "modproject/hmod_export.h"
 #include "modproject/hmod_ha6.h"
@@ -73,7 +74,8 @@ static int Run(int argc, char** argv)
 	fs::remove_all(out);
 	fs::create_directories(out);
 
-	// ---- pcmodtool loose-vs-packed: a path that is both a loose file and inside a .p is reported as loose (the game reads it first) ----
+	// ---- pcmodtool loose-vs-packed: a path that is both a loose file and inside a .p is reported as packed (MBAA.exe reads the
+	//      mounted archives first and the loose file only when no archive has the path) ----
 	{
 		const fs::path g = out / "vgame";
 		Put(g / "MBAA.exe", "MZ");
@@ -82,9 +84,21 @@ static int Run(int argc, char** argv)
 		CHECK(vi.Load(g.u8string()));
 		vi.packed.insert("data\\p_arc.cg");
 		vi.packed.insert("data\\only_packed.cg");
-		CHECK_EQ(vi.Where("data\\p_arc.cg"), "loose");
+		CHECK_EQ(vi.Where("data\\p_arc.cg"), "packed");
+		Put(g / "data" / "only_loose.cg", "loose bytes");
+		CHECK_EQ(vi.Where("data\\only_loose.cg"), "loose");
 		CHECK_EQ(vi.Where("data\\only_packed.cg"), "packed");
 		CHECK_EQ(vi.Where("data\\nothing.cg"), "");
+	}
+
+	// ---- MBAACC archive override order (later wins in VanillaIndex::Build): MBAA.exe's mount order reversed, .p.bak in place of its .p ----
+	{
+		const fs::path g = out / "vorder";
+		for (const char* n : { "0000.p", "0001.p", "0002.p.bak", "0003.p", "0004.p", "0005.p", "0006.p", "0007.p", "0008.p", "0009.p", "0008.p.orig" }) Put(g / n, "x");
+		std::string got;
+		for (const std::string& a : VanillaIndex::FindArchives("mbaacc", g.u8string())) got += fs::u8path(a).filename().u8string() + " ";
+		CHECK_EQ(got, "0009.p 0001.p 0006.p 0004.p 0000.p 0007.p 0002.p.bak 0005.p 0003.p 0008.p ");
+		CHECK(fbarc::MbaaccMountRank("C:\\x\\0008.p") == 0 && fbarc::MbaaccMountRank("0001.P") == 8 && fbarc::MbaaccMountRank("0002.p.bak") == 3 && fbarc::MbaaccMountRank("0008.p.orig") == 100);
 	}
 
 	// ---- glob + normalisation ----

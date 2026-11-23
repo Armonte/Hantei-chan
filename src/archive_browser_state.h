@@ -144,8 +144,6 @@ int MoveArchive(int idx, int delta);
 bool CanMoveArchive(int idx, int delta);
 // The game root of source idx is a folder Windows protects (Program Files / Windows): writes may fail or be redirected.
 bool UnderProtectedFolder(int idx);
-// MBAACC: position of an archive file name in MBAA.exe's mount order (0 = 0008.p, wins over every other; 100 = not mounted by the game).
-int MbaaccMountRank(const std::string &fileName);
 void RebuildMerged(Group &g);
 void SaveSettings();
 void LoadSettings();

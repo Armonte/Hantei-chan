@@ -289,6 +289,19 @@ std::string Archive::relativePath(size_t i) const
 	return d.empty() ? e.name : d + "/" + e.name;
 }
 
+int MbaaccMountRank(const std::string& fileNameOrPath)
+{
+	static const char* const order[] = { "0008", "0003", "0005", "0002", "0007", "0000", "0004", "0006", "0001" };
+	std::string n = fileNameOrPath;
+	const size_t sl = n.find_last_of("/\\");
+	if (sl != std::string::npos) n = n.substr(sl + 1);
+	for (auto& c : n) c = (char)tolower((unsigned char)c);
+	const std::string ext = n.size() > 4 ? n.substr(4) : std::string();
+	if (ext != ".p" && ext != ".p.bak") return 100;
+	for (int i = 0; i < (int)(sizeof order / sizeof *order); i++) if (n.compare(0, 4, order[i]) == 0) return i;
+	return 100;
+}
+
 int Archive::find(const std::string& q) const
 {
 	std::string qq = q; for (auto& c : qq) if (c == '\\') c = '/';

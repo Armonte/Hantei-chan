@@ -32,7 +32,7 @@ const char *const kBackupDir = "_packed_backup";
 std::string Lower(std::string s) { for (auto &c : s) c = (char)tolower((unsigned char)c); return s; }
 fs::path P8(const std::string &u8) { return fs::u8path(u8); }
 bool IsDigitP(const std::string &n) { return n.size() == 6 && isdigit((unsigned char)n[0]) && isdigit((unsigned char)n[1]) && isdigit((unsigned char)n[2]) && isdigit((unsigned char)n[3]) && Lower(n.substr(4)) == ".p"; }
-int Rank(const std::string &fileName) { return MbaaccMountRank(fileName); }   // 0 = highest priority (archive_browser.cpp)
+int Rank(const std::string &fileName) { return fbarc::MbaaccMountRank(fileName); }   // 0 = highest priority
 std::string Fmt(const char *fmt, ...)
 {
 	char b[1024]; va_list ap; va_start(ap, fmt); vsnprintf(b, sizeof b, fmt, ap); va_end(ap); return b;
