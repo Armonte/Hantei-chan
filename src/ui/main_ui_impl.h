@@ -803,8 +803,8 @@ void MainFrame::AdvanceViewPlayback(CharacterView* view)
 			}
 			state.currentTick=resume;state.playbackFinished=false;
 		} else if(state.playbackFinished) { state.currentTick=0; state.playbackFinished=false; }
-		const int settled = sim.settledTick();          // cached after the first call
-		int wrapAt = settled >= 0 ? settled : sim.horizon();
+		// Wrap where the timeline ends (#124): not at the 1800-tick horizon when an actor outlives the root or loops.
+		int wrapAt = PlaybackEndTick(sim, &active->frameData, state.pattern);
 		if(state.playAllRoutes) for(const auto& route:state.discoveredRoutes)
 			if(route.start==state.routeStart) wrapAt=route.lastTick;
 		if(state.playAllRoutes && state.currentTick>=wrapAt) {

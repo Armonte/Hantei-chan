@@ -95,7 +95,7 @@ std::vector<int> MainFrame::ExportTicks(CharacterView* view, const ExportSetting
 	auto& sim = st.BindPreviewSim(&c->frameData, effectData);
 	if (s.range == ExportSettings::currentFrame) {
 		liveFrame = true;           // exactly what the view shows (selected frame)
-		ticks.push_back(st.currentTick);
+		ticks.push_back(st.PreviewTick(&c->frameData));   // a stepped-to state: its tick, not the stale playhead (#123)
 		return ticks;
 	}
 	int first = 0, last = 0;

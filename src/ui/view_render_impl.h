@@ -158,6 +158,33 @@ static double MsSince(std::chrono::steady_clock::time_point t0)
 	return std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
 }
 
+struct PresetMarker { float x, y; int preset; };
+
+// Preset effect (EF3) / script impact markers of the view's tick, relative to the root. "Show on all frames": every
+// one the pattern fires in one playback run (up to PlaybackEndTick, or the tick shown when later), on every frame.
+static void CollectPresetMarkers(FrameState& state, CharacterInstance* character, std::vector<PresetMarker>& markers)
+{
+	markers.clear();
+	FrameData* effectData = character->effectCharacter ? &character->effectCharacter->frameData : nullptr;
+	auto& sim = state.BindPreviewSim(&character->frameData, effectData);
+	const int tick = state.PreviewTick(&character->frameData);
+	preview::TickState ts;
+	sim.getStateAt(tick, ts);
+	const preview::SimActor* root = ts.root();
+	const float rootX = root ? root->x : 0.f, rootY = root ? root->y : 0.f;
+	if (state.vizSettings.presetEffectsAllFrames) {
+		// The records reach as far as anything simulated (the timeline runs to the horizon): a looping pattern
+		// would list the same preset once per loop.
+		const int end = std::max(tick, PlaybackEndTick(sim, &character->frameData, state.pattern));
+		sim.ensureSimulatedTo(end);
+		for (const auto& r : sim.spawnRecords())
+			if (r.isPreset && r.spawnTick <= end) markers.push_back({r.x - rootX, r.y - rootY, r.pattern});
+	} else {
+		for (const auto& a : ts.actors)
+			if (a.isPreset) markers.push_back({a.x - rootX, a.y - rootY, a.pattern});
+	}
+}
+
 } // namespace viewrender
 
 void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* character,
@@ -168,23 +195,8 @@ void MainFrame::DrawPresetEffectMarkers(FrameState& state, CharacterInstance* ch
 
 	// Preset effects (EF3) and script impact markers are one-tick actors in
 	// the preview simulation. "All frames" shows every one the pattern fires.
-	FrameData* effectData = character->effectCharacter ? &character->effectCharacter->frameData : nullptr;
-	auto& sim = state.BindPreviewSim(&character->frameData, effectData);
-	preview::TickState ts;
-	sim.getStateAt(state.PreviewTick(&character->frameData), ts);
-	const preview::SimActor* root = ts.root();
-	const float rootX = root ? root->x : 0.f, rootY = root ? root->y : 0.f;
-
-	struct Marker { float x, y; int preset; };
-	std::vector<Marker> markers;
-	if (state.vizSettings.presetEffectsAllFrames) {
-		sim.ensureSimulatedTo(std::max(state.PreviewTick(&character->frameData), sim.settledTick()));
-		for (const auto& r : sim.spawnRecords())
-			if (r.isPreset) markers.push_back({r.x - rootX, r.y - rootY, r.pattern});
-	} else {
-		for (const auto& a : ts.actors)
-			if (a.isPreset) markers.push_back({a.x - rootX, a.y - rootY, a.pattern});
-	}
+	std::vector<viewrender::PresetMarker> markers;
+	viewrender::CollectPresetMarkers(state, character, markers);
 
 	for (const auto& m : markers) {
 		const ImVec2 center(origin.x + m.x * zoom, origin.y + m.y * zoom);

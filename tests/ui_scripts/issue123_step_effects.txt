@@ -1,0 +1,38 @@
+# Issue #123: stepping frames (arrow keys / frame slider) showed no spawned effects: the viewport read the spawned
+# actors at the stale playback tick instead of the stepped-to state's tick. stepscan steps through a pattern the way
+# the keyboard does and logs per frame "frame:tick/sprites/markers" (preview tick, spawned actors drawn, preset
+# markers). Machine-specific path: packed Steam MBAACC (read only). Run headless:
+#   gonptechan.exe --headless --ui-script tests\ui_scripts\issue123_step_effects.txt   (result lines in <script>.log)
+browse C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+waitidle
+source All archives
+waitidle
+select data/ryougi_1.ha6
+open
+waitidle
+pattern 446
+stepscan
+pattern 740
+stepscan
+# preset effects (EF3): on their own frame, then with "Show on all frames" on every frame
+presetscan
+pattern 601
+stepscan
+pattern 646
+stepscan
+presetallframes on
+stepscan
+pattern 601
+stepscan
+presetallframes off
+# the viewport at a stepped-to frame (pattern 646 frame 3: four spawned actors alive)
+pattern 646
+previewinfo 3
+wait 3
+captureview issue123_p646_f3.png
+# the same tick reached by playback / simulated scrub: the captures must match
+seektick 17
+previewinfo
+wait 3
+captureview issue123_p646_t17.png
+quit
