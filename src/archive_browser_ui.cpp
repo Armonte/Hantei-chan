@@ -606,6 +606,25 @@ static void DrawSources(State &st)
 			ImGui::TextColored(ImVec4(1.f, .65f, .3f, 1.f), "%s", TXT("The working folder is on C: (not recommended: Program Files / permission problems)."));
 			ImGui::PopTextWrapPos();
 		}
+		// MBAACC: unpack / restore / pack the game's .p files (archive_gamepack.cpp), one button per row (narrow column). The folder is re-checked every 2 s.
+		std::string mbRoot;
+		if (cur) for (auto &g : st.groups) if (g && g->id == cur->group && g->info.game == Game::MBAACC) mbRoot = g->info.root;
+		if (!mbRoot.empty()) {
+			static std::string cRoot; static double cAt = -10.0; static bool cHas = false, cBak = false;
+			if (cRoot != mbRoot || ImGui::GetTime() - cAt > 2.0) { cRoot = mbRoot; cAt = ImGui::GetTime(); cHas = HasGameArchives(mbRoot); cBak = HasPackedBackup(mbRoot); }
+			ImGui::BeginDisabled(st.prog.running);
+			if (cHas) {
+				if (ImGui::SmallButton(LBL("Unpack .p files..."))) UnpackGameDialog(mbRoot);
+				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", TXT("Extract every file of 0000.p ... 0008.p into the game folder and move the .p files to _packed_backup, so the game reads the loose files (what dump.exe did)"));
+			}
+			if (cBak) {
+				if (ImGui::SmallButton(LBL("Restore .p files..."))) RestorePackedDialog(mbRoot);
+				if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", TXT("Move the backed-up .p files back into the game folder (packed files win over loose files again)"));
+			}
+			if (ImGui::SmallButton(LBL("Pack into .p..."))) PackArchivesDialog(mbRoot);
+			if (ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) ImGui::SetTooltip("%s", TXT("Rebuild .p files with the loose files that changed (keeps <name>.p.bak)"));
+			ImGui::EndDisabled();
+		}
 	}
 	for (int i = 0; i < (int)st.sources.size(); i++) {
 		const SourceP &s = st.sources[i];
@@ -752,6 +771,7 @@ bool Draw(OpenRequest &req, const std::vector<std::string> &recentFiles)
 	PumpMain();
 	State &st = S();
 	LoadSettings();
+	DrawGamePackDialogs();
 	bool open = false;
 	if (g_havePending) { req = g_pending; g_havePending = false; return true; }
 	if (!show) return false;
@@ -808,10 +828,18 @@ bool Draw(OpenRequest &req, const std::vector<std::string> &recentFiles)
 		ImGui::EndChild();
 	}
 	// status bar
-	if (st.prog.running) {
+	if (st.prog.running && !st.prog.op.empty()) {   // game archive unpack / pack (archive_gamepack.cpp)
+		ImGui::ProgressBar(st.prog.total ? (float)st.prog.done / (float)st.prog.total : 0.f, ImVec2(220, 0));
+		ImGui::SameLine(); ImGui::Text("%s %d / %d  %s", TXT(st.prog.op.c_str()), st.prog.done.load(), st.prog.total.load(), st.prog.dest.c_str());
+		ImGui::SameLine(); if (ImGui::SmallButton(T("Cancel", "\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xb3\xe3\x82\xbb\xe3\x83\xab"))) st.prog.cancel = true;
+	} else if (st.prog.running) {
 		ImGui::ProgressBar(st.prog.total ? (float)st.prog.done / (float)st.prog.total : 0.f, ImVec2(220, 0));
 		ImGui::SameLine(); ImGui::Text(T("Extracting %d / %d to %s", "\xe6\x8a\xbd\xe5\x87\xba\xe4\xb8\xad %d / %d -> %s"), st.prog.done.load(), st.prog.total.load(), st.prog.dest.c_str());
 		ImGui::SameLine(); if (ImGui::SmallButton(T("Cancel", "\xe3\x82\xad\xe3\x83\xa3\xe3\x83\xb3\xe3\x82\xbb\xe3\x83\xab"))) st.prog.cancel = true;
+	} else if (!st.prog.op.empty() && !GamePackResult().empty()) {
+		const std::string r = GamePackResult(); const size_t nl = r.find('\n');
+		ImGui::TextDisabled("%s", (nl == std::string::npos ? r : r.substr(0, nl) + " ...").c_str());
+		if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", r.c_str());
 	} else if (st.prog.total > 0 && !st.prog.dest.empty()) {
 		ImGui::Text(T("Extracted %d files to %s (%d failed)", "%d \xe5\x80\x8b\xe3\x82\x92 %s \xe3\x81\xab\xe6\x8a\xbd\xe5\x87\xba (\xe5\xa4\xb1\xe6\x95\x97 %d)"), st.prog.done.load() - st.prog.failed.load(), st.prog.dest.c_str(), st.prog.failed.load());
 	} else {
@@ -834,6 +862,7 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 {
 	State &st = S();
 	auto say = [&](const std::string &m) { if (msg) *msg = m; };
+	if (cmd == "unpackgame" || cmd == "restorepacked" || cmd == "packgame" || cmd == "gamepackdialog") return GamePackScript(cmd, arg, msg);
 	if (cmd == "browse") { show = true; std::string e = OpenPath(arg); if (!e.empty()) { say(e); return false; } return true; }
 	if (cmd == "source") {
 		const std::string q = Lower(arg);
@@ -868,6 +897,12 @@ bool ScriptCommand(const std::string &cmd, const std::string &arg, std::string *
 		char b[512]; snprintf(b, sizeof b, "sources=%zu sel=%d view=%zu cursor=%d selected=%zu type=%d show=%d dockTarget=%08x node=%d dockId=%08x size=%.0fx%.0f status=%s", st.sources.size(), st.selSource, st.view.size(), st.cursor, st.sel.size(), st.typeFilter,
 		              show ? 1 : 0, dockTarget, dockTarget && ImGui::DockBuilderGetNode(dockTarget) ? 1 : 0, w ? w->DockId : 0u, w ? w->Size.x : 0.f, w ? w->Size.y : 0.f, st.status.c_str());
 		say(b); return false;
+	}
+	if (cmd == "owner") {   // owner <entry path>: which archive the selected (merged) source takes that path from; like info, the answer goes to the log
+		SourceP s = FindSource(st.selSource);
+		if (!s) { say("no source"); return false; }
+		for (auto &it : s->items) if (Lower(it.name) == Lower(arg)) { uint32_t oi = 0; const Source &o = Owner(*s, it, oi); say("owner " + arg + " = " + o.label); return false; }
+		say("owner " + arg + " = (not listed)"); return false;
 	}
 	if (cmd == "typeahead") { g_injType += arg; return true; }
 	if (cmd == "frame") { st.bankFrame = atoi(arg.c_str()); return true; }

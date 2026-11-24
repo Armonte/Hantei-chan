@@ -201,6 +201,7 @@ static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
 
 static int pendingWaitMs = 0; static bool pendingWaitS3d = false;
 static int pendingPlayWaitS = 0;   // set by playwait <seconds>: until Play in game is idle, then its reply goes to the log   // set by waitms / waits3dchange, armed by RunUiScript
+static bool waitingPack = false; static std::string packCmd;   // unpackgame / packgame started: log its result when the job finished
 static void LogLine(const char* text)
 {
 	FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
@@ -245,6 +246,17 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			playWaiting = false;
 			LogLine(((timeout ? "playwait -> FAILED timeout: " : "playwait -> ") + fpanimplay::LastReply()).c_str());
 			if (timeout) gStartup.exitCode = 1;
+		}
+	}
+	{   // unpackgame / restorepacked / packgame: the job runs on the browser worker; its result goes to the log when it finished
+		if (waitingPack) {
+			if (abrowser::GamePackBusy()) return;
+			waitingPack = false;
+			bool ok = true; const std::string r = abrowser::GamePackResult(&ok);
+			LogLine((packCmd + " -> " + (ok ? "ok: " : "FAILED: ") + r).c_str());
+			if (!ok) gStartup.exitCode = 1;
+			waitFrames = 3;
+			return;
 		}
 	}
 	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
@@ -335,6 +347,13 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			if (lf) { fprintf(lf, "%s %s -> %s\n", cmd.c_str(), arg.c_str(), msg.empty() ? "ok" : msg.c_str()); fclose(lf); }
 			waitFrames = 3;
 			return;
+		}
+		if (cmd == "unpackgame" || cmd == "packgame" || cmd == "restorepacked") {   // archive_gamepack.cpp; unpack / pack finish later (see above)
+			const bool ok = abrowser::ScriptCommand(cmd, arg, &msg);
+			if (!ok) { LogLine((line + " -> FAILED: " + msg).c_str()); gStartup.exitCode = 1; }
+			else if (cmd == "restorepacked") LogLine((line + " -> ok: " + msg).c_str());
+			else { waitingPack = true; packCmd = line; }
+			waitFrames = 3; return;
 		}
 		if (!abrowser::ScriptCommand(cmd, arg, &msg)) {
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");

@@ -25,7 +25,8 @@ std::string NormKey(const std::string& rel);
 
 class VanillaIndex {
 public:
-	// `archives`: archive files / folders in override order (later wins). MBAACC: 0000.p ... 0008.p (+ 0002.p.bak).
+	// `archives`: archive files / folders in override order (later wins). MBAACC (FindArchives): the game's mount order reversed,
+	// 0001, 0006, 0004, 0000, 0007, 0002, 0005, 0003, 0008.p (+ 0002.p.bak in 0002's place), see fbarc::MbaaccMountRank.
 	// `progress(done, total, current)` is called per archive entry (may be null); returning false cancels.
 	bool Build(const std::vector<std::string>& archives, const std::string& game, std::string& err,
 	           const std::function<bool(size_t, size_t, const std::string&)>& progress = {});
@@ -59,7 +60,7 @@ public:
 	// Default shared cache location: %LOCALAPPDATA%\Hantei-chan\vanilla\<game>-<packset8>.tsv (temp dir when unset).
 	static std::string CachePath(const std::string& game, const std::string& packset8);
 	static std::string ComputePackset8(const std::vector<std::string>& archives);
-	// Archives of an install in override order: MBAACC "*.p" (+ "*.p.bak" without a sibling .p); UNI2 "<root>\d"; MBTL "<root>\MBTL.exe".
+	// Archives of an install in override order (later wins): MBAACC "*.p" (+ "*.p.bak" without a sibling .p) by fbarc::MbaaccMountRank; UNI2 "<root>\d"; MBTL "<root>\MBTL.exe".
 	static std::vector<std::string> FindArchives(const std::string& game, const std::string& gameDir);
 
 private:

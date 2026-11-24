@@ -5,6 +5,7 @@
 //   fbarctool rt <archive>...                  rebuild with no edits; the result must equal the file byte for byte
 //   fbarctool extract <archive> <path|-all> <outdir>
 //   fbarctool pack <archive-as-template> <dir> <out>   rebuild with every file of <dir> replacing the same-named entry
+//   fbarctool diff <a> <b>                     entry by entry (plain bytes, matched by path): which entries differ / exist in one only
 //   fbarctool magics <archive>...              per-extension histogram of the first 4 plain bytes (cipher sanity)
 //
 // Exit code 0 when everything passed. Arguments are UTF-8.
@@ -107,6 +108,28 @@ static int CmdPack(int argc, char** argv)
 	if (!a->rebuild(argv[2], e, &err)) { printf("FAIL: %s\n", err.c_str()); return 1; }
 	printf("wrote %s (%d replaced, %d added)\n", argv[2], repl, added);
 	return 0;
+}
+
+static int CmdDiff(int argc, char** argv)
+{
+	if (argc < 2) return 2;
+	std::string err; auto a = Open(argv[0], &err), b = a ? Open(argv[1], &err) : nullptr;
+	if (!a || !b) { printf("FAIL %s\n", err.c_str()); return 1; }
+	std::map<std::string, size_t> inB;
+	for (size_t j = 0; j < b->entries().size(); j++) { std::string k = b->relativePath(j); for (auto& c : k) c = (char)tolower((unsigned char)c); inB[k] = j; }
+	int same = 0, diff = 0, onlyA = 0;
+	for (size_t i = 0; i < a->entries().size(); i++) {
+		std::string k = a->relativePath(i); for (auto& c : k) c = (char)tolower((unsigned char)c);
+		auto it = inB.find(k);
+		if (it == inB.end()) { printf("ONLY-A %s\n", NameToUtf8(a->relativePath(i)).c_str()); onlyA++; continue; }
+		std::vector<uint8_t> x, y;
+		if (!a->read(i, x, &err) || !b->read(it->second, y, &err)) { printf("FAIL read %s: %s\n", a->relativePath(i).c_str(), err.c_str()); return 1; }
+		if (x == y) same++; else { printf("DIFF   %s (%zu -> %zu bytes)\n", NameToUtf8(a->relativePath(i)).c_str(), x.size(), y.size()); diff++; }
+		inB.erase(it);
+	}
+	for (auto& [k, j] : inB) printf("ONLY-B %s\n", NameToUtf8(b->relativePath(j)).c_str());
+	printf("entries: a %zu, b %zu; identical %d, different %d, only in a %d, only in b %zu\n", a->entries().size(), b->entries().size(), same, diff, onlyA, inB.size());
+	return (diff || onlyA || !inB.empty()) ? 1 : 0;
 }
 
 static int CmdMagics(int argc, char** argv)
@@ -243,6 +266,7 @@ static int Run(int argc, char** argv)
 	if (c == "census") return CmdCensus(argc - 2, argv + 2);
 	if (c == "edittest") return CmdEditTest(argc - 2, argv + 2);
 	if (c == "ex3rt") return CmdEx3Rt(argc - 2, argv + 2);
+	if (c == "diff") return CmdDiff(argc - 2, argv + 2);
 	if (c == "magics") return CmdMagics(argc - 2, argv + 2);
 	printf("unknown command %s\n", c.c_str());
 	return 2;

@@ -355,6 +355,8 @@ GameInfo DetectGame(const std::string &dir)
 	gi.game = g;
 	std::sort(allArchives.begin(), allArchives.end(), [](const auto &a, const auto &b) { int ra = ArchiveRank(a.first), rb = ArchiveRank(b.first); return ra != rb ? ra < rb : a.first < b.first; });
 	std::set<std::string> seen;
+	// MBAACC: the browser's "later wins" list is the game's mount order reversed (0001 first ... 0008 last); archives the game does not mount come first
+	if (g == Game::MBAACC) std::stable_sort(allArchives.begin(), allArchives.end(), [](const auto &a, const auto &b) { return fbarc::MbaaccMountRank(a.first) > fbarc::MbaaccMountRank(b.first); });
 	for (auto &a : allArchives) if (seen.insert(Lower(a.second.generic_u8string())).second) gi.archives.push_back(a.second.u8string());
 	if (g == Game::MBTL) gi.archives = { mbtlExe.u8string() };
 	if (g == Game::UNI2) gi.archives = { (P8(dir) / "d").u8string() };
@@ -1371,7 +1373,7 @@ void StartExtract(int sourceIdx, std::vector<uint32_t> items, const std::string 
 	SourceP s = FindSource(sourceIdx);
 	if (!s || st.prog.running) return;
 	if (items.empty()) for (uint32_t i = 0; i < s->items.size(); i++) items.push_back(i);
-	st.prog.done = 0; st.prog.failed = 0; st.prog.total = (int)items.size(); st.prog.running = true; st.prog.cancel = false; st.prog.dest = dir; st.prog.what = s->label;
+	st.prog.done = 0; st.prog.failed = 0; st.prog.total = (int)items.size(); st.prog.running = true; st.prog.cancel = false; st.prog.dest = dir; st.prog.what = s->label; st.prog.op.clear();
 	PostJob([s, items, dir] {
 		State &st = S();
 		for (uint32_t i : items) {

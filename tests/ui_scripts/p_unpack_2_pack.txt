@@ -1,0 +1,5 @@
+# Step 2 of 3: pack every archive of the backup folder with the loose files (only the archive whose loose file changed is rewritten),
+# then force a rebuild of an unchanged archive (must come out byte-identical). Machine-specific path, see step 1.
+packgame C:\dev\Hantei-chan\work\p_unpack_test\game
+packgame +force C:\dev\Hantei-chan\work\p_unpack_test\game\_packed_backup\0004.p
+quit
