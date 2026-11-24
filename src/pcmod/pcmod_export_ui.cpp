@@ -3,6 +3,7 @@
 #include "pcmod_export_ui.h"
 #include "pcmod_manifest.h"
 #include "pcmod_package.h"
+#include "pcmod_schema2.h"
 #include "pcmod_vanilla.h"
 
 #include "../app_log.h"
@@ -52,6 +53,15 @@ struct State {
 	bool resultOk = false;
 	std::string digest, simDigest;
 	std::vector<std::string> skippedWritten;   // data\*.wmt files the add paths skipped (written by the game, never read)
+	// ---- schema 2 (PC pcmod-manifest.md S2): patches/features/rules TOML sources + the vanilla exe they are checked against ----
+	std::string s2Src[3];        // patches.toml / features.toml / rules.toml (UTF-8 paths, "" = none)
+	std::string s2Exe;           // vanilla MBAA.exe 1.07 (UTF-8 path)
+	bool s2Ok = false;           // last Validate passed; s2Data is what Export attaches
+	pcmod::s2::Data s2Data;
+	pcmod::s2::Files s2Files;              // the TOML texts Export writes (deterministic writer output)
+	pcmod::Manifest s2Attached;            // schema/aux refs/s2Canon from AttachToManifest, copied into Build()
+	std::vector<std::string> s2Report;   // validation lines
+	std::string s2Canon;
 };
 State g;
 
@@ -201,8 +211,95 @@ pcmod::Manifest Build(std::string& problem, pcmod::PackageClass& detected, size_
 	if (simFiles) *simFiles = sim;
 	detected = sim ? pcmod::PackageClass::Sim : pcmod::PackageClass::Cosmetic;
 	m.cls = g.classMode == 1 ? pcmod::PackageClass::Sim : g.classMode == 2 ? pcmod::PackageClass::Cosmetic : detected;
+	if (g.s2Ok && g.s2Data.any()) {
+		m.schema = 2;
+		m.exePatches = g.s2Attached.exePatches; m.features = g.s2Attached.features; m.rules = g.s2Attached.rules;
+		m.s2Canon = g.s2Attached.s2Canon;
+		m.cls = pcmod::PackageClass::Sim;   // S2.1
+	} else if (problem.empty() && (!g.s2Src[0].empty() || !g.s2Src[1].empty() || !g.s2Src[2].empty()))
+		problem = TXT("Schema 2: validate the patches against the vanilla exe first");
 	if (problem.empty()) problem = pcmod::Validate(m);
 	return m;
+}
+
+// Reads the TOML sources and the vanilla exe, parses with the MBAACC profile (exactly PovertyCaster's parser) and verifies
+// every patch against the exe image. Fills g.s2Report; g.s2Ok when nothing is refused.
+void ValidateSchema2()
+{
+	namespace S = pcmod::s2;
+	g.s2Ok = false; g.s2Data = S::Data{}; g.s2Report.clear(); g.s2Canon.clear();
+	const S::Profile& pf = S::MbaaccProfile();
+	auto bad = [](const std::string& l) { g.s2Report.push_back("x " + l); };
+	static const char* kNames[3] = { "patches.toml", "features.toml", "rules.toml" };
+	bool any = false;
+	for (int i = 0; i < 3; ++i) {
+		if (g.s2Src[i].empty()) continue;
+		any = true;
+		std::vector<uint8_t> b;
+		if (!pcmod::ReadAll(g.s2Src[i], b)) { bad(std::string(kNames[i]) + ": " + TXT("cannot read") + " " + g.s2Src[i]); continue; }
+		const std::string text(b.begin(), b.end());
+		const std::string e = i == 0 ? S::ParsePatches(text, pf, g.s2Data) : i == 1 ? S::ParseFeatures(text, pf, g.s2Data) : S::ParseRules(text, pf, g.s2Data);
+		if (!e.empty()) bad(e);
+	}
+	if (!any) { bad(TXT("no patches.toml / features.toml / rules.toml chosen")); return; }
+	if (!g.s2Data.patches.empty()) {
+		std::vector<uint8_t> exeBytes;
+		if (g.s2Exe.empty() || !pcmod::ReadAll(g.s2Exe, exeBytes)) { bad(TXT("choose the vanilla MBAA.exe (1.07) to verify orig bytes against")); return; }
+		const std::string sha = pcmod::Sha256Hex(exeBytes.data(), exeBytes.size());
+		g.s2Report.push_back("  exe sha256 " + sha);
+		if (sha.rfind(S::kMbaaccExeSha256, 0) != 0) bad(TXT("this is not the vanilla MBAA.exe 1.07 (sha256 6d1415ca...)"));
+		bool listed = false;
+		for (const std::string& e : SplitList(g.exe)) if (Lower(e) == sha) listed = true;
+		if (!listed) bad(TXT("the exe is not in the package's exe list"));
+		S::PeImage img;
+		std::string why;
+		if (!S::ParsePe(std::move(exeBytes), img, why)) { bad("MBAA.exe: " + why); return; }
+		for (const S::Issue& is : S::VerifyPatches(g.s2Data, img, pf)) bad(std::string("[") + S::IssueName(is.code) + "] " + is.message);
+	}
+	S::Normalise(g.s2Data);
+	g.s2Canon = S::Canonical(g.s2Data);
+	g.s2Attached = pcmod::Manifest{};
+	g.s2Attached.id = g.id;
+	const std::string attach = S::AttachToManifest(g.s2Attached, g.s2Data, pf, g.s2Files);
+	if (!attach.empty()) bad(attach);
+	const bool ok = std::none_of(g.s2Report.begin(), g.s2Report.end(), [](const std::string& l) { return l.rfind("x ", 0) == 0; });
+	g.s2Report.push_back((ok ? "ok " : "x ") + std::to_string(g.s2Data.patches.size()) + " patch(es), " + std::to_string(g.s2Data.features.size()) +
+		" feature(s), " + std::to_string(g.s2Data.rules.size()) + " rule(s); canonical sha256 " + pcmod::Sha256Hex(g.s2Canon));
+	g.s2Ok = ok;
+	HC_LOG_INFO("pcmod schema 2 validate: {} ({} patches, {} lines)", ok ? "ok" : "refused", g.s2Data.patches.size(), g.s2Report.size());
+}
+
+void DrawSchema2()
+{
+	if (!ImGui::CollapsingHeader(LBL("Schema 2: exe patches / features / rules"))) return;
+	ImGui::TextDisabled("%s", TXT("Data-only exe edits (patches.toml) checked against the vanilla MBAA.exe; written next to pcmod.json, schema 2."));
+	static const char* kLbl[3] = { "patches.toml###s2p", "features.toml###s2f", "rules.toml###s2r" };
+	bool changed = false;
+	for (int i = 0; i < 3; ++i) {
+		ImGui::PushID(i);
+		ImGui::SetNextItemWidth(-260);
+		changed |= ImGui::InputText(kLbl[i], &g.s2Src[i]);
+		ImGui::SameLine();
+		if (ImGui::SmallButton(LBL("Browse..."))) { const std::string f = FileDialog(-1, false); if (!f.empty()) { g.s2Src[i] = AnsiToUtf8(f); changed = true; } }
+		ImGui::PopID();
+	}
+	ImGui::SetNextItemWidth(-260);
+	changed |= ImGui::InputText(LBL("Vanilla MBAA.exe"), &g.s2Exe);
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("Browse...##s2exe"))) { const std::string f = FileDialog(-1, false); if (!f.empty()) { g.s2Exe = AnsiToUtf8(f); changed = true; } }
+	if (!g.gameDir.empty()) {
+		ImGui::SameLine();
+		if (ImGui::SmallButton(LBL("Installed##s2exe"))) { g.s2Exe = (fs::u8path(g.gameDir) / "MBAA.exe").u8string(); changed = true; }
+	}
+	if (changed) { g.s2Ok = false; g.s2Report.clear(); }
+	if (ImGui::Button(LBL("Validate patches"))) ValidateSchema2();
+	ImGui::SameLine();
+	if (ImGui::SmallButton(LBL("Clear##s2"))) { for (auto& p : g.s2Src) p.clear(); g.s2Ok = false; g.s2Report.clear(); g.s2Data = pcmod::s2::Data{}; }
+	for (const std::string& l : g.s2Report) {
+		const bool isBad = l.rfind("x ", 0) == 0, isOk = l.rfind("ok ", 0) == 0;
+		if (isBad || isOk) ImGui::TextColored(isBad ? ColBad() : ColGood(), "%s", l.c_str());
+		else ImGui::TextDisabled("%s", l.c_str());
+	}
 }
 
 void EnsureDefaults()
@@ -229,7 +326,7 @@ void Export()
 	if (!problem.empty()) { g.result = problem; g.resultOk = false; return; }
 	std::vector<pcmod::SourceFile> src;
 	for (const Row& r : g.rows) if (r.include) src.push_back({r.rel, r.abs});
-	const pcmod::PackResult r = pcmod::Pack(src, m, g.outDir, g.writeZip);
+	const pcmod::PackResult r = pcmod::Pack(src, m, g.outDir, g.writeZip, m.HasAux() ? &g.s2Files : nullptr);
 	g.resultOk = r.ok;
 	if (!r.ok) {
 		g.result = std::string(TXT("Export refused: ")) + r.error;
@@ -267,7 +364,7 @@ void MenuItem(const std::string& descriptor)
 {
 	if (ImGui::MenuItem(LBL("Export as pcmod package..."))) Open(descriptor);
 	if (ImGui::IsItemHovered())
-		ImGui::SetTooltip("%s", TXT("PovertyCaster mod package (pcmod.json schema 1): the active character's files,\n"
+		ImGui::SetTooltip("%s", TXT("PovertyCaster mod package (pcmod.json schema 1, or 2 with exe patches): the active character's files,\n"
 			"or any files / folder you add. Writes <id>\\pcmod.json + files and a .zip."));
 }
 
@@ -399,6 +496,8 @@ void Draw()
 	if (replaces)
 		ImGui::TextColored(ColWarn(), TXT("%d file(s) replace a file of the MBAACC install. That is allowed, but the game then reads ONLY the packaged file: it must be the whole file, not a patch."), replaces);
 
+	DrawSchema2();
+
 	// ---- output ----
 	ImGui::SetNextItemWidth(-260);
 	ImGui::InputText(LBL("Output folder"), &g.outDir);
@@ -441,6 +540,20 @@ bool ScriptCommand(const std::string& cmd, const std::string& argIn, std::string
 		return true;
 	}
 	if (sub == "export") { Export(); if (msg) *msg = g.result; return true; }
+	// `pcmod s2 patches|features|rules|exe <path>` / `pcmod s2validate`
+	if (sub == "s2") {
+		const size_t s2 = arg.find(' ');
+		const std::string k = arg.substr(0, s2), v = s2 == std::string::npos ? "" : arg.substr(s2 + 1);
+		if (k == "patches") g.s2Src[0] = v; else if (k == "features") g.s2Src[1] = v; else if (k == "rules") g.s2Src[2] = v; else if (k == "exe") g.s2Exe = v;
+		else if (msg) *msg = "pcmod s2: unknown field " + k;
+		g.s2Ok = false;
+		return true;
+	}
+	if (sub == "s2validate") {
+		ValidateSchema2();
+		if (msg) { msg->clear(); for (const std::string& l : g.s2Report) *msg += l + "\n"; }
+		return true;
+	}
 	if (sub == "status") {
 		std::string problem; pcmod::PackageClass d;
 		size_t sim = 0;

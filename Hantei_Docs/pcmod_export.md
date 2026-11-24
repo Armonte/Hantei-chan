@@ -122,6 +122,42 @@ checks it. It has 75 files; its one `data\*.pal` is cosmetic and stays outside t
 | package | `7721d18a3b3f8984582ca65a27ceea41992d6c9db48958a4ea6503750c4b2fe9` |
 | package sim | `d6d72ad9295f0354dcabcfeffe06d06d2b031a07488460fd87c329e040026ef8` |
 
+## Schema 2: exe patches, features, rules
+
+Spec: PovertyCaster `docs/design/pcmod-manifest.md` "Schema 2" (S2.1-S2.8, branch `mods/pcmod-schema2`). A schema-2
+package is a normal package plus up to three TOML files next to `pcmod.json` (`patches.toml`, `features.toml`,
+`rules.toml`), referenced as `exe_patches` / `features` / `rules` = `{path, sha256, size}`. They are not in `files[]`. A
+package with any of them is `class: "sim"` and must list `exe`.
+
+GUI: the export window has a "Schema 2" section. Pick the TOML sources and the vanilla MBAA.exe 1.07 (sha256 `6d1415ca...`),
+then press Validate patches. Each file is parsed with the MBAACC profile. The parser is a copy of PovertyCaster's, so it
+refuses exactly what PovertyCaster refuses. Every patch is then checked against the exe image, and each problem is listed
+under a name:
+
+| name | meaning |
+|---|---|
+| `orig-mismatch` | the bytes at `addr` in the vanilla exe are not `orig` (the line shows what was found) |
+| `out-of-range` | not in `.text`/`.rdata` inside 0x401000..0x54B000, or `.data` outside an allow-listed table (`css_roster`), or unmapped |
+| `pe-header` / `resources` | PE header or `.rsrc`: file-on-disk only, refused (S2.8) |
+| `call-too-short` | `call`/`jmp` with `orig` under 5 bytes |
+| `call-target-not-code` | `vanilla:` target not in vanilla `.text` (0x401000..0x51B000) |
+| `overlap` | two patches of the package touch the same byte |
+| `reserved` | touches a PovertyCaster-owned site (an advisory copy of PC's list; PC's own table is authoritative) |
+
+After the patches validate, Export writes the files with the deterministic writer: sorted, `0x%08X` addresses,
+`"8B 45 08"` byte strings. It adds them to the folder and the zip, then reads the result back. `pcmodtool verify` and the
+session resolver also check the TOML hashes and parse them. Script: `pcmod s2 patches|features|rules|exe <path>`,
+`pcmod s2validate`.
+
+Digests (S2.3). The schema-2 digests are computed by the same code as schema 1:
+- `pcmod-pkg-2` covers the TOML file bytes (`toml:<key>\0<sha>\0<size>`).
+- `pcmod-sim-2` covers the canonical text of the parsed values, so comments, whitespace, order and hex spelling don't
+  change it.
+- `pcmod-set-2` is used once any live package is schema 2. It adds `abi:mbaacc-prim-1`.
+
+`tests/pcmod_s2_test.cpp` pins the three digests that PovertyCaster's own headers compute for
+`tests/fixtures/pcmod_s2`. To regenerate them, run `tools/pcmod/s2_vectors_from_pc.sh` (read-only on PovertyCaster).
+
 ## Code
 
 - `src/pcmod/pcmod_manifest.*`: the model, the strict reader, the deterministic writer, the path rules and both digests.
@@ -130,6 +166,8 @@ checks it. It has 75 files; its one `data\*.pal` is cosmetic and stays outside t
 - `src/pcmod/pcmod_zip.*`: a store-only zip writer and reader with fixed timestamps, so the same package always gives the
   same bytes.
 - `src/pcmod/pcmod_package.*`: scan, pack, verify a folder or zip, read `mod.ini`, and resolve a session.
+- `src/pcmod/pcmod_schema2.*`: schema 2. The strict TOML subset, the patches/features/rules parse and the canonical text
+  mirror PC `pc/mods/Schema2.hpp`. It adds the TOML writers, a PE32 reader and verification against the vanilla exe.
 - `src/pcmod/pcmod_vanilla.*`: the index of the install's `.p` archives (`mbaacc_pack.h`) plus loose files.
 - `src/pcmod/pcmod_export_ui.*`: the window. `src/pcmod/pcmodtool.cpp`: the CLI.
 

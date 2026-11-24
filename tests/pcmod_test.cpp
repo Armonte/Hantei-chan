@@ -264,7 +264,10 @@ int main(int argc, char** argv)
 		CHECK(!pcmod::ParseManifest(t, m, err));
 		t = base; t.replace(t.find("\"priority\": 0"), 13, "\"priority\": 5000");
 		CHECK(!pcmod::ParseManifest(t, m, err));
+		// schema 2 (PC S2.1) is now understood (tests/pcmod_s2_test.cpp); schema 3 is not.
 		t = base; t.replace(t.find("\"schema\": 1"), 11, "\"schema\": 2");
+		CHECK(pcmod::ParseManifest(t, m, err) && m.schema == 2);
+		t = base; t.replace(t.find("\"schema\": 1"), 11, "\"schema\": 3");
 		CHECK(!pcmod::ParseManifest(t, m, err));
 		CHECK(!pcmod::ParseManifest(base + "x", m, err));
 
