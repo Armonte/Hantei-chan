@@ -535,13 +535,16 @@ static void DrawList(State &st, OpenRequest &req, bool &open)
 	if (ImGuiTableSortSpecs *sp = ImGui::TableGetSortSpecs()) {
 		if (sp->SpecsDirty && sp->SpecsCount > 0) { st.sortCol = sp->Specs[0].ColumnIndex; st.sortDesc = sp->Specs[0].SortDirection == ImGuiSortDirection_Descending; st.viewDirty = true; sp->SpecsDirty = false; }
 	}
+	// A row is the rowH-tall selectable plus the cell padding above and below it. The clipper has to step by that: told rowH it ran
+	// out of visible space before the last rows, and cut off more of the list the taller the window was (#120).
+	const float rowStep = rowH + ImGui::GetStyle().CellPadding.y * 2.f;
 	if (st.scrollToCursor && st.cursor >= 0) {
-		const float y = (float)st.cursor * rowH;
-		const float top = ImGui::GetScrollY(), h = ImGui::GetWindowHeight() - rowH * 1.5f;
-		if (y < top) ImGui::SetScrollY(y); else if (y + rowH > top + h) ImGui::SetScrollY(y + rowH - h);
+		const float y = (float)st.cursor * rowStep;
+		const float top = ImGui::GetScrollY(), h = ImGui::GetWindowHeight() - rowStep * 1.5f;
+		if (y < top) ImGui::SetScrollY(y); else if (y + rowStep > top + h) ImGui::SetScrollY(y + rowStep - h);
 		st.scrollToCursor = false;
 	}
-	ImGuiListClipper clip; clip.Begin(n, rowH);
+	ImGuiListClipper clip; clip.Begin(n, rowStep);
 	while (clip.Step()) for (int pos = clip.DisplayStart; pos < clip.DisplayEnd; pos++) {
 		const uint32_t idx = st.view[pos]; const Item &it = s->items[idx];
 		ImGui::TableNextRow(0, rowH);

@@ -9,6 +9,7 @@
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
+#include "ini.h"
 #include "framedata_han2.h"
 #include "han2_pat.h"
 #include "han2_character.h"
@@ -281,7 +282,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
 		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1/anim | tint R G B
 		if (cmd == "captureview") { if (!editCmd(cmd, arg)) gStartup.exitCode = 1; continue; }   // the active view's FBO (works under --headless)
-		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint" || cmd == "palinfo") {
+		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint" || cmd == "palinfo" || cmd == "boxfills") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
 		}
@@ -353,6 +354,7 @@ void MainFrame::ProcessStartupArgs()
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; },
 			[this](const std::string &cmd, const std::string &arg) -> bool {
 				if (cmd == "switchview") { const int i = atoi(arg.c_str()); if (i < 0 || i >= (int)views.size()) return false; setActiveView(i); return true; }
+				if (cmd == "boxfills") { gSettings.boxFillsAdditive = arg == "additive"; return true; }   // boxfills union|additive (#128 before/after captures)
 				if (cmd == "captureview") return WriteViewTargetPng(getActiveView(), arg);
 				CharacterView *vw = getActiveView();
 				CharacterInstance *ch = getActiveCharacter();

@@ -45,6 +45,10 @@ static void ReadLine(ImGuiContext*, ImGuiSettingsHandler*, void* entry, const ch
 		gSettings.jlFrameStep = i != 0;
 	} else if (sscanf(line, "PageKeysStepStates=%i", &i) == 1){
 		gSettings.pageKeysStepStates = i != 0;
+	} else if (sscanf(line, "BoxFillsAdditive=%i", &i) == 1){
+		gSettings.boxFillsAdditive = i != 0;
+	} else if (sscanf(line, "InlinePatternList=%i", &i) == 1){
+		gSettings.inlinePatternList = i != 0;
 	} else if (sscanf(line, "PatternListWindow=%i", &i) == 1){
 		gSettings.patternListWindow = i != 0;
 	} else if (sscanf(line, "TimelineDurationLane=%i", &i) == 1){
@@ -181,6 +185,8 @@ static void Write(ImGuiContext* ctx, ImGuiSettingsHandler* handler, ImGuiTextBuf
 	if (gSettings.absoluteScrubDefault) buf->appendf("AbsoluteScrubDefault=1\n");
 	if (gSettings.jlFrameStep) buf->appendf("JlFrameStep=1\n");
 	if (gSettings.pageKeysStepStates) buf->appendf("PageKeysStepStates=1\n");
+	if (gSettings.boxFillsAdditive) buf->appendf("BoxFillsAdditive=1\n");
+	if (!gSettings.inlinePatternList) buf->appendf("InlinePatternList=0\n");
 	if (gSettings.patternListWindow) buf->appendf("PatternListWindow=1\n");
 	if (gSettings.timelineDurationLane) buf->appendf("TimelineDurationLane=1\n");
 	if (gSettings.compactUi != defaults.compactUi) buf->appendf("CompactUi=%i\n", gSettings.compactUi ? 1 : 0);

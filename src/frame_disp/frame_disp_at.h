@@ -87,9 +87,9 @@ inline void AtDisplay(Frame_AT *at, FrameData *frameData = nullptr, int patternI
 		case 16: Tooltip("Use custom blockstop"); break;
 		case 17: Tooltip("OTG Relaunch"); break;
 		case 18: Tooltip("Can't counterhit"); break;
-		case 19: Tooltip("Unknown"); break;
-		case 20: Tooltip("Use Type 2 Circuit Break"); break;
-		case 21: Tooltip("Unknown"); break;
+		case 19: Tooltip("Hit enemy away from position instead of facing direction"); break;
+		case 20: Tooltip("Use Type 2 Circuit Break and don't reset bounces on hitgrab"); break;
+		case 21: Tooltip("Enemy does not lose priority"); break;
 		case 22: Tooltip("Remove 1f of untech"); break;
 
 		case 25: if (uniFormat) Tooltip("Attacker's own hitstop from the ATSA preset\n(Hit_ResolveHitstop, UNI2/MBTL)"); break;

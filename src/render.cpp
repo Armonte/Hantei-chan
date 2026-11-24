@@ -6,6 +6,7 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtc/constants.hpp>
 #include <algorithm>
+#include <array>
 #include <cmath>
 
 //Error
@@ -14,6 +15,7 @@
 #include <sstream>
 
 #include "hitbox.h"
+#include "ini.h"
 #include "app_log.h"
 #include <cstdarg>
 #include <cstdio>
@@ -34,6 +36,7 @@ static void TraceAppend(std::string& out, const char* fmt, ...)
 
 
 constexpr int maxBoxes = 33;
+constexpr int maxBoxFillQuads = 1024;   // merged fill rectangles after the box outlines (GenerateHitboxVertices)
 
 const char* simpleSrcVert = R"(
 #version 330 core
@@ -263,7 +266,7 @@ blendingMode(normal)
 	};
 
 	geoParts[LINES] = vGeometry.Prepare(sizeof(lines), lines);
-	geoParts[BOXES] = vGeometry.Prepare(sizeof(float)*6*4*maxBoxes, nullptr);
+	geoParts[BOXES] = vGeometry.Prepare(sizeof(float)*6*4*(maxBoxes + maxBoxFillQuads), nullptr);
 	vGeometry.Load();
 	vGeometry.InitQuads(geoParts[BOXES]);
 
@@ -416,7 +419,7 @@ void Render::Draw()
 		glUniform1f(lAlphaS, 0.6f);
 		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
 		glUniform1f(lAlphaS, 0.3f);
-		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		vGeometry.DrawQuads(GL_TRIANGLE_FAN, fillCount, fillFirst);
 
 		return;  // Skip sprite rendering
 	}
@@ -464,7 +467,7 @@ void Render::Draw()
 	glUniform1f(lAlphaS, 0.6f);
 	vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
 	glUniform1f(lAlphaS, 0.3f);
-	vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+	vGeometry.DrawQuads(GL_TRIANGLE_FAN, fillCount, fillFirst);
 }
 
 void Render::DrawSpriteOnly(bool drawHitboxes)
@@ -522,7 +525,7 @@ void Render::DrawSpriteOnly(bool drawHitboxes)
 		glUniform1f(lAlphaS, 0.6f);
 		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
 		glUniform1f(lAlphaS, 0.3f);
-		vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+		vGeometry.DrawQuads(GL_TRIANGLE_FAN, fillCount, fillFirst);
 	}
 
 	// Re-enable depth write
@@ -706,6 +709,7 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 	if(size <= 0)
 	{
 		quadsToDraw = 0;
+		fillFirst = fillCount = 0;
 		return;
 	}
 	static Hitbox **lastHitbox = 0;
@@ -766,6 +770,53 @@ void Render::GenerateHitboxVertices(const BoxList &hitboxes)
 		dataI += 4*6;
 	}
 	quadsToDraw = size;
+
+	// Fills. Each box's translucent fill used to be drawn on its own, so where boxes of the same kind overlapped the fill
+	// was blended twice and the overlap came out darker (#128). hanteichan 1.2.0 drew one flat colour per kind. Fill the
+	// union of each colour group instead: cut the group's area along every box edge and emit the covered cells, merged
+	// along rows. View > "Box fills add up where boxes overlap" restores the old look.
+	fillFirst = 0; fillCount = size;
+	if (!gSettings.boxFillsAdditive) {
+		fillFirst = size; fillCount = 0;
+		std::vector<std::pair<std::array<float, 4>, std::array<float, 4>>> groups;   // (z, r, g, b), rect (x0, y0, x1, y1); by value: clientQuads grows below
+		for (int q = 0; q < size; q++) {
+			const float *src = &clientQuads[q * 24];
+			const float x0 = std::min(src[0], src[6]), x1 = std::max(src[0], src[6]), y0 = std::min(src[1], src[13]), y1 = std::max(src[1], src[13]);
+			if (x1 > x0 && y1 > y0) groups.push_back({{src[2], src[3], src[4], src[5]}, {x0, y0, x1, y1}});
+		}
+				std::vector<bool> done(groups.size());
+		bool overflow = false;
+		for (size_t g = 0; g < groups.size() && !overflow; g++) {
+			if (done[g]) continue;
+			std::vector<std::array<float, 4>> rs; const std::array<float, 4> col = groups[g].first;
+			for (size_t k = g; k < groups.size(); k++) if (!done[k] && groups[k].first == col) { rs.push_back(groups[k].second); done[k] = true; }
+			std::vector<float> xs, ys;
+			for (auto &r : rs) { xs.push_back(r[0]); xs.push_back(r[2]); ys.push_back(r[1]); ys.push_back(r[3]); }
+			std::sort(xs.begin(), xs.end()); xs.erase(std::unique(xs.begin(), xs.end()), xs.end());
+			std::sort(ys.begin(), ys.end()); ys.erase(std::unique(ys.begin(), ys.end()), ys.end());
+			for (size_t yi = 0; yi + 1 < ys.size() && !overflow; yi++) {
+				const float cy = (ys[yi] + ys[yi + 1]) * 0.5f;
+				size_t xi = 0;
+				while (xi + 1 < xs.size()) {
+					auto covered = [&](size_t i) { const float cx = (xs[i] + xs[i + 1]) * 0.5f; for (auto &r : rs) if (cx > r[0] && cx < r[2] && cy > r[1] && cy < r[3]) return true; return false; };
+					if (!covered(xi)) { xi++; continue; }
+					size_t xe = xi + 1; while (xe + 1 < xs.size() && covered(xe)) xe++;
+					if (fillCount >= maxBoxFillQuads) { overflow = true; break; }
+					const float rx0 = xs[xi], rx1 = xs[xe], ry0 = ys[yi], ry1 = ys[yi + 1];
+					if ((int)clientQuads.size() < (size + fillCount + 1) * 24) clientQuads.resize((size + fillCount + 1) * 24);
+					float *d = &clientQuads[(size + fillCount) * 24];
+					for (int v = 0; v < 4; v++) {
+						d[v * 6 + 0] = tX[v] ? rx1 : rx0; d[v * 6 + 1] = tY[v] ? ry1 : ry0;
+						d[v * 6 + 2] = col[0]; d[v * 6 + 3] = col[1]; d[v * 6 + 4] = col[2]; d[v * 6 + 5] = col[3];
+					}
+					fillCount++;
+					xi = xe;
+				}
+			}
+		}
+		if (overflow) { fillFirst = 0; fillCount = size; }   // too many cells: per-box fills as before
+		dataI = (fillFirst + fillCount) * 24 > dataI ? (fillFirst + fillCount) * 24 : dataI;
+	}
 	vGeometry.UpdateBuffer(geoParts[BOXES], clientQuads.data(), dataI*sizeof(float));
 }
 
@@ -901,6 +952,7 @@ bool Render::GenerateUVRectangleVertices()
 	}
 
 	quadsToDraw = 1;
+	fillFirst = 0; fillCount = 1;
 	vGeometry.UpdateBuffer(geoParts[BOXES], rectQuad, sizeof(rectQuad));
 	return true;
 }
@@ -908,6 +960,7 @@ bool Render::GenerateUVRectangleVertices()
 void Render::DontDraw()
 {
 	quadsToDraw = 0;
+	fillFirst = fillCount = 0;
 	gridLinesHaveOverlay = true;   // force the reset below
 	ResetGridLines();
 }
@@ -1320,7 +1373,7 @@ void Render::DrawLayers()
 		vGeometry.DrawQuads(GL_LINE_LOOP, quadsToDraw);
 		if (!layer.boxesOutlineOnly) {
 			glUniform1f(lAlphaS, 0.3f);
-			vGeometry.DrawQuads(GL_TRIANGLE_FAN, quadsToDraw);
+			vGeometry.DrawQuads(GL_TRIANGLE_FAN, fillCount, fillFirst);
 		}
 		glDepthMask(GL_TRUE);
 	}
