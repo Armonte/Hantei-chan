@@ -17,26 +17,39 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 	int& no = effect.number;
 	const float width = ui::Px(75.f);   // follows the font size (ui_style.h)
 
+	// Preset list and params: gonp's HA6 doc, 2026-11.
 	const char* const presetEffects[] = {
+				"0: Expanding circle",
 				"1: Jump looking effect",
-				"2: David star (lags)",
+				"2: David star (lags, unused)",
 				"3: Red hitspark",
-				"4: Force field",
-				"6: Fire",
-				"7: Snow",
-				"8: Blue flash",
+				"4: Force field (unused)",
+				"5: Bouncing white traces",
+				"6: Fire (unused)",
+				"7: Snow (unused)",
+				"8: Blue flash (unused)",
 				"9: Blue hitspark",
 				"10: Superflash background",
-				"15: Blue horizontal wave",
-				"16: Red vertical wave",
-				"19: Foggy rays",
-				"20: 3D rotating waves",
+				"14: Expanding dust (cropped)",
+				"15: Horizontal wave (unused)",
+				"16: Vertical wave (unused)",
+				"19: Foggy rays (unused)",
+				"20: 3D rotating waves (unused)",
+				"21: Expanding jagged blue circle",
+				"22: Unknown",
 				"23: Blinding effect",
 				"24: Blinding effect 2",
 				"27: Dust cloud",
 				"28: Dust cloud (large)",
 				"29: Dust cloud (rotating)",
-				"30: Massive dust cloud",
+				"30: Massive dust cloud (unused)",
+				"100: Big wallbounce distortion",
+				"101: Small wallbounce distortion",
+				"256: Unknown",
+				"265: White glow impact",
+				"300: Round win icon flare (crashes)",
+				"301: Expanding yellow floor",
+				"302: Angled red impact",
 			};
 
 			if(EfComboManual("Effect Number", &no, presetEffects, IM_ARRAYSIZE(presetEffects), width*2, width)) {
@@ -73,13 +86,28 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 			}
 			} else if(no == 3 || no == 9) { // Hitsparks
 				EfSection(TXT("--- Hitspark ---"));
-				im::DragInt(EfRow(LBL("Intensity")), &p[2]);
-				if(im::IsItemEdited()) {
-				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
-			}
-			if(im::IsItemDeactivatedAfterEdit()) {
-				markModified();
-			}
+				if(no == 3) {
+					if(im::InputInt(EfRow(LBL("Glow intensity")), &p[2], 0, 0)) markModified();
+					if(im::InputInt(EfRow(LBL("Spark intensity")), &p[3], 0, 0)) markModified();
+				} else {
+					if(im::InputInt(EfRow(LBL("Spark intensity")), &p[2], 0, 0)) markModified();
+				}
+			} else if(no == 0) { // Expanding circle
+				EfSection(TXT("--- Expanding circle ---"));
+				if(im::InputInt(EfRow(LBL("Color")), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Duration")), &p[3], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Type")), &p[4], 0, 0)) markModified();
+			} else if(no == 16) { // Vertical wave
+				if(im::InputInt(EfRow(LBL("Color")), &p[2], 0, 0)) markModified();
+			} else if(no == 23 || no == 24) { // Blinding effect (24: same with a different curve)
+				EfSection(TXT("--- Blinding effect ---"));
+				if(im::InputInt(EfRow(LBL("Fade in duration (?)")), &p[2], 0, 0)) markModified();
+				const char* const blindColors[] = {"0: White", "1: Black", "2: Red"};
+				if(EfComboManual("Color", &p[3], blindColors, IM_ARRAYSIZE(blindColors), width*2, width)) markModified();
+				if(im::Checkbox(EfRow(LBL("Don't obscure characters")), (bool*)&p[4])) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Characters stay visible if this is 1");
+				if(im::InputInt(EfRow(LBL("Fade out duration (?)")), &p[5], 0, 0)) markModified();
 			} else if(no >= 27 && no <= 30) { // Dust clouds
 				EfSection(TXT("--- Dust Cloud ---"));
 				im::DragInt(EfRow(LBL("X speed")), &p[2]);
@@ -96,7 +124,7 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::DragInt(EfRow(LBL("Duration")), &p[4]);
+				im::DragInt(EfRow(LBL("Particle duration")), &p[4]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -113,7 +141,9 @@ static inline void DrawEffectPreset_Type3(Frame_EF& effect, FrameData* frameData
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
-				im::DragInt(EfRow(LBL("Amount")), &p[7]);
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("If odd, particles go only toward one side (probably a flag)");
+				im::DragInt(EfRow(LBL("Particle count")), &p[7]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}

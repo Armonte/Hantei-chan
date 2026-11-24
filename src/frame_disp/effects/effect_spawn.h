@@ -19,6 +19,44 @@
 // with various positioning, inheritance, and behavior options.
 // ============================================================================
 
+// Flagset bit meanings shared by EF1/101/1000, EF8/108 and EF11/111 (gonp's HA6 doc, 2026-11; "?" = uncertain there).
+static inline void EfSpawnFlagset1Tooltip(unsigned int bit)
+{
+	switch(bit) {
+		case 0: Tooltip("Remove when parent gets hit (includes shield, throw, throw tech; not clash or armor)"); break;
+		case 1: Tooltip("Always face right (maybe other effects)"); break;
+		case 2: Tooltip("Follow parent"); break;
+		case 3: Tooltip("Affected by hitstop of parent"); break;
+		case 4: Tooltip("Coordinates relative to camera"); break;
+		case 5: Tooltip("Remove when parent changes pattern"); break;
+		case 6: Tooltip("Can go below floor level (otherwise goes to the landing frame when below y=0)"); break;
+		case 7: Tooltip("Always on floor"); break;
+		case 8: Tooltip("Inherit parent's rotation (as set by EF6 No 22)"); break;
+		case 9: Tooltip("Position relative to screen border in the back"); break;
+		case 10: Tooltip("Unknown effect"); break;
+		case 11: Tooltip("Flip facing"); break;
+		case 12: Tooltip("Unknown or no effect (Akiha's 217 only)"); break;
+	}
+}
+
+static inline void EfSpawnFlagset2Tooltip(unsigned int bit)
+{
+	switch(bit) {
+		case 0: Tooltip("Child has shadow"); break;
+		case 1: Tooltip("Advance child with parent? (also activates Flagset 1 bit 5)"); break;
+		case 2: Tooltip("Remove when parent is thrown"); break;
+		case 3: Tooltip("Parent is affected by hitstop"); break;
+		case 4: case 5: Tooltip("Unknown effect"); break;
+		case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
+		case 7: Tooltip("Sprite is fixed in camera"); break;
+		case 8: Tooltip("X position is relative to opponent X"); break;
+		case 9: Tooltip("Position is relative to (-32768, 0)"); break;
+		case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
+		case 11: Tooltip("Face according to player slot"); break;
+		case 12: Tooltip("Unaffected by any superflash"); break;
+	}
+}
+
 static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified)
 {
 	int* p = effect.parameters;
@@ -113,21 +151,7 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 				}
 
 				// Tooltips based on hovered flag
-				switch(flagIdx) {
-					case 0: Tooltip("Remove when parent gets hit (includes shield, throw, not clash/armor)"); break;
-					case 1: Tooltip("Always face right"); break;
-					case 2: Tooltip("Follow parent"); break;
-					case 3: Tooltip("Affected by hitstop of parent"); break;
-					case 4: Tooltip("Coordinates relative to camera"); break;
-					case 5: Tooltip("Remove when parent changes pattern"); break;
-					case 6: Tooltip("Can go below floor level"); break;
-					case 7: Tooltip("Always on floor"); break;
-					case 8: Tooltip("Inherit parent's rotation"); break;
-					case 9: Tooltip("Position relative to screen border in the back"); break;
-					case 10: Tooltip("Unknown effect"); break;
-					case 11: Tooltip("Flip facing"); break;
-					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
-				}
+				EfSpawnFlagset1Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[2]);
 				im::TreePop();
@@ -141,27 +165,14 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 				}
 
 				// Tooltips based on hovered flag
-				switch(flagIdx) {
-					case 0: Tooltip("Child has shadow"); break;
-					case 1: Tooltip("Advance child with parent (also activates Flagset 1 bit 5)"); break;
-					case 2: Tooltip("Remove when parent is thrown"); break;
-					case 3: Tooltip("Parent is affected by hitstop"); break;
-					case 4: case 5: Tooltip("Unknown effect"); break;
-					case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
-					case 7: Tooltip("Doesn't move with camera"); break;
-					case 8: Tooltip("Position is relative to opponent"); break;
-					case 9: Tooltip("Position is relative to (-32768, 0)"); break;
-					case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
-					case 11: Tooltip("Face according to player slot"); break;
-					case 12: Tooltip("Unaffected by any superflash"); break;
-				}
+				EfSpawnFlagset2Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[3]);
 				im::TreePop();
 			}
 
-			// Angle
-			im::DragInt(EfRow(LBL("Angle")), &p[7]);
+			// Rotation (gonp's HA6 doc: param8, clockwise, 10000 = 360 degrees)
+			im::DragInt(EfRow(LBL("Rotation")), &p[7]);
 			if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -181,6 +192,8 @@ static inline void DrawEffectSpawn_Type1_101(Frame_EF& effect, FrameData* frameD
 	if(im::IsItemDeactivatedAfterEdit()) {
 		markModified();
 	}
+	im::SameLine(); im::TextDisabled("(?)");
+	if(im::IsItemHovered()) Tooltip("Amount to decrease the projectile variable by on despawn");
 
 	if(effect.type == 1000) {
 		// MBAA Effect1_SpawnPattern: EF1000 spawns only while var word[+0x1C0 + 2*p6] == 0, then sets it to 1.
@@ -284,21 +297,7 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 					markModified();
 				}
 
-				switch(flagIdx) {
-					case 0: Tooltip("Remove when parent gets hit (includes shield, throw, not clash/armor)"); break;
-					case 1: Tooltip("Always face right"); break;
-					case 2: Tooltip("Follow parent"); break;
-					case 3: Tooltip("Affected by hitstop of parent"); break;
-					case 4: Tooltip("Coordinates relative to camera"); break;
-					case 5: Tooltip("Remove when parent changes pattern"); break;
-					case 6: Tooltip("Can go below floor level"); break;
-					case 7: Tooltip("Always on floor"); break;
-					case 8: Tooltip("Inherit parent's rotation"); break;
-					case 9: Tooltip("Position relative to screen border in the back"); break;
-					case 10: Tooltip("Unknown effect"); break;
-					case 11: Tooltip("Flip facing"); break;
-					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
-				}
+				EfSpawnFlagset1Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[6]);
 				im::TreePop();
@@ -310,20 +309,7 @@ static inline void DrawEffectSpawn_Type11_111(Frame_EF& effect, FrameData* frame
 					markModified();
 				}
 
-				switch(flagIdx) {
-					case 0: Tooltip("Child has shadow"); break;
-					case 1: Tooltip("Advance child with parent (also activates Flagset 1 bit 5)"); break;
-					case 2: Tooltip("Remove when parent is thrown"); break;
-					case 3: Tooltip("Parent is affected by hitstop"); break;
-					case 4: case 5: Tooltip("Unknown effect"); break;
-					case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
-					case 7: Tooltip("Doesn't move with camera"); break;
-					case 8: Tooltip("Position is relative to opponent"); break;
-					case 9: Tooltip("Position is relative to (-32768, 0)"); break;
-					case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
-					case 11: Tooltip("Face according to player slot"); break;
-					case 12: Tooltip("Unaffected by any superflash"); break;
-				}
+				EfSpawnFlagset2Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[7]);
 				im::TreePop();

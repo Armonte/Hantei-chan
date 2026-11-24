@@ -23,3 +23,7 @@ __pycache__/
 
 # local Claude Code settings
 .claude/
+
+# headless UI-script outputs
+tests/ui_scripts/out/
+tests/ui_scripts/*.log

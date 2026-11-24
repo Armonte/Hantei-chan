@@ -85,7 +85,8 @@ extern std::atomic<uint64_t> g_uiFrame;
 
 struct ViewState { float zoom = 1.f; float panX = 0, panY = 0; bool fit = true; bool checker = true; };
 
-struct Progress { std::atomic<int> done{0}, total{0}, failed{0}; std::atomic<bool> running{false}, cancel{false}; std::string what, dest; };
+struct Progress { std::atomic<int> done{0}, total{0}, failed{0}; std::atomic<bool> running{false}, cancel{false}; std::string what, dest;
+                  std::string op; /* "" = extraction, else the game-archive operation ("Unpacking", "Packing": English key, archive_gamepack.cpp) */ };
 
 struct State {
 	std::vector<SourceP> sources;                  // the left list

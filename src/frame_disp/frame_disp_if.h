@@ -47,6 +47,9 @@
 // Every IF "jump" is Character_JumpToFrame: a FRAME of the current pattern.
 // Only some types queue a PATTERN instead (IF 1 below 10000; IF 3/14/25 at
 // 10000+; IF 7, 8, 12, 13, 27, 37). The helpers below label each case.
+// Labels updated from gonp's HA6 doc, 2026-11 (MBAACC only; UNI2/MBTL use
+// game_label_ui.h). Where it disagrees with the Cond_Dispatch reading above,
+// the tooltip keeps both.
 // ============================================================================
 
 
@@ -311,7 +314,8 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 				if(im::Checkbox(Row("Despawn on pattern transition"), (bool*)&p[2])) markModified();
 
-				if(im::DragInt(Row("Projectile var decrease"), &p[3])) markModified();
+				if(im::DragInt(Row("Projectile var decrease", markW()), &p[3])) markModified();
+				ShowTooltipMarker("Amount to decrease the projectile variable by on despawn");
 				break;
 			}
 
@@ -337,13 +341,15 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					ShowTooltipMarker("Pattern = p1 + random(0, range)");
 				}
 
-				if(im::Checkbox(Row("Deterministic RNG (p8)"), (bool*)&p[7])) markModified();
+				if(im::Checkbox(Row("Alternate RNG pool (p8)", markW()), (bool*)&p[7])) markModified();
+				ShowTooltipMarker("Use the alternate RNG pool.\nEarlier label: deterministic RNG");
 				break;
 
 			case 3: // Branch on hit
 				ShowJumpField("Jump to", &p[0]);
 
-				if(ComboManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions))) markModified();
+				if(ComboManual("Hit condition", &p[1], hitConditions, IM_ARRAYSIZE(hitConditions), markW())) markModified();
+				ShowTooltipMarker("All hits must be used up. +100 = no OTG");
 
 				if(i18n::Combo(Row("Opponent state"), &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList))) markModified();
 
@@ -369,7 +375,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					if(im::IsItemHovered()) Tooltip("255 = buttons don't matter");
 				}
 
-				if(ifList[i].type == 6) ShowFrameField("Frame to jump to", &p[2], "Frame in the current pattern (+ current frame if p5 != 0)");
+				if(ifList[i].type == 6) ShowFrameField("Frame to jump to", &p[2], "Frame in the current pattern (+ current frame if p5 != 0).\nSkips the first frame of the destination; a 1f destination is skipped\naltogether (its conditions, but NOT its effects)");
 				else ShowPatternField("Pattern to queue", &p[2], "Queued at priority 500");
 
 				{
@@ -378,8 +384,11 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					if(BitField("Flags", (unsigned int*)&p[3], &flagIdx, 8)) markModified();
 					switch(flagIdx) {
 						case 0: Tooltip("Negate the condition"); break;
-						case 1: Tooltip("Can be held"); break;
+						case 1: Tooltip("Can be held (usually needed for bit 0 to work as desired)"); break;
 						case 2: Tooltip("Require any button (instead of all)"); break;
+						case 3: Tooltip("Cannot be in hitstun or blocking"); break;
+						case 4: Tooltip("Cannot be in hitstun or blocking (listed twice in gonp's doc; difference from bit 3 unknown)"); break;
+						case 5: Tooltip("Only on hit"); break;
 					}
 				}
 				break;
@@ -396,7 +405,8 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				};
 				if(ComboManual("When", &p[1], cond11When, IM_ARRAYSIZE(cond11When))) markModified();
 
-				if(im::DragInt(Row("Target frame (?)"), &p[2])) markModified();
+				if(im::DragInt(Row("Frame to transition to", markW()), &p[2])) markModified();
+				ShowTooltipMarker("Frame of the current pattern; overrides the command's pattern transition");
 
 				const char* const cond11State[] = {
 					"0: Always",
@@ -462,7 +472,8 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 
 			case 13: // Screen edge check (MBAA Cond13_ScreenEdgeCheck)
 			{
-				ShowPatternField("Pattern", &p[0], "Pattern to queue when at the edge (-1 = none)");
+				ShowPatternField("Pattern", &p[0], "Pattern to queue when at the edge (-1 = none)\n"
+					"gonp's HA6 doc: frame to jump to (add 10000 for a pattern jump)");
 				if(im::Checkbox(Row("Queue now (prio 1000)", markW()), (bool*)&p[1])) markModified();
 				ShowTooltipMarker("Off: pattern is stored as pending (priority 255)");
 				if(im::InputInt(Row("Stance filter", markW()), &p[2], 0, 0)) markModified();
@@ -539,15 +550,20 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			}
 
 			case 16: // Be affected by scrolling
-				if(im::Checkbox(Row("By X"), (bool*)&p[0])) markModified();
+				if(im::Checkbox(Row("By X", markW()), (bool*)&p[0])) markModified();
+				ShowTooltipMarker("Uncertain in gonp's HA6 doc (by X?)");
 
-				if(im::Checkbox(Row("By Y"), (bool*)&p[1])) markModified();
+				if(im::Checkbox(Row("By Y", markW()), (bool*)&p[1])) markModified();
+				ShowTooltipMarker("Uncertain in gonp's HA6 doc (by Y?)");
 				break;
 
 			case 17: // Branch according to number of hits
 				ShowFrameField("Frame to jump to", &p[0]);
 
 				if(im::DragInt(Row("Number of hits"), &p[1])) markModified();
+
+				if(im::DragInt(Row("Projectile var decrease", markW()), &p[2])) markModified();
+				ShowTooltipMarker("1s place: Value\n10s place: Variable ID");
 				break;
 
 			case 24: // Projectile flag/variable check
@@ -627,10 +643,32 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				break;
 
 			case 34: // Homing
-				if(i18n::Combo(Row("Tracking type"), &p[8], "Accelerated\0Instant\0")) markModified();
+			{
+				// gonp's HA6 doc, 2026-11 (see Hime 75+76, 210+208, 211+209 and C.Mech 176+235).
+				const char* const homingTypes[] = {
+					"0: Accelerated tracking of enemy",
+					"1: Tracking of enemy",
+					"2: Tracking of owner",
+				};
+				if(ComboManual("Tracking type", &p[8], homingTypes, IM_ARRAYSIZE(homingTypes))) markModified();
+				if(p[8] == 0) {
+					if(im::InputInt(Row("Acceleration"), &p[1], 0, 0)) markModified();
+				} else if(p[8] == 1 || p[8] == 2) {
+					if(im::InputInt(Row("X offset"), &p[0], 0, 0)) markModified();
+					if(im::InputInt(Row("Y offset"), &p[1], 0, 0)) markModified();
+					if(im::InputInt(Row("Unknown (p3)", markW()), &p[2], 0, 0)) markModified();
+					ShowTooltipMarker("Does something if not 0");
+					if(im::InputInt(Row("Velocity divisor", markW()), &p[3], 0, 0)) markModified();
+					ShowTooltipMarker("0 doesn't track, but the turn flag still works");
+					unsigned int flagIdx = -1;
+					FormBreak();
+					if(BitField("Homing flags", (unsigned int*)&p[4], &flagIdx, 1)) markModified();
+					if(flagIdx == 0) Tooltip("Turn to face the target during travel");
+				}
 				FormBreak();
-				im::TextWrapped("%s", TXT("Other params: See Hime/CMech patterns"));
+				i18n::TextDisabledWrapped("%s", TXT("See Hime/CMech patterns"));
 				break;
+			}
 
 			case 37: // MBAA: queue pattern unconditionally (was "jump by selected colour" in MBAC/hantei4)
 				ShowPatternField("Pattern to queue", &p[0], "Queued at priority 300");
@@ -652,7 +690,8 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 					"6: On clash",
 					"7: On block/clash",
 				};
-				if(ComboManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When))) markModified();
+				if(ComboManual("When", &p[1], cond38When, IM_ARRAYSIZE(cond38When), markW())) markModified();
+				ShowTooltipMarker("+100 = no OTG");
 
 				if(i18n::Combo(Row("Opponent state"), &p[2], opponentStateList, IM_ARRAYSIZE(opponentStateList))) markModified();
 
@@ -688,10 +727,12 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				if(im::Checkbox(Row("Air throw"), (bool*)&p[1])) markModified();
 
 				if(im::DragInt(Row("Frame if combo air throw"), &p[2])) markModified();
+
+				if(i18n::Combo(Row("Bounces"), &p[7], "0: Reset bounces\0001: Don't reset bounces\000")) markModified();
 				break;
 
 			case 54: // Jump when owner thrown or hit
-				ShowFrameField("Frame to jump to", &p[0], "Jumps when the owner is thrown (not in hitstop) or in hitstun");
+				ShowFrameField("Frame to jump to", &p[0], "Jumps when the owner is thrown (not in hitstop) or in hitstun.\ngonp's HA6 doc: jump on hit or block");
 				break;
 
 			case 70: // Jump on reaching screen border
@@ -725,33 +766,43 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			{
 				if(p[2] & 2) ShowPatternField("Pattern to queue", &p[0], "Queued at priority 1000 (flag bit 1 set)");
 				else ShowFrameField("Frame to jump to", &p[0]);
-				if(im::InputInt(Row("Distance (px)"), &p[1], 0, 0)) markModified();
+				if(im::InputInt(Row("Distance (px)", markW()), &p[1], 0, 0)) markModified();
+				ShowTooltipMarker("Jumps if less than this (X distance from the opponent by default)");
 				unsigned int flagIdx = -1;
 				FormBreak();
 				if(BitField("Flags", (unsigned int*)&p[2], &flagIdx, 4)) markModified();
 				switch(flagIdx) {
-					case 0: Tooltip("Target must not be at a wall"); break;
+					case 0: Tooltip("Fail if the opponent is cornered"); break;
 					case 1: Tooltip("Queue pattern p1 (prio 1000) instead of a frame jump"); break;
-					case 2: Tooltip("Height test"); break;
+					case 2: Tooltip("Check distance to the floor"); break;
 					case 3: Tooltip("Needs Character_IsStateValid"); break;
 				}
-				if(im::InputInt(Row("Lever filter"), &p[3], 0, 0)) markModified();
-				if(im::InputInt(Row("X offset"), &p[4], 0, 0)) markModified();
+				if(im::InputInt(Row("Directional input", markW()), &p[3], 0, 0)) markModified();
+				ShowTooltipMarker("0-9: jumps if the directional input matches (numpad)\n10: 4/6\n11: 4/6/7/8/9\n12: 7/8/9\n13: 1/2/3");
+				if(im::InputInt(Row("Opponent X offset", markW()), &p[4], 0, 0)) markModified();
+				ShowTooltipMarker("Opponent X offset to check the distance from");
 				break;
 			}
 
 			case 15: // Box collision check (Capture)
 			{
-				ShowFrameField("Frame to jump to", &p[0], "Grabs the box target, then jumps to this frame");
+				ShowFrameField("Frame to jump to", &p[0], "Grabs the box target, then jumps to this frame.\ngonp's HA6 doc: add 10000 for a pattern jump?");
 				const char* const cond15Target[] = {
 					"0: Enemies only",
 					"1: Allies only",
 					"2: Both",
 				};
-				if(ComboManual("Check target", &p[1], cond15Target, IM_ARRAYSIZE(cond15Target))) markModified();
+				if(ComboManual("Check target", &p[1], cond15Target, IM_ARRAYSIZE(cond15Target), markW())) markModified();
+				ShowTooltipMarker("Add +100X for 'not cornered' check");
 				if(im::InputInt(Row("Own box", markW()), &p[2], 0, 0)) markModified();
 				ShowTooltipMarker("Same box numbering as IF 14 (value % 1000)");
 				if(im::InputInt(Row("Hitstop on contact"), &p[3], 0, 0)) markModified();
+				const char* const cond15Turn[] = {
+					"0: No turnaround",
+					"2: Turn towards collider",
+					"4: Turn away from collider",
+				};
+				if(ComboManual("Turn direction", &p[4], cond15Turn, IM_ARRAYSIZE(cond15Turn))) markModified();
 				break;
 			}
 
@@ -772,20 +823,25 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 			case 19: // Projectile box contact (reflection)
 				{
 					int selfMode = p[7] != 0;
-					if(i18n::Combo(Row("Mode (p8)"), &selfMode, "0: Reflect the box-6 target\0001: Self switches team\000")) { p[7] = selfMode; markModified(); }
+					if(i18n::Combo(Row("Mode (p8)"), &selfMode, "0: Reflect projectile in reflection box (box 6)\0001: Reflect self on clash (switch team)\000")) { p[7] = selfMode; markModified(); }
 				}
 				if(p[7]) {
 					ShowFrameField("Frame to jump to", &p[0], "Self switches to the attacker's team and jumps here");
+					if(im::Checkbox(Row("Projectile var decrease on hit"), (bool*)&p[2])) markModified();
+					if(im::DragInt(Row("Projectile var decrease", markW()), &p[3])) markModified();
+					ShowTooltipMarker("1s place: Value\n10s place: Variable ID");
 				} else {
 					if(im::InputInt(Row("X speed (/256)", markW()), &p[0], 0, 0)) markModified();
-					ShowTooltipMarker("Reflected target (and its children): team swapped,\nX velocity * -value/256 (0 = plain reverse)");
+					ShowTooltipMarker("Reflected target (and its children): team swapped,\nX velocity * -value/256 (0 = plain reverse; 256 = 1.0x)");
 				}
 				break;
 
 			case 20: // Box collision check 2
 				ShowFrameField("Frame to jump to", &p[0]);
-				if(im::InputInt(Row("Search kind (?)"), &p[1], 0, 0)) markModified();
-				if(im::InputInt(Row("Box"), &p[2], 0, 0)) markModified();
+				if(im::InputInt(Row("Box type 1", markW()), &p[1], 0, 0)) markModified();
+				ShowTooltipMarker("Earlier label (Cond_Dispatch reading): search kind (?)");
+				if(im::InputInt(Row("Box type 2", markW()), &p[2], 0, 0)) markModified();
+				ShowTooltipMarker("Earlier label: box");
 				if(im::InputInt(Row("On-screen test / hitstop (?)", markW()), &p[3], 0, 0)) markModified();
 				ShowTooltipMarker("1 = target must be 8-312 px on screen");
 				break;
@@ -801,13 +857,16 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				break;
 
 			case 28: // Jump if round-end phase started
-				ShowFrameField("Frame to jump to", &p[0], "Jumps once the round-end phase has started\n(g_RoundEndState != 0; EF6 No 253 advances it).\nThis is not the actor's own KO state.");
+				ShowFrameField("Frame to jump to", &p[0], "Jumps once the round-end phase has started\n(g_RoundEndState != 0; EF6 No 253 advances it).\nThis is not the actor's own KO state.\ngonp's HA6 doc: jump if knocked out");
 				break;
 
 			case 29: // Check X pos on screen
 				ShowFrameField("Frame to jump to", &p[0]);
 				if(im::InputInt(Row("Screen X"), &p[1], 0, 0)) markModified();
-				if(im::InputInt(Row("Direction", markW()), &p[2], 0, 0)) markModified();
+				{
+					const char* const cond29Cmp[] = {"0: Less than", "1: Greater than"};
+					if(ComboManual("Comparison", &p[2], cond29Cmp, IM_ARRAYSIZE(cond29Cmp), markW())) markModified();
+				}
 				ShowTooltipMarker("Jumps and clamps the position when past Screen X");
 				break;
 
@@ -867,7 +926,7 @@ inline void IfDisplay(std::vector<Frame_IF> *ifList_, Frame_IF *singleClipboard 
 				break;
 
 			case 50: // Attack box touches teammate box 10
-				ShowFrameField("Frame to jump to", &p[0], "Jumps when own attack boxes touch a TEAMMATE's box 10\n(hurtbox index 9). Not an opponent check (medium confidence)");
+				ShowFrameField("Frame to jump to", &p[0], "Jumps when own attack boxes touch a TEAMMATE's box 10\n(hurtbox index 9). Not an opponent check (medium confidence).\ngonp's HA6 doc: effect reflection box (unused?)");
 				break;
 
 			case 100: // Partner box contact (tag touch)

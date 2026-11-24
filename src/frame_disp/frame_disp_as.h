@@ -85,11 +85,12 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	{
 		case 0: Tooltip("Vector influences other animations (dash momentum)"); break;
 		case 1: Tooltip("Force clean vector (kill dash momentum)"); break;
-		case 2: Tooltip("Don't transition to walking"); break;
+		case 2: Tooltip("Don't transition to walking or crouching"); break;
 		case 4: Tooltip("Can ground tech"); break;
 		case 5: Tooltip("Unknown"); break;
-		case 8: Tooltip("Guard point high and mid"); break;
+		case 8: Tooltip("Guard point stand blockable"); break;
 		case 9: Tooltip("Guard point air blockable"); break;
+		case 10: Tooltip("Guard point crouch blockable"); break;
 		case 12: Tooltip("Unknown"); break;
 		case 31: Tooltip("Vector initialization only at the beginning (?)"); break;
 	}
@@ -102,7 +103,7 @@ inline void AsDisplay(Frame_AS *as, FrameData *frameData = nullptr, int patternI
 	switch (flagIndex)
 	{
 		case 0: Tooltip("Can always EX cancel"); break;
-		case 2: Tooltip("Can only jump cancel"); break;
+		case 2: Tooltip("Normal cancel is jump and air throw only"); break;
 		case 31: Tooltip("Can't block"); break;
 	}
 

@@ -730,6 +730,9 @@ void MainFrame::Menu(unsigned int errorPopupId)
 			if (ImGui::IsItemHovered())
 				ImGui::SetTooltip("Arrange related properties in responsive grids. Applies to all views; font size is unchanged.");
 			if(ImGui::MenuItem(LBL("Pattern list"),nullptr,&gSettings.showPatternList,gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
+			// The inline list repeats the Pattern dropdown; people who navigate with the dropdown can hide it (#129)
+			if(ImGui::MenuItem(LBL("Box fills add up where boxes overlap"),nullptr,&gSettings.boxFillsAdditive)) ImGui::MarkIniSettingsDirty();
+			if(ImGui::MenuItem(LBL("Pattern list under the trees"),nullptr,&gSettings.inlinePatternList,!gSettings.patternListWindow)) ImGui::MarkIniSettingsDirty();
 			ImGui::Separator();
 			auto* active = getActiveCharacter();
 			if (ImGui::BeginMenu(LBL("Zoom level")))
@@ -993,6 +996,16 @@ void MainFrame::Menu(unsigned int errorPopupId)
 		{
 			if (ImGui::MenuItem(LBL("Game Link (MBAACC)"), nullptr, gamelink::showPanel)) gamelink::showPanel = !gamelink::showPanel;
 			if (ImGui::MenuItem(LBL("fpan-im (UNI2 / MBTL): install, status"), nullptr, fpanimpanel::showPanel)) fpanimpanel::showPanel = !fpanimpanel::showPanel;
+			ImGui::Separator();
+			// MBAACC .p archives: the in-app replacement for dump.exe (archive_gamepack.cpp)
+			if (ImGui::BeginMenu(LBL("Game archives (MBAACC .p)")))
+			{
+				if (ImGui::MenuItem(LBL("Unpack game archives (replaces dump.exe)...")) ) abrowser::UnpackGameDialog();
+				if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", TXT("Extract every file of 0000.p ... 0008.p into the game folder and move the .p files to _packed_backup, so the game reads the loose files (what dump.exe did)"));
+				if (ImGui::MenuItem(LBL("Restore packed archives..."))) abrowser::RestorePackedDialog();
+				if (ImGui::MenuItem(LBL("Pack loose files into .p..."))) abrowser::PackArchivesDialog();
+				ImGui::EndMenu();
+			}
 			ImGui::Separator();
 			// [authoring] docs/HANTEI_AUTHORING_MODE.md §8.11: Authoring ships in the public build, here (was "Experimental: Authoring").
 			if (ImGui::BeginMenu(LBL("Authoring")))

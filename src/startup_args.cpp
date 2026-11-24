@@ -9,6 +9,7 @@
 #include "authoring/authoring_window.h"
 #include "main_frame.h"
 #include "character_instance.h"
+#include "ini.h"
 #include "framedata_han2.h"
 #include "han2_pat.h"
 #include "han2_character.h"
@@ -200,6 +201,7 @@ static bool WriteViewTargetPng(CharacterView *v, const std::string &path)
 
 static int pendingWaitMs = 0; static bool pendingWaitS3d = false;
 static int pendingPlayWaitS = 0;   // set by playwait <seconds>: until Play in game is idle, then its reply goes to the log   // set by waitms / waits3dchange, armed by RunUiScript
+static bool waitingPack = false; static std::string packCmd;   // unpackgame / packgame started: log its result when the job finished
 static void LogLine(const char* text)
 {
 	FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
@@ -246,6 +248,17 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			if (timeout) gStartup.exitCode = 1;
 		}
 	}
+	{   // unpackgame / restorepacked / packgame: the job runs on the browser worker; its result goes to the log when it finished
+		if (waitingPack) {
+			if (abrowser::GamePackBusy()) return;
+			waitingPack = false;
+			bool ok = true; const std::string r = abrowser::GamePackResult(&ok);
+			LogLine((packCmd + " -> " + (ok ? "ok: " : "FAILED: ") + r).c_str());
+			if (!ok) gStartup.exitCode = 1;
+			waitFrames = 3;
+			return;
+		}
+	}
 	if (waitIdle) { if (abrowser::Busy() && ++idleWaited < 1800) return; waitIdle = false; idleWaited = 0; waitFrames = 6; return; }   // a few frames for the uploaded textures to draw
 	while (pc < lines.size()) {
 		const std::string line = lines[pc++];
@@ -285,7 +298,7 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 		// Edits through the same model calls as the UI (S3 evidence): copypattern N | pastepattern N |
 		// gameformat auto|mbaacc|uni2|unist|unib|mbtl | layer N | switchview N | opentrees 0/1/anim | tint R G B
 		if (cmd == "captureview") { if (!editCmd(cmd, arg)) gStartup.exitCode = 1; continue; }   // the active view's FBO (works under --headless)
-		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint" || cmd == "palinfo") {
+		if (cmd == "copypattern" || cmd == "pastepattern" || cmd == "gameformat" || cmd == "layer" || cmd == "switchview" || cmd == "opentrees" || cmd == "tint" || cmd == "palinfo" || cmd == "boxfills") {
 			if (!editCmd(cmd, arg)) { FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a"); if (lf) { fprintf(lf, "script line %zu '%s' failed\n", pc, line.c_str()); fclose(lf); } }
 			waitFrames = 3; return;
 		}
@@ -339,6 +352,13 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			waitFrames = 3;
 			return;
 		}
+		if (cmd == "unpackgame" || cmd == "packgame" || cmd == "restorepacked") {   // archive_gamepack.cpp; unpack / pack finish later (see above)
+			const bool ok = abrowser::ScriptCommand(cmd, arg, &msg);
+			if (!ok) { LogLine((line + " -> FAILED: " + msg).c_str()); gStartup.exitCode = 1; }
+			else if (cmd == "restorepacked") LogLine((line + " -> ok: " + msg).c_str());
+			else { waitingPack = true; packCmd = line; }
+			waitFrames = 3; return;
+		}
 		if (!abrowser::ScriptCommand(cmd, arg, &msg)) {
 			FILE *lf = fopen((gStartup.uiScript + ".log").c_str(), "a");
 			if (lf) { fprintf(lf, "script line %zu '%s' failed: %s\n", pc, line.c_str(), msg.c_str()); fclose(lf); }
@@ -357,6 +377,7 @@ void MainFrame::ProcessStartupArgs()
 			[this]() { return getActiveCharacter() ? saveCharacter(getActiveCharacter()) : false; },
 			[this](const std::string &cmd, const std::string &arg) -> bool {
 				if (cmd == "switchview") { const int i = atoi(arg.c_str()); if (i < 0 || i >= (int)views.size()) return false; setActiveView(i); return true; }
+				if (cmd == "boxfills") { gSettings.boxFillsAdditive = arg == "additive"; return true; }   // boxfills union|additive (#128 before/after captures)
 				if (cmd == "captureview") return WriteViewTargetPng(getActiveView(), arg);
 				CharacterView *vw = getActiveView();
 				CharacterInstance *ch = getActiveCharacter();

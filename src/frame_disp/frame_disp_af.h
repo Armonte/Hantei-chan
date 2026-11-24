@@ -407,6 +407,36 @@ if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
 
 	};
 
+	// AFAL blend as stored (#130). MBAACC (MBAA.exe 0x41AFA8): blend 0 = Default, drawn as Normal with the alpha forced to 255
+	// whatever +1C holds; a layer without AFAL is blend 0 with alpha 0 in the game. 1 Normal, 2 Additive, 3 Subtractive.
+	// The list used to show 0 as Normal and store 1 when touched, and showed the unused alpha as 255.
+	auto blendCombo = [&](const char *label) {
+		int m = std::clamp(layer.blend_mode, 0, 3);
+		if (i18n::Combo(label, &m, "Default (alpha ignored)\0Normal\0Additive\0Subtractive\0") && m != layer.blend_mode) {
+			if (layer.blend_mode == 0 || m == 0) layer.rgba[3] = 1.f;   // leaving Default starts at alpha 255 (shown); Default keeps no alpha
+			layer.blend_mode = m;
+			markModified();
+		}
+		if (im::IsItemHovered())
+			Tooltip(uni ? "AFAL mode (UNI2/MBTL D3D blend table, D3D_SetBlendModeFromTable):\n"
+				"0 = Default: no AFAL, normal with the alpha forced to 255\n"
+				"1 = normal (src alpha, inv src alpha)\n"
+				"2 = additive (src alpha, one)\n"
+				"3 = subtractive (reverse subtract, src alpha, one)"
+				: "AFAL blend mode as stored.\n"
+				"Default (0): drawn like Normal with alpha 255; the alpha value is ignored (0 in the data when there is no AFAL).\n"
+				"Normal (1): uses the alpha.\nAdditive (2), Subtractive (3).");
+	};
+	// Colour: on a Default layer the game ignores the alpha, so it is shown as the data's 0 and not editable.
+	auto colorEdit = [&](const char *label) {
+		if (layer.blend_mode != 0) { if (im::ColorEdit4(label, layer.rgba)) markModified(); return; }
+		const char *note = TXT("A 0 (ignored)");
+		im::SetNextItemWidth(std::max(ui::Em(6), im::CalcItemWidth() - im::CalcTextSize(note).x - im::GetStyle().ItemSpacing.x));   // CalcItemWidth honours a caller's SetNextItemWidth
+		if (im::ColorEdit4(label, layer.rgba, ImGuiColorEditFlags_NoAlpha)) markModified();
+		im::SameLine(); im::TextDisabled("%s", note);
+		if (im::IsItemHovered()) Tooltip("Blend is Default: the game draws this layer at alpha 255. Set Blend to Normal to use an alpha.");
+	};
+
 	if(gSettings.compactUi) {
 		im::EndDisabled(); // offset is still editable on a BaseData template
 		if(im::BeginTable("##af_transform_rows",5,ImGuiTableFlags_SizingFixedFit|ImGuiTableFlags_NoSavedSettings|ImGuiTableFlags_NoClip)) {
@@ -427,10 +457,9 @@ if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
 			im::TableSetColumnIndex(4);pasteTransforms();
 			im::TableNextRow();im::TableSetColumnIndex(0);ui::RowLabel("Color");im::TableSetColumnIndex(1);
 			const float colorWidth=im::GetCurrentTable()->Columns[4].MinX-im::GetCursorScreenPos().x-im::GetStyle().ItemSpacing.x;
-			im::SetNextItemWidth(colorWidth);if(im::ColorEdit4("##color",layer.rgba)) markModified();
+			im::SetNextItemWidth(colorWidth);colorEdit("##color");
 			im::TableSetColumnIndex(4);ui::RowLabel("Blend");im::SameLine();
-			im::SetNextItemWidth(-FLT_MIN);int mode=std::max(0,layer.blend_mode-1);
-			if(i18n::Combo("##blend",&mode,"Normal\0Additive\0Subtractive\0")) {layer.blend_mode=mode+1;markModified();}
+			im::SetNextItemWidth(-FLT_MIN);blendCombo("##blend");
 			im::EndDisabled();im::EndTable();
 		}
 	} else {
@@ -470,23 +499,8 @@ if(im::InputInt(ui::FormRow(LBL("Z-Priority")), &af->priority, 0, 0)) {
 	// 1 = ADD (src alpha, inv src alpha), 2 = ADD (src alpha, one), 3 = REVSUBTRACT (src alpha, one).
 	// So stored 1 Normal, 2 Additive, 3 Subtractive are right (0 = Normal at full alpha); Render::SetBlendingMode
 	// uses the same mapping.
-	int mode = layer.blend_mode-1;
-	if(mode < 1)
-		mode = 0;
-	if (i18n::Combo(ui::FormRow(LBL("Blend Mode")), &mode, "Normal\0Additive\0Subtractive\0"))
-	{
-		layer.blend_mode=mode+1;
-		markModified();
-	}
-	if (uni && im::IsItemHovered())
-		Tooltip("AFAL mode (UNI2/MBTL D3D blend table, D3D_SetBlendModeFromTable):\n"
-			"1 = normal (src alpha, inv src alpha)\n"
-			"2 = additive (src alpha, one)\n"
-			"3 = subtractive (reverse subtract, src alpha, one)\n"
-			"No AFAL = normal with the alpha forced to 255.");
-	if(im::ColorEdit4(ui::FormRow(LBL("Color")), layer.rgba)) {
-		markModified();
-	}
+	blendCombo(ui::FormRow(LBL("Blend Mode")));
+	colorEdit(ui::FormRow(LBL("Color")));
 
 	ui::FormRow(LBL("Rot XYZ"));
 	if(ui::AxisFloats("rotation",layer.rotation,3,.005f)) {

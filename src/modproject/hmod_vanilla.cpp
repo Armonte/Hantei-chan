@@ -235,8 +235,12 @@ std::vector<std::string> VanillaIndex::FindArchives(const std::string& game, con
 			for (char& c : l) if (c >= 'A' && c <= 'Z') c = char(c - 'A' + 'a');
 			if (l.size() > 6 && l.compare(l.size() - 6, 6, ".p.bak") == 0 && !have.count(l.substr(0, l.size() - 4))) names.push_back(n);
 		}
-		// order by the 4-digit stem so "0002.p.bak" sits between 0001.p and 0003.p
-		std::sort(names.begin(), names.end(), [](const std::string& a, const std::string& b) { return a.substr(0, a.find('.')) < b.substr(0, b.find('.')); });
+		// later wins in Build(): MBAA.exe's mount order reversed (0001 first ... 0008 last: the game takes the first mounted archive that holds a
+		// path); "0002.p.bak" stands in for 0002.p; archives the game does not mount come first, by name
+		std::sort(names.begin(), names.end(), [](const std::string& a, const std::string& b) {
+			const int ra = fbarc::MbaaccMountRank(a), rb = fbarc::MbaaccMountRank(b);
+			return ra != rb ? ra > rb : a.substr(0, a.find('.')) < b.substr(0, b.find('.'));
+		});
 		for (const std::string& n : names) out.push_back((root / n).u8string());
 	}
 	return out;

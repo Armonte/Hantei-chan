@@ -46,7 +46,7 @@ public:
 	void Draw(int which, size_t count = 0, int mode = GL_TRIANGLES);
 
 	void InitQuads(int which);
-	void DrawQuads(int mode = GL_LINE_LOOP, int numberOf =-1);
+	void DrawQuads(int mode = GL_LINE_LOOP, int numberOf =-1, int first = 0);
 	void UpdateBuffer(int which, void *data, size_t count = 0);
 	void Bind();
 	void Load();

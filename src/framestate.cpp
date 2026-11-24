@@ -352,6 +352,20 @@ int CalculateTickFromFrame(FrameData* frameData, int patternId, int frameNum)
 	return tick;
 }
 
+int PlaybackEndTick(preview::PreviewSim& sim, FrameData* frameData, int patternId)
+{
+	const int horizon = std::max(0, sim.horizon());
+	const int rootEnd = sim.rootEndTick();
+	if (rootEnd >= 0) {
+		int end = rootEnd + kPlaybackTailTicks;
+		const int settled = sim.settledTick();
+		if (settled >= 0) end = std::min(end, settled);
+		return std::clamp(end, 0, horizon);
+	}
+	const int period = FindLoopPeriod(frameData, patternId);
+	return std::min(std::max(period * 3, 240), horizon);
+}
+
 // Find loop period by simulating animation flow and detecting when we return to frame 0
 // Uses the actual Hantei animation logic (aniType/aniFlag/jump) to properly detect loops
 int FindLoopPeriod(FrameData* frameData, int patternId, int maxTicks)
@@ -762,6 +776,33 @@ int FrameState::AuthoredTick(FrameData* data) const
 	int local=authoredOffset;
 	if(!authoredInspection && previewSim) { preview::TickState ts; previewSim->getStateAt(currentTick,ts); if(ts.root() && ts.root()->frame==selected) local=ts.root()->frameTimer; }
 	return tick+std::clamp(local,0,std::max(1,seq->frames[selected].AF.duration)-1);
+}
+
+int FrameState::PreviewTick(FrameData* data) const
+{
+	if(!authoredInspection) return currentTick;
+	return absoluteScrub?AuthoredTick(data):InspectedRuntimeTick(data);
+}
+
+int FrameState::InspectedRuntimeTick(FrameData* data) const
+{
+	// Inspecting a state leaves the runtime playhead (currentTick) where it was (#88), but the spawned actors and
+	// preset markers must be the ones of the state shown, not of that stale tick (#123: stepping frames showed no
+	// effects). The state's visit at the playhead when the root is in it there; else the first tick the simulated
+	// flow enters it; else (never reached) its authored start tick. Plus the inspected offset into the visit.
+	auto* seq=data?data->get_sequence(pattern):nullptr; if(!seq || seq->frames.empty()) return currentTick;
+	const int selected=std::clamp(frame,0,int(seq->frames.size())-1);
+	const int offset=std::clamp(authoredOffset,0,std::max(1,seq->frames[selected].AF.duration)-1);
+	if(!previewSim || previewSim->rootPattern()!=pattern) return CalculateTickFromFrame(data,pattern,selected)+offset;
+	preview::PreviewSim& sim=*previewSim;
+	int start=-1;
+	preview::TickState ts;
+	if(sim.getStateAt(currentTick,ts) && ts.root() && ts.root()->frame==selected) start=currentTick-ts.root()->frameTimer;
+	if(start<0) start=sim.firstTickOfRootFrame(selected);
+	if(start<0) { int t=0; for(int i=0;i<selected;++i) t+=std::max(1,seq->frames[i].AF.duration); return std::min(t+offset,sim.horizon()); }
+	sim.ensureSimulatedTo(start+offset);
+	const auto& track=sim.rootFrameTrack();
+	return start+offset<(int)track.size() && track[start+offset]==selected?start+offset:start;
 }
 
 void FrameState::ScrubTimeline(FrameData* data,FrameData* effects,int tick)

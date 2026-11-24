@@ -8,6 +8,7 @@
 // Effect Type 2: Visual Effects
 // ============================================================================
 // Superflash, heat distortion, speed lines, screen effects, etc.
+// Param names for No 4/26/50/261/1260: gonp's HA6 doc, 2026-11.
 // Various visual-only effects that don't spawn patterns or cause damage
 // ============================================================================
 
@@ -26,7 +27,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			const char* const subTypes[] = {
 				"0: System fx 5 (20f, attached to owner)",
 				"1: System fx 6 (90f, rising)",
-				"4: Random sparkle/speed line",
+				"4: Random sparkle/speed line (Ciel 182, 183)",
 				"26: (Blood) Heat activation",
 				"50: Superflash",
 				"210: (no MBAA handler?) (Ciel)",
@@ -69,7 +70,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 					markModified();
 				}
 
-				im::DragInt(EfRow(LBL("Duration")), &p[3]);
+				im::DragInt(EfRow(LBL("Freeze/blackout duration")), &p[3]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
 			}
@@ -86,6 +87,8 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 					markModified();
 				}
 
+				if(im::Checkbox(EfRow(LBL("Draw in front")), (bool*)&p[5])) markModified();
+
 				im::DragInt(EfRow(LBL("Don't spend meter")), &p[8]);
 				if(im::IsItemEdited()) {
 				if (frameData && patternIndex >= 0) frameData->mark_modified(patternIndex);
@@ -93,6 +96,8 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 			if(im::IsItemDeactivatedAfterEdit()) {
 				markModified();
 			}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Non-zero: meter is not spent, but the meter spend value is still set");
 
 				im::DragInt(EfRow(LBL("Meter gain mult")), &p[9]);
 				if(im::IsItemEdited()) {
@@ -102,7 +107,7 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("256 = 1.0x, requires param9 != 0");
+				if(im::IsItemHovered()) Tooltip("256 = 1.0x (default 110), requires Don't spend meter != 0");
 
 				im::DragInt(EfRow(LBL("Mult duration")), &p[10]);
 				if(im::IsItemEdited()) {
@@ -112,8 +117,30 @@ static inline void DrawEffectVisual_Type2(Frame_EF& effect, FrameData* frameData
 				markModified();
 			}
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Frames, requires param9 != 0");
+				if(im::IsItemHovered()) Tooltip("Frames (default 420f), requires Don't spend meter != 0");
 
+	} else if(no == 4) { // Random spawning sparkle/speed line (gonp's HA6 doc, 2026-11)
+		EfSection(TXT("--- Random Sparkle / Speed Line ---"));
+		if(im::InputInt(EfRow("X1"), &p[0], 0, 0)) markModified();
+		if(im::InputInt(EfRow("Y1"), &p[1], 0, 0)) markModified();
+		if(im::InputInt(EfRow("X2"), &p[2], 0, 0)) markModified();
+		if(im::InputInt(EfRow("Y2"), &p[3], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Stretch (?)")), &p[4], 0, 0)) markModified();
+	} else if(no == 26) { // (Blood) Heat
+		if(im::InputInt(EfRow(LBL("Position X")), &p[0], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Position Y")), &p[1], 0, 0)) markModified();
+	} else if(no == 261) { // Trailing effect
+		EfSection(TXT("--- Trailing effect ---"));
+		if(im::InputInt(EfRow(LBL("Offset X")), &p[0], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Offset Y")), &p[1], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Trail pattern")), &p[2], 0, 0)) markModified();
+		if(frameData && p[2] >= 0 && p[2] < frameData->get_sequence_count()) EfNote(frameData->GetDecoratedName(p[2]).c_str());
+		if(im::InputInt(EfRow(LBL("Trail sprite width (X)")), &p[3], 0, 0)) markModified();
+	} else if(no == 1260) { // Fading circle (Boss Aoko); always spawns at the origin
+		EfSection(TXT("--- Fading circle (spawns at origin) ---"));
+		if(im::InputInt(EfRow(LBL("Color (index?)")), &p[2], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Unknown (must not be 6)")), &p[3], 0, 0)) markModified();
+		if(im::InputInt(EfRow(LBL("Sprite scale")), &p[4], 0, 0)) markModified();
 	} else {
 		// Generic parameters for other sub-types
 		im::Text(TXT("Parameters:"));

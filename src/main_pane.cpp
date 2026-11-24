@@ -699,7 +699,7 @@ void MainPane::Draw()
 
 			// The space the (collapsed) trees leave holds the pattern list, so the pane is not half empty
 			// (docs/ui/LAYOUT_AUDIT_2026-10-16.md #10), unless the list was moved to its own window.
-			if (!gSettings.patternListWindow && im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
+			if (!gSettings.patternListWindow && gSettings.inlinePatternList && im::GetContentRegionAvail().y > im::GetTextLineHeightWithSpacing() * 6.f)
 			{
 				im::SeparatorText(TXT("Pattern"));
 				DrawPatternListBody();

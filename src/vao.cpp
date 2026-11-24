@@ -68,12 +68,13 @@ void Vao::InitQuads(int which)
 	}
 }
 
-void Vao::DrawQuads(int mode, int numberOf)
+void Vao::DrawQuads(int mode, int numberOf, int first)
 {
 	if(numberOf<0)
-		numberOf = quadSize;
-	if(quadIndexes)
-		glMultiDrawArrays(mode, quadIndexes, quadCount, numberOf);
+		numberOf = quadSize - first;
+	if(first < 0 || first + numberOf > quadSize) return;
+	if(quadIndexes && numberOf > 0)
+		glMultiDrawArrays(mode, quadIndexes + first, quadCount + first, numberOf);
 }
 
 void Vao::UpdateBuffer(int which, void *data, size_t count)

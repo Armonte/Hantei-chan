@@ -75,6 +75,12 @@ std::unique_ptr<Archive> Open(const std::string& utf8Path, std::string* err);
 // Opens as a specific kind.
 std::unique_ptr<Archive> OpenAs(Kind kind, const std::string& utf8Path, std::string* err);
 
+// MBAACC: position of an archive (file name or path; "0002.p.bak" counts as 0002.p) in MBAA.exe's mount order. The game mounts
+// 0008, 0003, 0005, 0002, 0007, 0000, 0004, 0006, 0001.p and every file open takes the FIRST mounted archive that holds the path
+// (FilePac_MountGameArchives_InPriorityOrder 0x41E470 / FilePac_FindEntry 0x4DB8E0; the Steam build does the same); a loose file is read
+// only when no archive has it. 0 = 0008.p (wins over every other archive), 100 = a name the game does not mount.
+int MbaaccMountRank(const std::string& fileNameOrPath);
+
 // Byte-exact proof used by the suite: rebuild with an empty Edit to a temp file and compare with the original.
 // Returns true when identical; `detail` receives the first difference otherwise.
 bool VerifyRebuild(const Archive& a, std::string* detail);

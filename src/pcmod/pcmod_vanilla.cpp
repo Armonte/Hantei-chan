@@ -46,11 +46,11 @@ bool VanillaIndex::Load(const std::string& dir)
 const char* VanillaIndex::Where(const std::string& normPath) const
 {
 	if (!loaded) return "";
-	// A loose file in the game folder is what the game reads first, so it wins over the same path inside a .p archive:
-	// report "loose" even when the archive also holds the path (p_arc.* is both).
+	// MBAA.exe asks the mounted .p archives first (FilePac_FindEntry 0x4DB8E0) and reads the loose file only when no archive holds
+	// the path, so a path inside a .p is "packed" even when a loose copy exists too (that copy is ignored by the game).
+	if (packed.count(normPath)) return "packed";
 	std::error_code ec;
 	if (fs::is_regular_file(fs::u8path(gameDir) / fs::u8path(normPath), ec)) return "loose";
-	if (packed.count(normPath)) return "packed";
 	return "";
 }
 
