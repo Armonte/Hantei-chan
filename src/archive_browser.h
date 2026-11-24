@@ -69,6 +69,13 @@ bool SaveCharacterIntoArchive(CharacterInstance &ch, const std::string &archiveP
 bool SaveEntryBytesIntoArchive(const std::string &loosePath, std::string *err, bool *hadOrigin);
 bool SwapRebuiltArchive(const std::string &archivePath, const std::string &rebuiltPath, std::string *err);
 
+// Character diff (issue #131): finds the character file `fileName` (its .txt or .ha6 name, e.g. "ryougi_0.txt") in an archive (.p ...) or a game folder (the
+// game's archives in its own search order, MBAACC 0008, 0003, 0005, 0002, 0007, 0000, 0004, 0006, 0001 with the first one that has it winning; a loose file
+// only when no archive has it) and unpacks it with its stack into stageRoot (always rewritten).
+// Returns the file to load (a loose file is returned in place); '' and *err when not found. *foundIn = the archive or file it came from.
+// Loads one character file of any family the editor reads, by content (as File > Open routes it). *fmt = what it was recognised as.
+bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);
+std::string StageCharacterByName(const std::string &archiveOrFolder, const std::string &fileName, const std::string &stageRoot, std::string *foundIn, std::string *err);
 // ---- MBAACC game archives (archive_gamepack.cpp) --------------------------------------------------------------------------------------------------------
 // MBAA.exe reads a file from the mounted .p archives first and only falls back to the loose file when no archive holds it, so "unpack" writes every
 // file into the game folder and then moves 0000.p ... 0008.p into <game>\_packed_backup. dir "" = the MBAACC folder open in the browser / the found install.

@@ -283,6 +283,10 @@ static void RunUiScript(MainFrame &mf, HDC dc, const std::function<void(const st
 			std::string hmsg;
 			if (mf.HotSaveScriptCommand(cmd, arg, &hmsg)) { LogLine((cmd + " " + arg + " -> " + hmsg).c_str()); waitFrames = 3; return; }
 		}
+		{   // character diff (ui/char_diff_impl.h): diffwith <archive|folder|file> | diffrefresh | diffside | diffstatus | difffields P [F] | diffonly on|off | diffclear
+			std::string dmsg;
+			if (mf.CharDiffScriptCommand(cmd, arg, &dmsg)) { LogLine((cmd + " " + arg + " -> " + dmsg).c_str()); waitFrames = 3; return; }
+		}
 		{   // PACNyx-parity commands (ui/pacnyx_script_impl.h) first: `layer` in an RBO / GOF2 PAT editor tab is the part layer
 			std::string pmsg;
 			if (mf.PacnyxScriptCommand(cmd, arg, &pmsg)) {   // PAT editor / CG / export commands: result line in the log, a few frames to settle

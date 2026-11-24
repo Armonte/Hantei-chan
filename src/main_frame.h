@@ -8,6 +8,7 @@ namespace abrowser { struct OpenRequest; }
 #include "state_transfer.h"
 #include "bgm_player.h"
 #include "pattern_refs.h"
+#include "char_diff.h"
 #include "context_gl.h"
 #include "render.h"
 #include "main_pane.h"
@@ -516,6 +517,41 @@ public:
 private:
 	CompareState m_compare;
 	void drawCompareWindow();
+	// Character diff (issue #131, ui/char_diff_impl.h): the tool character against another file of the same character
+	// (vanilla archive / game folder, or any character file), pattern by pattern.
+	struct CharDiffState {
+		bool open = false;
+		CharacterInstance* mine = nullptr;        // validated every frame (isLiveCharacter)
+		uint64_t mineViewId = 0;                  // the view the side-by-side tab follows
+		std::string source;                       // archive / game folder / character file the user picked
+		std::string otherPath;                    // file loaded for the other side (a private staged copy, or the file itself)
+		std::string foundIn;                      // archive or file it came from
+		std::string otherLabel;                   // "ryougi_0.txt (0002.p)"
+		std::vector<Sequence> other;              // the other side's patterns as compared (refreshed from the side tab while it is open)
+		std::unique_ptr<CharacterInstance> otherChar;   // loaded other side, until it is opened side by side
+		CharacterInstance* sideChar = nullptr;    // the other side in a tab (owned by `characters`)
+		uint64_t sideViewId = 0;
+		chardiff::Result result;
+		uint64_t mineVersion = 0, sideVersion = 0, mineRevision = 0;   // data version (edits) and undo revision (undo / redo) compared last
+		double lastRefresh = 0.0;
+		bool autoRefresh = true, sync = true;
+		int syncPattern = -1, syncFrame = -1, sideSetPattern = -1, sideSetFrame = -1;
+		std::string status;
+		bool statusError = false;
+		char sourceBuf[1024] = {};
+		char filter[64] = {};
+	} m_diff;
+	void DrawCharDiffWindow();
+	void UpdateCharDiff();     // every frame: validity, auto refresh, side-by-side sync, pattern list marks
+	bool CharDiffLoad(CharacterInstance* mine, uint64_t mineViewId, const std::string& source, std::string* msg);
+	void CharDiffRefresh();
+	bool CharDiffOpenSideBySide(std::string* msg);
+	void CharDiffClear();
+	std::string CharDiffSummary(int maxRows) const;
+	void NavigateView(CharacterView* view, int pattern, int frame);
+public:
+	bool CharDiffScriptCommand(const std::string& cmd, const std::string& arg, std::string* msg);
+private:
 	bool m_showOpponent = false;
 	uint64_t m_opponentSettingsView=0;
 	bool m_raiseOpponentSettings=false;

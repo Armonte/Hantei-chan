@@ -1,0 +1,11 @@
+# Character diff (issue #131): a file against itself and an unmodified copy against the packed Steam MBAACC -> 0 differences.
+# Machine-specific paths. Setup (vanilla copy of ryougi out of 0002.p):
+#   for e in data/ryougi_0.txt data/ryougi.HA6 data/ryougi_r.HA6 data/ryougi_0.ha6 data/ryougi_0_r.HA6 data/ryougi.cg data/ryougi.pal data/ryougi.pat; do
+#     build/fbarctool.exe extract "<Steam MBAACC>\0002.p" $e %TEMP%\hantei_diff_test; done
+# Run headless:  gonptechan.exe --headless --ui-script tests\ui_scripts\char_diff_identity.txt   (result lines in <script>.log)
+openany C:\Users\teo\AppData\Local\Temp\hantei_diff_test\data\ryougi_0.txt
+wait 5
+diffwith C:\Users\teo\AppData\Local\Temp\hantei_diff_test\data\ryougi_0.txt
+diffwith C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code\0002.p
+diffwith C:\Program Files (x86)\Steam\steamapps\common\MELTY BLOOD Actress Again Current Code
+quit

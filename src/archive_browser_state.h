@@ -161,7 +161,8 @@ void ApplyThumb(const std::string &key, std::shared_ptr<std::vector<uint8_t>> rg
 
 // unpacking a character stack of a read-only / foreign archive as a working copy (returns the file to open: the txt, else the .ha6); loading any character file by content
 // light = only what a thumbnail needs (txt, .ha6, .pal); *cgIndex = the item of the project's sprite bank (read it straight from the archive)
-std::string Materialize(const SourceP &owner, const Item &it, std::string *err, bool light = false, int *cgIndex = nullptr);
+// stageRoot: stage into this folder instead of the shared %TEMP%\\hantei_archive one, rewriting every file
+std::string Materialize(const SourceP &owner, const Item &it, std::string *err, bool light = false, int *cgIndex = nullptr, const std::string *stageRoot = nullptr);
 bool LoadCharacterFile(CharacterInstance &ch, const std::string &path, std::string *fmt, std::string *err);
 
 // opening / extraction

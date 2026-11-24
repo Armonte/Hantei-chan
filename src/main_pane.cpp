@@ -11,6 +11,7 @@
 #include "ui/compact_inspector.h"
 #include "fpanim_play.h"
 #include "paste_notice.h"
+#include "char_diff.h"
 
 MainPane::MainPane(Render* render, FrameData *framedata, FrameState &fs) : DrawWindow(render, framedata, fs),
 decoratedNames(nullptr)
@@ -128,12 +129,14 @@ void MainPane::Draw()
 				if (PatternHidden(n)) continue;
 				decoratedNames[n] = frameData->GetDecoratedName(n);
 				const bool is_selected = (currState.pattern == n);
+				const bool diffColor = PushDiffColor(n);
 				if (im::Selectable(decoratedNames[n].c_str(), is_selected))
 				{
 					currState.pattern = n;
 					currState.frame = 0;
 					currState.currentTick = 0;  // Reset tick when changing pattern
 				}
+				if (diffColor) im::PopStyleColor();
 
 				// Set the initial focus when opening the combo (scrolling + keyboard navigation focus)
 				if (is_selected)
@@ -734,8 +737,10 @@ void MainPane::DrawPatternListBody()
 				const int count = frameData->get_sequence_count();
 				DrawHideEmptyToggles();
 				// Rows = the pattern IDs left after the hide-empty filter (all of them when it is off).
-				const std::vector<int> rows = VisiblePatterns(*frameData, gSettings.hideEmptyPatterns,
+				std::vector<int> rows = VisiblePatterns(*frameData, gSettings.hideEmptyPatterns,
 					gSettings.hideFramelessPatterns, currState.pattern);
+				if (HiddenByDiff(-1))   // character diff: only the differing patterns (and the selected one)
+					rows.erase(std::remove_if(rows.begin(), rows.end(), [&](int n) { return HiddenByDiff(n); }), rows.end());
 				// The selection follows currState.pattern both ways: a click here sets it, and a change anywhere else (combo,
 				// ID field, search, shortcuts) moves the selection and scrolls the row into view once. The scroll is held
 				// back while a popup is open (the Pattern combo's own keyboard navigation) and while this list has the
@@ -758,7 +763,10 @@ void MainPane::DrawPatternListBody()
 							const int n = rows[r];
 							const bool sel = currState.pattern == n;
 							im::PushID(n);
-							if (im::Selectable(frameData->GetDecoratedName(n).c_str(), sel))
+							const bool diffColor = PushDiffColor(n);
+							const bool clicked = im::Selectable(frameData->GetDecoratedName(n).c_str(), sel);
+							if (diffColor) im::PopStyleColor();
+							if (clicked)
 							{
 								currState.pattern = n;   // same as picking it in the Pattern combo
 								currState.frame = 0;
@@ -797,7 +805,28 @@ void MainPane::PopCopies()
 bool MainPane::PatternHidden(int n)
 {
 	return n != currState.pattern
-		&& PatternHiddenByFilter(frameData->get_sequence(n), gSettings.hideEmptyPatterns, gSettings.hideFramelessPatterns);
+		&& (PatternHiddenByFilter(frameData->get_sequence(n), gSettings.hideEmptyPatterns, gSettings.hideFramelessPatterns) || HiddenByDiff(n));
+}
+
+// Character diff (issue #131): the "show only changed patterns" filter. n < 0: whether the filter applies to this list at all.
+bool MainPane::HiddenByDiff(int n) const
+{
+	const auto &m = chardiff::Marks();
+	if (!m.onlyChanged || !m.active(frameData)) return false;
+	if (n < 0) return true;
+	return n != currState.pattern && m.kindFor(frameData, n) == chardiff::Kind::Same;
+}
+
+// Text colour of a differing pattern's row: changed (amber), added (green), removed (red). True when a colour was pushed.
+bool MainPane::PushDiffColor(int n) const
+{
+	const auto &m = chardiff::Marks();
+	if (!m.active(frameData)) return false;
+	const ImVec4 bg = ImGui::GetStyleColorVec4(ImGuiCol_WindowBg);
+	ImVec4 c;
+	if (!chardiff::KindColor(m.kindFor(frameData, n), bg.x * 0.3f + bg.y * 0.59f + bg.z * 0.11f > 0.5f, &c.x)) return false;
+	ImGui::PushStyleColor(ImGuiCol_Text, c);
+	return true;
 }
 
 void MainPane::DrawHideEmptyToggles()
@@ -806,10 +835,21 @@ void MainPane::DrawHideEmptyToggles()
 	if (im::Checkbox(LBL("Hide empty patterns"), &gSettings.hideEmptyPatterns)) im::MarkIniSettingsDirty();
 	if (im::IsItemHovered())
 		im::SetTooltip(TXT("Hide pattern slots with no frames and no name. The selected pattern stays listed, and the ID field still opens any slot."));
+	{	// character diff active on this pattern table: its "show only changed patterns" filter beside the empty-pattern one
+		auto &m = chardiff::Marks();
+		if (m.active(frameData)) {
+			int differing = 0;
+			for (auto k : *m.kinds) differing += k != chardiff::Kind::Same ? 1 : 0;
+			char lb[96]; snprintf(lb, sizeof lb, TXT("Show only changed patterns (%d)"), differing);
+			im::Checkbox((std::string(lb) + "###diffOnlyChanged").c_str(), &m.onlyChanged);
+			if (im::IsItemHovered())
+				im::SetTooltip(TXT("Character diff: list only the patterns that differ from the compared file. Amber = changed, green = only in this file, red = only in the other."));
+		}
+	}
 	if (!gSettings.hideEmptyPatterns) return;
 	int hidden = 0;
 	const int count = frameData->get_sequence_count();
-	for (int n = 0; n < count; ++n) hidden += PatternHidden(n) ? 1 : 0;
+	for (int n = 0; n < count; ++n) hidden += (n != currState.pattern && PatternHiddenByFilter(frameData->get_sequence(n), true, gSettings.hideFramelessPatterns)) ? 1 : 0;
 	im::SameLine();
 	im::TextDisabled(TXT("(%d hidden)"), hidden);
 	im::Indent();

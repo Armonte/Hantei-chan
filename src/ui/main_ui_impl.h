@@ -497,6 +497,8 @@ void MainFrame::DrawUi()
 	drawNotesWindow();
 	drawKeyBindingsWindow();
 	drawCompareWindow();
+	UpdateCharDiff();
+	DrawCharDiffWindow();
 	drawOpponentWindow();
 	drawBgmWindow();
 	drawHudWindow();

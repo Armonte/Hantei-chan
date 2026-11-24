@@ -188,6 +188,7 @@ void MainFrame::Draw()
 #include "paste_notice.h"
 #include "ui/tool_windows_impl.h"
 #include "ui/state_transfer_impl.h"
+#include "ui/char_diff_impl.h"
 
 // ============================================================================
 // PAT editor: auto backup, PAT documents, UV drag, navigation, layer tools
@@ -539,6 +540,10 @@ bool MainFrame::saveCharacter(CharacterInstance* character)
 	if (!character) return false;
 	// A PAT tab's document is its .pat (the placeholder pattern list is never saved).
 	if (character->isPatDocument()) return savePatOf(character, std::string());
+	if (character->compareCopy) {
+		requestErrorPopup("Save Error", TXT("This tab is the reference side of a character diff (read-only). Open the file itself to edit it."));
+		return false;
+	}
 	if (character->archiveHome.empty()) backupBeforeSave(character->getTopHA6Path(), false);
 	// Opened from an archive in the archive browser: Save writes back into that archive (first .bak kept), byte-exact through the format writers.
 	if (!character->archiveHome.empty()) {

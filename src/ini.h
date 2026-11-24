@@ -43,6 +43,7 @@ extern struct Settings
 	std::vector<std::string> keyBindings;    // "Key=<action>#<n>=<vk>,<mods>" overrides (issue #9)
 	bool invertWheelZoom = false;            // wheel up zooms out (issue #9)
 	std::string stageGameDir;                // last stage list (game bg folder) for the stage browser/dropdown
+	std::string diffSource;                  // Character diff: last archive / game folder / character file compared with (issue #131)
 	int stageGame = 0;                       // 0 MBAACC, 1 MBAC
 	bool stagePatAuthoring = true;           // PAT placement: Authoring (default) / Game-exact
 	bool stageClampCamera = true;            // keep the stage view's game camera inside the game's limits

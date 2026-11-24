@@ -842,6 +842,7 @@ void MainFrame::Menu(unsigned int errorPopupId)
                 OpenStateTransfer(getToolView());
 			if (ImGui::MenuItem(LBL("Pattern manager"), nullptr, m_patMgr.open)) m_patMgr.open = !m_patMgr.open;
 			if (ImGui::MenuItem(LBL("Pattern comparison"), nullptr, m_showCompare)) m_showCompare = !m_showCompare;
+			if (ImGui::MenuItem(LBL("Character diff (compare with vanilla / another file)..."), nullptr, m_diff.open)) m_diff.open = !m_diff.open;
 			if (ImGui::MenuItem("Opponent pose preview", nullptr, m_showOpponent)) { if(auto* v=getToolView()) m_opponentSettingsView=v->getId(); m_showOpponent = !m_showOpponent; }
 			if (ImGui::MenuItem(LBL("Variable references (batch replace)"), nullptr, m_varRefs.open)) m_varRefs.open = !m_varRefs.open;
 			if (ImGui::MenuItem(LBL("Stage card (select name, preview, round call)"), nullptr, stageCardWindow.open)) stageCardWindow.open = !stageCardWindow.open;

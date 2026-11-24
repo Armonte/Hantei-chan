@@ -1,0 +1,12 @@
+# Character diff (issue #131), step 1: edit a copy of vanilla ryougi (see char_diff_identity.txt for the setup) and save it.
+# Setup: copy %TEMP%\hantei_diff_test to %TEMP%\hantei_diff_mod first. Then run char_diff_against_vanilla.txt.
+# Edits: pattern 10 tinted (AF colour of every sprite layer), pattern 3 pasted over pattern 4, pattern 3 pasted into the empty slot 950.
+openany C:\Users\teo\AppData\Local\Temp\hantei_diff_mod\data\ryougi_0.txt
+wait 5
+pattern 10
+tint 1 0.5 0.5
+copypattern 3
+pastepattern 4
+pastepattern 950
+savechar
+quit
