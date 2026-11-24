@@ -1,6 +1,7 @@
 #ifndef EFFECT_ACTOR_H_GUARD
 #include "../../i18n.h"
 #include "effect_form.h"
+#include "effect_spawn.h"
 #include "../../ui/ui_style.h"
 #define EFFECT_ACTOR_H_GUARD
 
@@ -19,6 +20,8 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 
 
 			const char* const actorTypes[] = {
+				"0: Airdash forward rings",
+				"1: Airdash back rings",
 				"5: Clash",
 				"26: Charge [X]",
 			};
@@ -51,21 +54,7 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 				}
 
 				// Tooltips based on hovered flag
-				switch(flagIdx) {
-					case 0: Tooltip("Remove when parent gets hit (includes shield, throw, not clash/armor)"); break;
-					case 1: Tooltip("Always face right"); break;
-					case 2: Tooltip("Follow parent"); break;
-					case 3: Tooltip("Affected by hitstop of parent"); break;
-					case 4: Tooltip("Coordinates relative to camera"); break;
-					case 5: Tooltip("Remove when parent changes pattern"); break;
-					case 6: Tooltip("Can go below floor level"); break;
-					case 7: Tooltip("Always on floor"); break;
-					case 8: Tooltip("Inherit parent's rotation"); break;
-					case 9: Tooltip("Position relative to screen border in the back"); break;
-					case 10: Tooltip("Unknown effect"); break;
-					case 11: Tooltip("Flip facing"); break;
-					case 12: Tooltip("Unknown (Akiha's 217 only)"); break;
-				}
+				EfSpawnFlagset1Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[2]);
 				im::TreePop();
@@ -79,27 +68,14 @@ static inline void DrawEffectActor_Type8(Frame_EF& effect, FrameData* frameData,
 				}
 
 				// Tooltips based on hovered flag
-				switch(flagIdx) {
-					case 0: Tooltip("Child has shadow"); break;
-					case 1: Tooltip("Advance child with parent (also activates Flagset 1 bit 5)"); break;
-					case 2: Tooltip("Remove when parent is thrown"); break;
-					case 3: Tooltip("Parent is affected by hitstop"); break;
-					case 4: case 5: Tooltip("Unknown effect"); break;
-					case 6: Tooltip("Unaffected by parent's Type 2 superflash if spawned during it"); break;
-					case 7: Tooltip("Doesn't move with camera"); break;
-					case 8: Tooltip("Position is relative to opponent"); break;
-					case 9: Tooltip("Position is relative to (-32768, 0)"); break;
-					case 10: Tooltip("Top Z Priority (overridden if projectile sets own priority)"); break;
-					case 11: Tooltip("Face according to player slot"); break;
-					case 12: Tooltip("Unaffected by any superflash"); break;
-				}
+				EfSpawnFlagset2Tooltip(flagIdx);
 
 				im::Text(TXT("Raw value: %d"), p[3]);
 				im::TreePop();
 			}
 
 			// Angle: EF8/108 take the same parameters as EF1 (MBAA_NAME_AUDIT.md 2.1); layout as in the Gonptechan EX fork.
-			if(im::DragInt(EfRow(LBL("Angle")), &p[7])) markModified();
+			if(im::DragInt(EfRow(LBL("Rotation")), &p[7])) markModified();
 			im::SameLine(); im::TextDisabled("(?)");
 			if(im::IsItemHovered()) Tooltip("Clockwise rotation: 0=0°, 2500=90°, 5000=180°, 10000=360°");
 

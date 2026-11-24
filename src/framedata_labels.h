@@ -272,7 +272,7 @@ static const char* const characterList[] = {
 	"35: KohaMech", "36: (None)", "37: (None)", "38: (None)", "39: (None)",
 	"40: (None)", "41: (None)", "42: (None)", "43: (None)", "44: (None)",
 	"45: (None)", "46: (None)", "47: (None)", "48: (None)", "49: (None)",
-	"50: (None)", "51: B.Hime", "52: (None)", "53: (None)", "54: (None)",
+	"50: (None)", "51: B.Hime", "52: (None)", "53: B.Akiha", "54: (None)",
 	"55: (None)", "56: (None)", "57: (None)", "58: B.Miyako", "59: B.Wara",
 	"60: (None)", "61: (None)", "62: (None)", "63: (None)", "64: (None)",
 	"65: (None)", "66: (None)", "67: (None)", "68: (None)", "69: (None)",
@@ -291,7 +291,14 @@ static const char* const hitConditions[] = {
 	"5: On block",
 	"6: On clash or shield",
 	"7: On block, clash, or shield",
-	"100: On shield only",
+	// +100 = no OTG (gonp's HA6 doc, 2026-11; replaces the old "100: On shield only")
+	"100: On hit (no OTG)",
+	"101: On hit or block (no OTG)",
+	"102: On hit, clash, or shield (no OTG)",
+	"103: On hit, block, clash, or shield (no OTG)",
+	"105: On block (no OTG)",
+	"106: On clash or shield (no OTG)",
+	"107: On block, clash, or shield (no OTG)",
 };
 
 // Opponent state

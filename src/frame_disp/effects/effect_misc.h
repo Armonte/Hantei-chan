@@ -25,6 +25,8 @@
 // (IDA-verified Effect6_Dispatch 0x45D700). Docs number params from 1 (p1 = p[0]).
 // All numbers not listed (25-49, 51-99, 104, 108, 109, 115-149, 154, 156-199,
 // 201-251) are no-ops in vanilla MBAA. 154-157 are BOF/Extended Melty only.
+// Labels updated from gonp's HA6 doc, 2026-11; where it disagrees with the
+// Effect6_Dispatch reading above, the tooltip keeps both.
 // ============================================================================
 
 static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, int patternIndex, std::function<void()> markModified)
@@ -90,11 +92,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				markModified();
 			}
 
-			// Sub-type specific parameters
-			if(no == 0 || no == 3) { // After-image or Trailing images
-				EfSection(no == 0 ? TXT("--- After-image (one every 7f) ---") : TXT("--- Trailing images ---"));
-
-				if(i18n::Combo(EfRow(LBL("Blending mode")), &p[0],
+			static const char* const blendModes =
 					"0: Blue (Normal)\000"
 					"1: Red (Normal)\000"
 					"2: Green (Normal)\000"
@@ -106,9 +104,16 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					"8: Green (Additive)\000"
 					"9: Yellow (Additive)\000"
 					"10: Normal (Additive)\000"
-					"11: Normal (Full opacity)\000")) {
+					"11: Normal (Full opacity)\000";
+
+			// Sub-type specific parameters
+			if(no == 0 || no == 3) { // After-image or Trailing images
+				EfSection(no == 0 ? TXT("--- After-image (one every 7f) ---") : TXT("--- Trailing images ---"));
+
+				if(i18n::Combo(EfRow(LBL("Blending mode")), &p[0], blendModes)) {
 					markModified();
 				}
+				if(no == 0) EfNote(TXT("One every 7 frames; lasts until a new pattern"));
 
 				if(no == 3) { // Trailing images only
 					im::DragInt(EfRow(LBL("Number of images")), &p[1]);
@@ -128,7 +133,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 					im::SameLine(); im::TextDisabled("(?)");
 					if(im::IsItemHovered()) {
-						Tooltip("Frames each image is behind previous (max 32)");
+						Tooltip("Frames each image is behind the previous one (location only, all show the current frame; max 32)");
 					}
 				}
 
@@ -236,7 +241,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("Only works if owner is in MAX/HEAT/BLOOD HEAT");
+					Tooltip("Only works if the effect owner is in MAX/HEAT/BLOOD HEAT (regardless of player state)");
 				}
 
 				im::DragInt(EfRow(LBL("Red Health change")), &p[3]);
@@ -274,7 +279,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("0: vel = p1+rand(p2-p1), accel = p3+rand(p4-p3) on axis p5\n"
 					"1: angle p5 (+rand p6) /10000, speed p1 (+rand p2), accel p3; p7=1 decelerates to a stop\n"
-					"2: arc to parent (0,p3) in p1 frames with gravity p2");
+					"2: arc to parent (0,p3) in p1 frames with gravity p2\n"
+					"gonp's HA6 doc: p12 = 1 makes param4 the angle");
 
 				im::DragInt(EfRow(LBL("Min speed")), &p[0]);
 				if(im::IsItemEdited()) {
@@ -354,7 +360,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("Characters only.\np2 != 0: global freeze timer = p1\np2 == 0: per-slot super flash timer = p1");
+					Tooltip("Characters only.\np2 != 0: global freeze timer = p1\np2 == 0: per-slot super flash timer = p1\n"
+						"gonp's HA6 doc: p1 = global flash duration (only if p2 != 0)");
 				}
 
 								im::DragInt(EfRow(LBL("Global freeze")), &p[1]);
@@ -366,7 +373,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("Non-zero: p1 sets the global freeze timer instead of the per-slot flash");
+					Tooltip("Non-zero: p1 sets the global freeze timer instead of the per-slot flash\n"
+						"gonp's HA6 doc: 0 sets the player flash to 0");
 				}
 
 			} else if(no == 12) { // Various teleports
@@ -390,7 +398,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 					if(p[4] == 0) {
 						if(i18n::Combo(EfRow(LBL("Position relative to")), &p[2],
-							"0: param4\0001: Camera edge and floor\000")) {
+							"0: param4\0001: Camera edge (ignores zoom) and floor\000")) {
 							markModified();
 						}
 
@@ -467,6 +475,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				if(im::InputInt(EfRow(LBL("Meter change")), &p[2], 0, 0)) markModified();
 
 				if(im::InputInt(EfRow(LBL("MAX/HEAT time")), &p[3], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Only works if the effect owner is in MAX/HEAT/BLOOD HEAT (regardless of target)");
 
 			} else if(no == 15) { // Start/Stop Music
 				if(i18n::Combo(EfRow(LBL("Music")), &p[0], "0: Stop\0001: Start\000")) {
@@ -574,12 +584,12 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 				if(im::InputInt(EfRow(LBL("Value")), &p[0], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Scale: value/10000. Rotation: 10000 = 360 degrees");
+				if(im::IsItemHovered()) Tooltip("Scale: 10000 = 1.0. Rotation: clockwise, 10000 = 360 degrees");
 				if(im::InputInt(EfRow(LBL("Random add")), &p[1], 0, 0)) markModified();
 				int scaleRotTypes[] = {0, 1, 2, 10};
 				const char* scaleRotNames[] = {
-					"0: Scale one axis (Y?)",
-					"1: Scale other axis (X?)",
+					"0: Set X scale",
+					"1: Set Y scale",
 					"2: Scale X and Y",
 					"10: Rotation",
 				};
@@ -597,6 +607,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					p[5] = scaleRotTypes[scaleRotIdx];
 					markModified();
 				}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("gonp's HA6 doc: 0 = X scale, 1 = Y scale.\nEarlier label (unconfirmed): 0 = Y?, 1 = X?");
 
 			} else if(no == 24) { // Guard Quality Change
 				EfSection(TXT("--- Guard Quality Change ---"));
@@ -625,19 +637,29 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 					"44: Meter charge 4F (-250)",
 				};
 
-				// Find current index
-				int guardIdx = 0;
-				for(int i = 0; i < IM_ARRAYSIZE(guardActionTypes); i++) {
-					if(p[0] == guardActionTypes[i]) {
-						guardIdx = i;
-						break;
+				// p3 (gonp's HA6 doc, 2026-11): 0 = p1 is a Guard Quality map id, 1 = p1 is the value itself.
+				if(p[2] != 0) {
+					if(im::InputInt(EfRow(LBL("Guard quality value")), &p[0], 0, 0)) markModified();
+					im::SameLine(); im::TextDisabled("(?)");
+					if(im::IsItemHovered()) Tooltip("10000 = 1.000");
+				} else {
+					// Find current index
+					int guardIdx = 0;
+					for(int i = 0; i < IM_ARRAYSIZE(guardActionTypes); i++) {
+						if(p[0] == guardActionTypes[i]) {
+							guardIdx = i;
+							break;
+						}
 					}
-				}
 
-				if(i18n::Combo(EfRow(LBL("Guard action")), &guardIdx, guardActionNames, IM_ARRAYSIZE(guardActionNames))) {
-					p[0] = guardActionTypes[guardIdx];
-					markModified();
+					if(i18n::Combo(EfRow(LBL("Guard action")), &guardIdx, guardActionNames, IM_ARRAYSIZE(guardActionNames))) {
+						p[0] = guardActionTypes[guardIdx];
+						markModified();
+					}
+					im::SameLine(); im::TextDisabled("(?)");
+					if(im::IsItemHovered()) Tooltip("Guard Quality map (10000 = 1.000; unlisted ids are 0). Also pauses guard healing");
 				}
+				if(i18n::Combo(EfRow(LBL("Value source")), &p[2], "0: Guard Quality map\0001: Param values\000")) markModified();
 
 			} else if(no == 100 || no == 101) { // Increase/Decrease Projectile Variable
 				EfSection(no == 100 ? TXT("--- Increase Proj Var ---") : TXT("--- Decrease Proj Var ---"));
@@ -652,6 +674,11 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
 					Tooltip("1s place: Amount\n10s place: Variable ID");
+				}
+				{
+					char decoded[96];
+					snprintf(decoded, sizeof(decoded), TXT("Variable %d, amount %d"), p[0] / 10, p[0] % 10);
+					EfNote(decoded);
 				}
 
 			} else if(no == 102 || no == 103) { // Increase/Decrease Dash variable
@@ -698,6 +725,8 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 				if(EfComboManual("Mode", &p[2], ef6_105Modes, IM_ARRAYSIZE(ef6_105Modes), width*2, width)) {
 					markModified();
 				}
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("gonp's HA6 doc: 0 set, 1 add (parent's variable); +10 = affect self instead of parent");
 
 			} else if(no == 154 && bof::DrawEffect154(p, width, markModified)) { // BOF only (Extended profile)
 			} else if(bof::DrawPostEffect(no, p, width, markModified)) {
@@ -748,7 +777,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("Clear current movement if not 0");
+					Tooltip("0 = keep current movement, 1 = clear current movement");
 				}
 
 				im::DragInt(EfRow(LBL("Set stored Y accel")), &p[2]);
@@ -760,7 +789,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			}
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) {
-					Tooltip("If not 0 and current Y velocity/accel < 1");
+					Tooltip("Custom Y acceleration to store if the current Y velocity and acceleration are < 1\n(not moving or accelerating downwards)");
 				}
 
 			} else if(no == 112) { // Change proration
@@ -781,6 +810,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 113) { // Rebeat Penalty
 				im::Text(TXT("Rebeat Penalty (22.5%)"));
+				if(im::Checkbox(EfRow(LBL("Show Reverse Beat! popup")), (bool*)&p[0])) markModified();
 
 			} else if(no == 114) { // Circuit Break
 				im::Text(TXT("Circuit Break"));
@@ -821,6 +851,7 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 253) { // Advance round-end phase
 				im::Text(TXT("++g_RoundEndState (advance the round-end phase; IF 28 tests it)"));
+				im::TextDisabled(TXT("gonp's HA6 doc: hide characters and delay hit effects"));
 
 			} else if(no == 254) { // Set intro done
 				im::Text(TXT("Owner +0x1B0 = 1 (intro finished)"));
@@ -831,9 +862,11 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 			} else if(no == 7) { // Spawn after-image sprite
 				EfSection(TXT("--- Spawn After-image Sprite ---"));
 				im::TextDisabled(TXT("Effect_CreateAfterImage(p1..p5): a timed copy of the current sprite"));
-				if(im::InputScalarN("p1..p5 (?)", ImGuiDataType_S32, p, 5, NULL, NULL, "%d", 0)) markModified();
-				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Exact meaning of each param not confirmed.\nLifetime is probably p4 (?)");
+				if(i18n::Combo(EfRow(LBL("Blending mode")), &p[0], blendModes)) markModified();
+				if(im::InputInt(EfRow(LBL("X stretch")), &p[1], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Y stretch")), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Duration")), &p[3], 0, 0)) markModified();
+				if(i18n::Combo(EfRow(LBL("Z layer")), &p[4], "0: Z = 100 (back)\0001: Z = parent's Z\000")) markModified();
 
 			} else if(no == 8) { // Accelerate toward enemy
 				EfSection(TXT("--- Accelerate Toward Enemy ---"));
@@ -871,16 +904,18 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 20) { // Modify guard gauge
 				EfSection(TXT("--- Modify Guard Gauge (while guarding) ---"));
-				if(im::InputInt(EfRow(LBL("Value 1")), &p[0], 0, 0)) markModified();
-				if(im::InputInt(EfRow(LBL("Value 2")), &p[1], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Guard gauge change")), &p[0], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Healing pause (frames)")), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Character_ModifyGuardGaugeClamped(owner, p2, p1)\nOnly while the owner's guard state is 1");
-				if(im::Checkbox(EfRow(LBL("Raw values")), (bool*)&p[2])) markModified();
+				if(im::IsItemHovered()) Tooltip("Number of frames to pause guard gauge healing.\nCharacter_ModifyGuardGaugeClamped(owner, p2, p1)\nOnly while the owner's guard state is 1");
+				if(im::Checkbox(EfRow(LBL("Use param values")), (bool*)&p[2])) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
-				if(im::IsItemHovered()) Tooltip("Off: values are TypeConfig system-value ids");
+				if(im::IsItemHovered()) Tooltip("Off: params are Guard Quality map ids (see EF6 No 24; TypeConfig system values)");
 
 			} else if(no == 21) { // Camera zoom preset
-				if(i18n::Combo(EfRow(LBL("Zoom preset")), &p[0], "0: Zoom 1.0\0001: Zoom 0.84 (snap)\0002: Freeze\000")) markModified();
+				if(i18n::Combo(EfRow(LBL("Zoom preset")), &p[0], "0: Zoom 1.0 (fully zoomed in)\0001: Zoom 0.84 (fully zoomed out)\0002: Disable camera lerp for 1f\000")) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("2: jumps the camera to its destination if it is scrolling (1 frame only).\nEarlier label: 1 = zoom 0.84 (snap), 2 = freeze");
 
 			} else if(no == 23) { // Rotate toward floor point
 				if(im::InputInt(EfRow(LBL("Radius")), &p[0], 0, 0)) markModified();
@@ -889,19 +924,32 @@ static inline void DrawEffectMisc_Type6(Frame_EF& effect, FrameData* frameData, 
 
 			} else if(no == 50) { // Camera zoom override
 				EfSection(TXT("--- Camera Zoom Override ---"));
-				if(im::InputInt(EfRow("X"), &p[0], 0, 0)) markModified();
-				if(im::InputInt(EfRow("Y"), &p[1], 0, 0)) markModified();
-				if(im::InputInt(EfRow(LBL("Out frames")), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Zoom out duration")), &p[0], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Earlier label (Effect6_Dispatch reading): X");
+				if(im::InputInt(EfRow(LBL("Zoom hold duration")), &p[1], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Earlier label (Effect6_Dispatch reading): Y");
+				if(im::InputInt(EfRow(LBL("Zoom in duration")), &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Earlier label (Effect6_Dispatch reading): Out frames");
 				if(im::InputInt(EfRow(LBL("Zoom (/10000)")), &p[3], 0, 0)) markModified();
-				im::TextDisabled(TXT("X, Y and Out frames all 0 = override off"));
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("10000 = 1.0 (default, fully zoomed in), 8398 = 0.839895 (default fully zoomed out)");
+				im::TextDisabled(TXT("p1, p2 and p3 all 0 = cancel any custom zoom"));
 
 			} else if(no == 151) { // Set circuit mode, zero meter
 				EfSection(TXT("--- Set Circuit Mode (meter = 0) ---"));
-				if(i18n::Combo(EfRow(LBL("Circuit state")), &p[0], "0: Normal\0001: HEAT\0002: MAX\0003: BLOOD HEAT\000")) markModified();
+				const char* const circuitStates[] = {"0: Normal", "1: HEAT", "2: MAX", "3: BLOOD HEAT", "5: Unlimited (training only)"};
+				if(EfComboManual("Circuit state", &p[0], circuitStates, IM_ARRAYSIZE(circuitStates), width*2, width)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Meter is set to 0 afterwards, so only HEAT/MAX/BLOOD HEAT values matter.\n5: immediately canceled unless in training with meter set to unlimited");
 				if(im::InputInt(EfRow(LBL("Value")), &p[1], 0, 0)) markModified();
 				im::SameLine(); im::TextDisabled("(?)");
 				if(im::IsItemHovered()) Tooltip("State 0: meter = value. States 1-3: heat time = value");
-				if(im::InputInt(EfRow(LBL("Max duration")), &p[2], 0, 0)) markModified();
+				if(im::InputInt(EfRow(LBL("Meter pause duration")), &p[2], 0, 0)) markModified();
+				im::SameLine(); im::TextDisabled("(?)");
+				if(im::IsItemHovered()) Tooltip("Time before the meter starts draining.\nEarlier label: Max duration");
 
 			} else if(no == 152) { // BG fade mode
 				if(im::InputInt(EfRow(LBL("BG fade state")), &p[0], 0, 0)) markModified();
